@@ -1,0 +1,4 @@
+[submodule "lib/cspec"]
+	path = lib/cspec
+	url = https://github.com/McCurtjs/cspec
+	branch = main
