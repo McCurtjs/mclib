@@ -1,6 +1,7 @@
-option(MCLIB_BUILD_SPECS "Add unit test sources to spec project" OFF)
+option(CSPEC_MEMTEST "Enable memory testing defines for spec build" OFF)
 
 add_library(McLib)
+target_include_directories(McLib PUBLIC ./include)
 target_sources(McLib PRIVATE
   src/utility.c
   src/array.c
@@ -8,7 +9,6 @@ target_sources(McLib PRIVATE
   src/str.c
   src/vec.c
 )
-target_include_directories(McLib PUBLIC ./include)
 
 if (WIN32)
   target_compile_definitions(McLib PUBLIC
