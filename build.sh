@@ -112,41 +112,41 @@ elif [ "$build_target" = "clang" ]; then
 
   flags_debug_opt="-g -O0"
   if [ "$build_type" = "Release" ]; then
-    flags_debug_opt="-Oz -flto"
+    flags_debug_opt="-Oz" # -flto causes a link issue in clang?
   fi
 
-  mkdir -p build/$build_target
+  mkdir -p build/$build_target/$build_type
 
-  clang $flags_memtest -o build/clang/test.exe \
+  clang $flags_memtest -o build/clang/$build_type/test.exe \
     $flags_common $flags_debug_opt $includes $sources $sources_test
 
   if [ "$?" == "0" ]; then
-    ./build/clang/test.exe $args
+    ./build/clang/$build_type/test.exe $args
   fi
 
 # GCC
 elif [ "$build_target" = "gcc" ]; then
 
-  mkdir -p build/gcc
+  mkdir -p build/gcc/$build_type
 
-  gcc -o build/gcc/test.exe $flags_memtest $includes $sources $sources_test
+  gcc -o build/gcc/$build_type/test.exe $flags_memtest $includes $sources $sources_test
 
   if [ "$?" == "0" ]; then
-    ./build/gcc/test.exe $args
+    ./build/gcc/$build_type/test.exe $args
   fi
 
 # CMake MinGW on Windows with GCC
 elif [ "$build_target" = "mingw" ]; then
 
   if [ "$skip_cmake" != true ]; then
-    cmake -G "MinGW Makefiles" -S . -B build/mingw -DCMAKE_BUILD_TYPE=$build_type
+    cmake -G "MinGW Makefiles" -S . -B build/mingw/$build_type -DCMAKE_BUILD_TYPE=$build_type
     if [ "$?" != "0" ]; then
       exit
     fi
   fi
 
   pushd . &> /dev/null
-  cd build/mingw
+  cd build/mingw/$build_type
   eval $make_exe
   if [ "$?" == "0" ]; then
     ./McLib_specs.exe $args

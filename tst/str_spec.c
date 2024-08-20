@@ -43,6 +43,10 @@ describe(str_range) {
   // warns that the length and size are a union, which is the point
 #pragma GCC diagnostic ignored "-Waddress"
 #endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpointer-bool-conversion"
+#endif
   it("validates that length and size are union aliases") {
     StringRange range = R("literal string range");
 
@@ -50,6 +54,9 @@ describe(str_range) {
   }
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
+#ifdef __clang__
+#pragma clang diagnostic pop
 #endif
 
   it("creates a range in a local fixed-size char array") {

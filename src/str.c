@@ -68,10 +68,21 @@ static String_Internal* str_new_internal(index_s length) {
   return ret;
 }
 
+#ifdef __GNUC__
+// This warning detects that the begin pointer actually pionts to the head value
+//    which is just a char, and is too small to write into an offset of. But
+//    we're doing that on purpose by allocating extra memory for the string,
+//    so ignore the warning.
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstringop-overflow="
+#endif
 inline static String str_terminate(String_Internal* str) {
   *(str->begin + str->length) = '\0';
   return (String)str;
 }
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
 
 inline static bool str_is_literal(String str) {
   return (str >= &str_constants[0] && str < str_constants_end);

@@ -182,7 +182,7 @@ void* array_emplace_back(Array a_in) {
 void* array_emplace_range(Array a_in, index_s position, index_s count) {
   DARRAY_INTERNAL;
   assert(position >= 0);
-  assert(count >= 0);
+  assert(count > 0);
   if (position >= a->size) {
     return array_emplace_back_range(a_in, count);
   }
@@ -199,7 +199,7 @@ void* array_emplace_range(Array a_in, index_s position, index_s count) {
 
 void* array_emplace_back_range(Array a_in, index_s count) {
   DARRAY_INTERNAL;
-  assert(count >= 0);
+  assert(count > 0);
   if (a->size + count >= a->capacity) {
     array_reserve(a_in, a->size + count);
   }
@@ -222,7 +222,7 @@ index_s array_remove(Array a_in, index_s position) {
 
 index_s array_remove_range(Array a_in, index_s position, index_s count) {
   DARRAY_INTERNAL;
-  assert(position >= position);
+  assert(position >= 0);
   assert(count > 0);
   if (position >= a->size) return a->size;
   if (position + count >= a->size) {
