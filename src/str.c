@@ -145,6 +145,13 @@ void str_delete(String* str) {
 // Macro-overloaded str_ via istr_ functions
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <stdio.h>
+void istr_write(StringRange str) {
+  uint length = (uint)str.size;
+  printf("%.*s\n", length, str.begin);
+  fflush(stdout); // SDL Window blocks console output for some reason
+}
+
 String istr_copy(StringRange str) {
   String_Internal* ret = str_new_internal(str.size);
   if (!ret) return str_empty;
@@ -171,6 +178,19 @@ bool istr_contains(StringRange str, StringRange check) {
   return istr_find(str, check) != str.size;
 }
 
+bool istr_contains_char(StringRange str, char check) {
+  for (index_s i = 0; i < str.size; ++i) {
+    if (str.begin[i] == check) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//bool istr_contains_any(StringRange str, StringRange check_chars) {
+//  // TODO: this, and istr_token, and str_ versions
+//}
+
 bool istr_to_bool(StringRange str, bool* out) {
   if (!out) return false;
   if (str.size < 4) return false;
@@ -190,7 +210,15 @@ bool istr_to_bool(StringRange str, bool* out) {
   return false;
 }
 
-bool istr_to_int(StringRange str, index_s* out) {
+bool istr_to_int(StringRange str, int* out) {
+  if (!out) return false;
+  index_s long_out;
+  bool ret = istr_to_long(str, &long_out);
+  if (ret) *out = (int)long_out;
+  return ret;
+}
+
+bool istr_to_long(StringRange str, index_s* out) {
   if (!out || str.size == 0) return false;
   index_s sign = 1;
   index_s start = 0;
@@ -219,10 +247,57 @@ bool istr_to_int(StringRange str, index_s* out) {
   return true;
 }
 
-bool istr_to_float(StringRange str, double* out) {
-  PARAM_UNUSED(str);
-  PARAM_UNUSED(out);
-  return false;
+bool istr_to_float(StringRange str, float* out) {
+  if (!out) return false;
+  double long_out;
+  bool ret = istr_to_double(str, &long_out);
+  if (ret) *out = (float)long_out;
+  return ret;
+}
+
+bool istr_to_double(StringRange str, double* out) {
+  assert(out);
+
+  index_s i = 0;
+  const char* s = str.begin;
+  while (i < str.size && isspace(s[i])) {
+    ++i;
+  }
+
+  // check for valid number start
+  if (i >= str.size || (s[i] != '+' && s[i] != '-' && !isdigit(s[i]))) {
+    return false;
+  }
+
+  double res = 0, fact = 1;
+
+  // positive/negative
+  if (s[i] == '-') {
+    fact = -1;
+    ++i;
+  } else if (s[i] == '+') {
+    ++i;
+  }
+
+  // digits and decimal
+  for (bool in_decimal = FALSE; i < str.size; ++i) {
+
+    if (!in_decimal && s[i] == '.') {
+      in_decimal = TRUE;
+      continue;
+    }
+
+    if (!isdigit(s[i])) {
+      break;
+    }
+
+    int n = s[i] - '0';
+    if (in_decimal) fact /= 10.0;
+    res = res * 10.0 + (double)n;
+  }
+
+  *out = res * fact;
+  return TRUE;
 }
 
 index_s istr_index_of_char(StringRange str, char c, index_s from_pos) {
@@ -249,6 +324,28 @@ index_s istr_index_of(StringRange str, StringRange to_find, index_s from_pos) {
   return str.size;
 }
 
+StringRange istr_token(StringRange str, StringRange to_find, index_s* pos) {
+  assert(pos != NULL);
+  assert(to_find.size != 0);
+  if (str.size <= *pos) return str_empty->range;
+
+  for (index_s i = *pos; i < str.size; ++i) {
+    for (index_s d = 0; d < to_find.size; ++d) {
+      if (to_find.begin[d] == str.begin[i]) {
+        index_s old_pos = *pos;
+        *pos = i + 1;
+        return (StringRange) {
+          .begin = str.begin + old_pos,
+          .size = i - old_pos
+        };
+      }
+    }
+  }
+
+  *pos = str.size;
+  return str_empty->range;
+}
+
 index_s istr_find(StringRange str, StringRange to_find) {
   return istr_index_of(str, to_find, 0);
 }
@@ -263,7 +360,7 @@ StringRange istr_substring(StringRange str, index_s start, index_s end) {
   if (end <= start) return str_empty->range;
   return (StringRange) {
     .begin = str.begin + start,
-      .size = end - start,
+    .size = end - start,
   };
 }
 
@@ -508,6 +605,8 @@ static _Str_FmtSpec format_read_spec(
 
         switch (c) {
           case ':': read_state = _Str_FmtState_Flags; break;
+          case 'i': spec.representation = _Str_FmtRep_Default; break;
+          case 'f': spec.representation = _Str_FmtRep_Default; break;
           case 'x': spec.representation = _Str_FmtRep_Hex; break;
           case 'X': spec.representation = _Str_FmtRep_HEX; break;
           case 'b': spec.representation = _Str_FmtRep_Binary; break;
@@ -846,7 +945,7 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
 
 }
 
-String istr_format(StringRange fmt, ...) {
+static String format_va(StringRange fmt, va_list args) {
   // TODO: better error handling on memory errors
   // TODO: Move this to its own section, possibly want to split out a new 
   //    header just for this function, especially if other dependent types
@@ -855,12 +954,8 @@ String istr_format(StringRange fmt, ...) {
   index_s reserve_size = sizeof(String_Internal) + fmt.size;
 
   _Str_FmtArg arg;
-  va_list args;
 
-  // Read all the params into an array and calculate an approximate size
-  va_start(args, fmt);
-
-  loop {
+  loop{
     arg = va_arg(args, _Str_FmtArg);
 
     until(arg.type == _Str_FmtArg_End);
@@ -876,11 +971,9 @@ String istr_format(StringRange fmt, ...) {
   Array_byte output = arr_byte_new_reserve(reserve_size);
 
   // Push the String header to the front of the array data
-  String_Internal* header = (String_Internal*)arr_byte_emplace_back_range(
-    output, sizeof(struct _Str_Base)
-  );
-
-  if (!header) return str_empty;
+  if (!arr_byte_emplace_back_range(output, sizeof(struct _Str_Base))) {
+    return str_empty;
+  }
 
   // Process the format string
   byte arg_index = 0;
@@ -941,11 +1034,36 @@ String istr_format(StringRange fmt, ...) {
 
   array_delete(&params);
 
-  header->size = output->size - sizeof(struct _Str_Base);
   arr_byte_push_back(output, '\0');
+  String_Internal* header = (String_Internal*)output->arr;
+  header->size = output->size - sizeof(struct _Str_Base) - 1;
   header->begin = &header->head;
   arr_byte_truncate(output, output->size);
   String ret = (String)arr_byte_release(&output);
 
   return ret;
+}
+
+String istr_format(StringRange fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  return format_va(fmt, args);
+}
+
+void istr_print(StringRange fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  String to_print = format_va(fmt, args);
+  if (to_print == NULL) return;
+  istr_write(to_print->range);
+  str_delete(&to_print);
+}
+
+void istr_log(StringRange fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  String to_print = format_va(fmt, args);
+  if (to_print == NULL) return;
+  istr_write(to_print->range);
+  str_delete(&to_print);
 }

@@ -142,6 +142,8 @@ extern const String str_false;
 StringRange str_range(const char* c_str);
 StringRange str_range_s(const char* c_str, index_s length);
 
+#define str_write(str)              istr_write(_s2r(str))
+
 String  str_new(const char* c_str);
 String  str_new_s(const char* c_str, index_s length);
 #define str_copy(str)               istr_copy(_s2r(str))
@@ -158,6 +160,9 @@ void    str_delete(String* str);
 
 #define str_to_bool(str, out)       istr_to_bool(_s2r(str), out)
 #define str_to_int(str, out)        istr_to_int(_s2r(str), out)
+#define str_to_long(str, out)       istr_to_long(_s2r(str), out)
+#define str_to_float(str, out)      istr_to_float(_s2r(str), out)
+#define str_to_double(str, out)     istr_to_double(_s2r(str), out)
 
 // \brief prefer s.size, but can be useful in cases where a function is needed.
 //
@@ -179,6 +184,17 @@ void    str_delete(String* str);
 //    The index in str of the match, or str.size if none is present.
 #define str_index_of_char(str, to_find, from_pos) \
                     istr_index_of_char(_s2r(str), to_find, from_pos)
+
+// \brief Gets a token as a substring of str described by the starting position
+//    pos that ends with (not including) any delimeter character in to_find.
+//
+// \brief The value of pos is updated to the index after the found delimeter.
+//    If no character was found in the string, the value is equal to str.size.
+//
+// \returns
+//    A StringRange containing the token
+#define str_token(str, to_find, pos) \
+                    istr_token(_s2r(str), _s2r(to_find), pos)
 
 // \brief Alias for str_index_of(str, to_find, 0)
 #define str_find(str, to_find)      istr_find(_s2r(str), _s2r(to_find))
@@ -234,8 +250,51 @@ void    str_delete(String* str);
 #define str_replace_all(s, t, w)    istr_replace_all(_s2r(s), _s2r(t), _s2r(w))
 #define str_prepend(str, length, c) istr_prepend(_s2r(str), length, c)
 #define str_append(str, length, c)  istr_append(_s2r(str), length, c)
-#define str_format(str, ...)        istr_format \
-          (_s2r(str), _va_exp(_sfa, __VA_ARGS__), _str_fmtarg_end)
+
+// \brief `String str_format(fmt, ...)`
+// \brief Builds a new string from a format string and variable arguments.
+//
+// \brief The first parameter is always the format string, which takes argument
+//    specifiers in the form {}, or with optional specifiers (denoted 
+//    by brackets):
+// 
+//    {[index][![i|x|X|c]][:[+][<|^|>|=][#pad_char][width][.precision[+]]]}
+//
+//    - argument index:     {0}, {1}, ...
+//    - type annotation:    {!x}, with index: {1!x}, with width {1!x:5}
+//        - i, f: default
+//        - x: hex
+//        - X: HEX
+//        - c: character
+//        - b: binary
+//        - o: octal (TODO)
+//        - m: month, M: Month (TODO)
+//        - d: day, D: Day (TODO)
+//    - minimum width:      {:5}, with index: {1:5}
+//    - alignment:          left {:<5}, right {:>5}, center {:^5}, ledger {:=5}
+//        - < left align
+//        - > right align
+//        - ^ center align
+//        - = ledger style (right-align, +/- signs left aligned)
+//        - 0 ledger with leading zeroes {:05}, equivalent to {:#0=5}
+//    - padding character:  {:#,5} fills whitespace with ',' instead of ' '
+//    - sign for positives: {:+}, with index and width: {1:+5}
+//    - precision (floats): {:.3}, use trailing zeroes on precision {:5.3+}
+//    - exponent (TODO):    {:.3e}, {:.3E} (should be {!e}?)
+//
+// \returns a new string, which must be deleted later by the caller.
+#define str_format(...)             _str_format(__VA_ARGS__, _str_fmtarg_end)
+
+// \brief `void str_print(fmt, ...)`
+// \brief Prints a formatted string as a log.
+// \brief See str_format for details on formatting.
+#define str_print(...)              _str_print(__VA_ARGS__, _str_fmtarg_end)
+
+// \brief `void str_log(fmt, ...)`
+// \brief Prints a formatted string as a log. Differes from str_print in that
+//    values are not printed in release mode (TODO).
+// \brief See str_format for details on formatting.
+#define str_log(...)                _str_log(__VA_ARGS__, _str_fmtarg_end)
 
 //String str_pad_left(StringRange str, index_s length, char c);
 //String str_pad_right(StringRange str, index_s length, char c);
@@ -247,19 +306,25 @@ static inline StringRange _str_range_st(const String str) {
   return str_empty->range;
 }
 
+void        istr_write(StringRange str);
 String      istr_copy(StringRange str);
 bool        istr_eq(StringRange lhs, StringRange rhs);
 bool        istr_starts_with(StringRange str, StringRange starts);
 bool        istr_ends_with(StringRange str, StringRange ends);
 bool        istr_contains(StringRange str, StringRange check);
+bool        istr_contains_char(StringRange str, char check);
+bool        istr_contains_any(StringRange str, StringRange check_chars);
 bool        istr_to_bool(StringRange str, bool* out_bool);
-bool        istr_to_int(StringRange str, index_s* out_int);
-//bool      istr_to_float(StringRange str, float* out_float);
+bool        istr_to_int(StringRange str, int* out_int);
+bool        istr_to_long(StringRange str, index_s* out_int);
+bool        istr_to_float(StringRange str, float* out_float);
+bool        istr_to_double(StringRange str, double* out_float);
 //String    istr_to_upper(StringRange str);
 //String    istr_to_lower(StringRange str);
 //String    istr_to_title(StringRange str);
 index_s     istr_index_of_char(StringRange str, char c, index_s from);
 index_s     istr_index_of(StringRange str, StringRange to_find, index_s from);
+StringRange istr_token(StringRange str, StringRange del_chrs, index_s* pos);
 //index_s   istr_index_of_last(StringRange str, StringRange find, index_s from);
 index_s     istr_find(StringRange str, StringRange to_find);
 //index_s   istr_find_last(StringRange str, StringRange to_find);
@@ -280,10 +345,16 @@ String      istr_concat(StringRange left, StringRange right);
 String      istr_prepend(StringRange str, index_s length, char c);
 String      istr_append(StringRange str, index_s length, char c);
 String      istr_format(StringRange fmt, ...);
+void        istr_print(StringRange fmt, ...);
+void        istr_log(StringRange fmt, ...);
 
 #define _str_sub_args(str, start, end, ...) _s2r(str), (index_s)start, (index_s)end
 #define _str_sub_a(str, ...) _str_sub_args(str, __VA_ARGS__, _s2r(str).size)
 #define _str_substring(str, ...) istr_substring(_str_sub_a(str, __VA_ARGS__))
+
+#define _str_format(fmt, ...) istr_format(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
+#define _str_print(fmt, ...) istr_print(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
+#define _str_log(fmt, ...) istr_log(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
 
 enum _Str_FmtArg_Type {
   _Str_FmtArg_End,
@@ -330,15 +401,22 @@ static inline _Str_FmtArg _sarg_float(double f) {
   return (_Str_FmtArg) { .type = _Str_FmtArg_Float, .f = f };
 }
 
+static inline _Str_FmtArg _sarg_arg(_Str_FmtArg e) {
+  return e;
+}
+
 // \brief str_format argument macro
-#define _sfa(arg) _Generic((arg), \
-  StringRange:  _sarg_range,      \
-  String:       _sarg_str,        \
-  char*:        _sarg_c_str,      \
-  const char*:  _sarg_c_str,      \
-  int:          _sarg_int,        \
-  unsigned int: _sarg_unsigned,   \
-  double:       _sarg_float       \
-)(arg)                            //
+#define _sfa(arg) _Generic((arg),       \
+  StringRange:        _sarg_range,      \
+  String:             _sarg_str,        \
+  char*:              _sarg_c_str,      \
+  const char*:        _sarg_c_str,      \
+  int:                _sarg_int,        \
+  long long:          _sarg_int,        \
+  unsigned int:       _sarg_unsigned,   \
+  unsigned long long: _sarg_unsigned,   \
+  double:             _sarg_float,      \
+  _Str_FmtArg:        _sarg_arg         \
+)(arg)                                  //
 
 #endif

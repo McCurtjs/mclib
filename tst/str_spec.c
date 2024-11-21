@@ -463,7 +463,7 @@ describe(str_to_bool) {
 }
 
 describe(str_to_int) {
-  index_s out = 0, *p_out = &out;
+  int out = 0, *p_out = &out;
 
   it("fails when no output parameter is given") {
     p_out = NULL;
