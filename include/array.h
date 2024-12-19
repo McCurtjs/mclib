@@ -61,7 +61,8 @@ void*   array_ref_back(Array array);
 bool    array_read(const Array array, index_s index, void* out_element);
 bool    array_read_front(const Array array, void* out_element);
 bool    array_read_back(const Array array, void* out_element);
-//void    array_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
+bool    array_contains(const Array array, const void* to_find);
+void    array_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
 //void*   array_ref_find(Array array, bool (*predicate)(const void* el));
 //void    array_filter(Array array, bool (*filter)(const void* el));
 
@@ -73,9 +74,11 @@ bool    array_read_back(const Array array, void* out_element);
 //
 // #define con_type T
 // #define con_prefix t
+// #define con_cmp compare_fn // optional, reuqired for sort/search functions
 // #include "array.h"
 // #undef con_type
 // #undef con_prefix
+// #undef con_cmp
 //
 // // Create, Setup, Delete
 // Array_T  arr_t_new();
@@ -431,20 +434,26 @@ static inline con_type _prefix(_get_back)
 // \returns A pointer to the indexed element.
 static inline con_type* _prefix(_ref)
 (_arr_type arr, index_s index) {
-  return (con_type*)array_ref((Array)arr, index);
+  assert(arr);
+  assert(index < arr->size);
+  if (arr->size <= 0) return NULL;
+  return arr->first + index;
 }
 
 // \returns A pointer to the first element in the array, or NULL if empty.
 static inline con_type* _prefix(_ref_front)
 (_arr_type arr) {
   assert(arr);
+  if (arr->size <= 0) return NULL;
   return arr->arr;
 }
 
 // \returns A pointer to the last element in the array, or NULL if empty.
 static inline con_type* _prefix(_ref_back)
 (_arr_type arr) {
-  return (con_type*)array_ref_back((Array)arr);
+  assert(arr);
+  if (arr->size <= 0) return NULL;
+  return arr->first + (arr->size - 1);
 }
 
 // \brief Copies the value at the given index into the referenced output object.
@@ -482,6 +491,32 @@ static inline bool _prefix(_read_back)
   assert(arr->size > 0);
   return array_read_back((Array)arr, out_element);
 }
+
+// \brief Linearly searches the array for an element that is an exact binary
+//    match fro to_find.
+//
+// \returns True if a match was found, false otherwise
+static inline bool _prefix(_contains)
+(const _arr_type arr, con_type to_find) {
+  return array_contains((Array)arr, &to_find);
+}
+
+#ifdef con_cmp
+
+// \brief Sorts the array in place
+//
+//
+static inline void _prefix(_sort)
+(const _arr_type arr) {
+  array_sort((Array)arr, con_cmp);
+}
+
+static inline index_s _prefix(_find)
+(_arr_type arr, con_type to_find) {
+  return array_find((Array)arr, to_find, con_cmp);
+}
+
+#endif
 
 #undef _arr_type
 #undef _full_prefix

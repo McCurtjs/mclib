@@ -301,3 +301,15 @@ bool array_read_back(const Array a_in, void* element) {
   memcpy(element, a->data + (a->size - 1) * a->element_size, a->element_size);
   return true;
 }
+
+bool array_contains(const Array a_in, const void* element) {
+  DARRAY_INTERNAL_CONST;
+  assert(element);
+  if (a->size <= 0) return false;
+  for (index_s i = 0; i < a->size; ++i) {
+    if (memcmp(element, a->data + i * a->element_size, a->element_size)) {
+      return true;
+    }
+  }
+  return false;
+}
