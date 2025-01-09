@@ -8,11 +8,20 @@ target_sources(McLib PRIVATE
   src/mat.c
   src/str.c
   src/vec.c
+  include/types.h
+  include/utility.h
+  include/array.h
+  include/mat.h
+  include/str.h
+  include/vec.h
 )
 
 if (WIN32)
   target_compile_definitions(McLib PUBLIC
     _CRT_SECURE_NO_WARNINGS
+  )
+  target_include_directories(McLib PUBLIC
+    ./include>
   )
 endif()
 
