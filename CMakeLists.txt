@@ -3,25 +3,29 @@ option(CSPEC_MEMTEST "Enable memory testing defines for spec build" OFF)
 add_library(McLib)
 target_include_directories(McLib PUBLIC ./include)
 target_sources(McLib PRIVATE
-  src/utility.c
   src/array.c
   src/mat.c
+  src/slice.c
+  src/span.c
   src/str.c
+  src/utility.c
   src/vec.c
   include/types.h
-  include/utility.h
   include/array.h
+  include/array_byte.h
+  include/array_slice.h
   include/mat.h
+  include/slice.h
+  include/span.h
+  include/span_byte.h
   include/str.h
+  include/utility.h
   include/vec.h
 )
 
 if (WIN32)
   target_compile_definitions(McLib PUBLIC
     _CRT_SECURE_NO_WARNINGS
-  )
-  target_include_directories(McLib PUBLIC
-    ./include>
   )
 endif()
 
@@ -41,7 +45,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   target_sources(McLib_specs PRIVATE
     lib/cspec/tst/cspec_spec.c
     tst/spec_main.c
+    tst/span_spec.c
     tst/str_spec.c
+    tst/slice_spec.c
   )
 
   target_link_libraries(${MCLIB_TARGET} PRIVATE CSpec)

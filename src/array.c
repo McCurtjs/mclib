@@ -33,14 +33,22 @@
 // internal opaque structure:
 typedef struct Array_Internal {
   // public (read only)
-  index_s element_size;
-  index_s capacity;
-  index_s size;
-  index_s size_bytes;
+  union {
+    span_t span;
+    struct {
+      union { byte* begin; byte* data; };
+      byte* end;
+      index_t element_size;
+    };
+  };
+  index_t capacity;
+  index_t size;
+  index_t size_bytes;
 
   // private
-  byte* data;
 } Array_Internal;
+
+static const span_t span_empty = { .begin = NULL, .end = NULL };
 
 #define DARRAY_STARTING_SIZE 2
 
@@ -55,88 +63,118 @@ typedef struct Array_Internal {
   assert(a_in); \
   const Array_Internal* a = (const Array_Internal*)(a_in)
 
-Array _array_new_(index_s element_size) {
+Array _array_new_(index_t element_size) {
   Array_Internal* ret = malloc(sizeof(Array_Internal));
   assert(ret);
   *ret = (Array_Internal) {
+    .begin = NULL,
+    .end = NULL,
     .element_size = element_size,
     .capacity = 0,
     .size = 0,
     .size_bytes = 0,
-    .data = NULL,
   };
   return (Array)ret;
 }
 
-Array _array_new_reserve_(index_s element_size, index_s capacity) {
-  Array_Internal* ret = malloc(sizeof(Array_Internal));
-  assert(ret);
-  *ret = (Array_Internal) {
-    .element_size = element_size,
-    .capacity = capacity,
-    .size = 0,
-    .size_bytes = 0,
-    .data = malloc(element_size * capacity),
-  };
+Array _array_new_reserve_(index_t element_size, index_t capacity) {
+  Array_Internal* ret = (Array_Internal*)_array_new_(element_size);
+  if (capacity <= 0) return (Array)ret;
+  byte* mem = malloc(element_size * capacity);
+  assert(mem);
+  ret->begin = mem;
+  ret->end = mem;
+  ret->capacity = capacity;
   return (Array)ret;
 }
 
-void array_reserve(Array a_in, index_s capacity) {
+Array array_copy(Array a_in) {
+  DARRAY_INTERNAL;
+  return array_copy_span(a->span, a->element_size);
+}
+
+Array array_copy_span(span_t span, index_t element_size) {
+  assert(span.begin <= span.end);
+  if (span.begin >= span.end) return _array_new_(element_size);
+  index_t element_count = ispan_size(span, element_size);
+  Array_Internal* ret = (Array_Internal*)_array_new_reserve_(element_size, element_count);
+  memcpy(ret->begin, span.begin, ret->capacity);
+  return (Array)ret;
+}
+
+void array_reserve(Array a_in, index_t capacity) {
   DARRAY_INTERNAL;
   if (!a || a->size >= capacity) return;
-  void* new_data = realloc(a->data, a->element_size * capacity);
+  byte* new_data = realloc(a->begin, a->element_size * capacity);
   assert(new_data); // TODO: better handling of critical memory situations
-  a->data = new_data;
+  a->begin = new_data;
+  a->end = a->begin + a->size * a->capacity;
   a->capacity = capacity;
 }
 
-void array_truncate(Array a_in, index_s max_size) {
+void array_truncate(Array a_in, index_t max_size) {
   DARRAY_INTERNAL;
-  if (!a || a->capacity < max_size) return;
-  void* new_data = realloc(a->data, a->element_size * max_size);
-  if (!new_data) return;
-  a->data = new_data;
+  if (!a || a->capacity <= max_size) return;
+  if (max_size <= 0) {
+    array_free(a_in);
+    return;
+  }
+  byte* new_data = realloc(a->begin, a->element_size * max_size);
+  assert(new_data);
+  a->begin = new_data;
   a->capacity = max_size;
+  a->end = new_data + a->size * a->element_size;
   if (a->size > max_size) {
     a->size = max_size;
     a->size_bytes = max_size * a->element_size;
   }
 }
 
+void array_trim(Array a_in) {
+  DARRAY_INTERNAL;
+  if (a->size <= 0 || a->size == a->capacity) return;
+  byte* new_data = realloc(a->begin, a->size * a->element_size);
+  assert(new_data);
+  a->begin = new_data;
+  a->end = new_data + a->size * a->element_size;
+}
+
 void array_clear(Array a_in) {
   DARRAY_INTERNAL;
   a->size = 0;
   a->size_bytes = 0;
+  a->end = a->begin;
 }
 
 void array_free(Array a_in) {
-  if (!a_in) return;
+  if (!a_in) return; // why is it ok to array_free on a NULL array?
   DARRAY_INTERNAL;
-  if (!a->data) return;
+  if (!a->begin) return;
   array_clear(a_in);
-  free(a->data);
+  free(a->begin);
+  a->begin = NULL;
+  a->end = NULL;
   a->capacity = 0;
-  a->data = NULL;
 }
 
 void array_delete(Array* a_in) {
   if (!a_in || !*a_in) return;
   Array_Internal* a = (Array_Internal*)*a_in;
-  free(a->data);
+  free(a->begin);
   free(a);
   *a_in = NULL;
 }
 
-void* array_release(Array* a_in) {
-  if (!a_in || !*a_in) return NULL;
+span_t array_release(Array* a_in) {
+  if (!a_in || !*a_in) return span_empty;
   Array_Internal* a = (Array_Internal*)*a_in;
-  void* ret = a->data;
+  span_t ret = a->span;
   free(a);
   *a_in = NULL;
   return ret;
 }
 
-index_s array_write(Array a_in, index_s position, const void* element) {
+index_t array_write(Array a_in, index_t position, const void* element) {
   DARRAY_INTERNAL;
   assert(element);
   void* data = array_emplace(a_in, position);
@@ -145,7 +183,7 @@ index_s array_write(Array a_in, index_s position, const void* element) {
   return a->size;
 }
 
-index_s array_write_back(Array a_in, const void* element) {
+index_t array_write_back(Array a_in, const void* element) {
   DARRAY_INTERNAL;
   assert(element);
   void* data = array_emplace_back(a_in);
@@ -154,7 +192,7 @@ index_s array_write_back(Array a_in, const void* element) {
   return a->size;
 }
 
-void* array_emplace(Array a_in, index_s position) {
+void* array_emplace(Array a_in, index_t position) {
   DARRAY_INTERNAL;
   assert(position >= 0);
   if (position >= a->size) {
@@ -166,6 +204,7 @@ void* array_emplace(Array a_in, index_s position) {
   byte* pos = a->data + a->element_size * position;
   memmove(pos + a->element_size, pos, a->size_bytes - position * a->element_size);
   a->size_bytes += a->element_size;
+  a->end = a->begin + a->size_bytes;
   ++a->size;
   return pos;
 }
@@ -176,10 +215,11 @@ void* array_emplace_back(Array a_in) {
     array_reserve(a_in, GROWTH_FACTOR);
   }
   a->size_bytes += a->element_size;
+  a->end = a->begin + a->size_bytes;
   return a->data + a->size++ * a->element_size;
 }
 
-void* array_emplace_range(Array a_in, index_s position, index_s count) {
+span_t array_emplace_range(Array a_in, index_t position, index_t count) {
   DARRAY_INTERNAL;
   assert(position >= 0);
   assert(count > 0);
@@ -193,11 +233,15 @@ void* array_emplace_range(Array a_in, index_s position, index_s count) {
   ptrdiff_t new_bytes = a->element_size * count;
   memmove(pos + new_bytes, pos, a->size_bytes - position * a->element_size);
   a->size_bytes += new_bytes;
+  a->end = a->begin + a->size_bytes;
   a->size += count;
-  return pos;
+  return (span_t) {
+    .begin = pos,
+    .end = pos + new_bytes,
+  };
 }
 
-void* array_emplace_back_range(Array a_in, index_s count) {
+span_t array_emplace_back_range(Array a_in, index_t count) {
   DARRAY_INTERNAL;
   assert(count > 0);
   if (a->size + count >= a->capacity) {
@@ -205,22 +249,27 @@ void* array_emplace_back_range(Array a_in, index_s count) {
   }
   void* ret = a->data + a->size * a->element_size;
   a->size_bytes += a->element_size * count;
+  a->end = a->begin + a->size_bytes;
   a->size += count;
-  return ret;
+  return (span_t) {
+    .begin = ret,
+    .end = a->end,
+  };
 }
 
-index_s array_remove(Array a_in, index_s position) {
+index_t array_remove(Array a_in, index_t position) {
   DARRAY_INTERNAL;
   assert(position >= 0);
   if (position >= a->size) return a->size;
   if (position == a->size - 1) return array_pop_back(a_in);
   byte* pos = a->data + a->element_size * position;
   a->size_bytes -= a->element_size;
+  a->end = a->begin + a->size_bytes;
   memmove(pos, pos + a->element_size, a->size_bytes);
   return --a->size;
 }
 
-index_s array_remove_range(Array a_in, index_s position, index_s count) {
+index_t array_remove_range(Array a_in, index_t position, index_t count) {
   DARRAY_INTERNAL;
   assert(position >= 0);
   assert(count > 0);
@@ -235,11 +284,12 @@ index_s array_remove_range(Array a_in, index_s position, index_s count) {
   ptrdiff_t remainder_size = (a->size - position + count) * a->element_size;
   memmove(pos, pos + count_bytes, remainder_size);
   a->size -= count;
-  a->size_bytes = a->size * a->size_bytes;
+  a->size_bytes = a->size * a->element_size;
+  a->end = a->begin + a->size_bytes;
   return a->size;
 }
 
-index_s array_remove_unstable(Array a_in, index_s position) {
+index_t array_remove_unstable(Array a_in, index_t position) {
   DARRAY_INTERNAL;
   assert(position >= 0);
   byte* last = array_ref_back(a_in);
@@ -249,17 +299,19 @@ index_s array_remove_unstable(Array a_in, index_s position) {
   byte* pos = a->data + a->element_size * position;
   memcpy(pos, last, a->element_size);
   a->size_bytes -= a->element_size;
+  a->end = a->begin + a->size_bytes;
   return --a->size;
 }
 
-index_s array_pop_back(Array a_in) {
+index_t array_pop_back(Array a_in) {
   DARRAY_INTERNAL;
   if (a->size <= 0) return 0;
   a->size_bytes -= a->element_size;
+  a->end = a->begin + a->size_bytes;
   return --a->size;
 }
 
-void* array_ref(Array a_in, index_s index) {
+void* array_ref(Array a_in, index_t index) {
   DARRAY_INTERNAL;
   if (index >= a->size) return NULL;
   return a->data + index * a->element_size;
@@ -277,7 +329,7 @@ void* array_ref_back(Array a_in) {
   return a->data + (a->size - 1) * a->element_size;
 }
 
-bool array_read(const Array a_in, index_s index, void* element) {
+bool array_read(const Array a_in, index_t index, void* element) {
   DARRAY_INTERNAL_CONST;
   assert(element);
   assert(index >= 0);
@@ -306,7 +358,7 @@ bool array_contains(const Array a_in, const void* element) {
   DARRAY_INTERNAL_CONST;
   assert(element);
   if (a->size <= 0) return false;
-  for (index_s i = 0; i < a->size; ++i) {
+  for (index_t i = 0; i < a->size; ++i) {
     if (memcmp(element, a->data + i * a->element_size, a->element_size)) {
       return true;
     }

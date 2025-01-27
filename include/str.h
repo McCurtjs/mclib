@@ -26,63 +26,58 @@
 #define _MCLIB_STRING_H_
 
 #include "types.h"
+#include "slice.h"
+
 
 #include <stdarg.h>
 
-#include "array.h"
-
+/*
 #define _STR_RANGE_DEF(SRCA, SRCB)  \
   struct {                          \
     SRCA char*  SRCB begin;         \
     union {                         \
-      index_s   SRCB length;        \
-      index_s   SRCB size;          \
+      index_t   SRCB length;        \
+      index_t   SRCB size;          \
     };                              \
   }                                 //
 
 #define _STR_RANGE_DEF_BODY(C_STR)  \
   .begin = C_STR,                   \
   .size = sizeof(C_STR)-1           //
-
-// \brief StringRange is a basic immutable string segment containing the start
-//    and size of a string.
+  */
+// \brief String is a handle type pointing to an immutable string on the heap.
 //
-// \brief The Range object does not have ownership of the string and related
-//    functions will not allocate or free any memory for a returned Range.
-//    Because of this, they're not suited for long-term tracking of a string
-//    object unless that string is a compile-time constant string literal
-//    (which you can wrap using the str_literal, R, or str_static macros).
-//
-// \brief A StringRange can be created referencing any of the following:
-//    1) a constant string literal (using R, str_literal, or str_static).
-//    2) a range within a String object (including the implicit str->range).
-//    3) a or a range along a standard C-style char* string (str_range).
-typedef _STR_RANGE_DEF(const,) StringRange;
+// \brief Unlike StringRange, a String object has ownership of the data in its
+//    contained range. Any String object returned from a function will have to
+//    later be freed via str_delete(). Any StringRange returned from a function
+//    using the String's range will have its lifecycle bound to the String, and
+//    will be invalid once the String object is deleted.
+typedef struct {
+  union {
+    const slice_t slice;
+    struct {
+      const char* const begin;
+      union {
+        const index_t length;
+        const index_t size;
+      };
+    };
+  };
+}* String;
 
-// \brief Creates a string range from a string literal - ONLY use this for
+/*
+// \brief Creates a string slice from a string literal - ONLY use this for
 //    literal string values (eg: "abc"). Will not copy or take ownership of the
 //    string's memory.
 // \brief Passing a char* to this will fail because the length is calculated at
-//    compile time. For a runtime string range, use str_range(c_str).
+//    compile time. For a runtime string range, use str_copy(c_str).
 //
 // \param C_STRING_LITERAL - The string literal value.
 //    Can accept either a string in double quotes, or a const static char[].
 //
-#define str_literal(C_STRING_LITERAL) ((StringRange) {  \
-  _STR_RANGE_DEF_BODY(C_STRING_LITERAL)                 \
-})                                                      //
-
-// \brief Alias for str_literal(c_str).
-// \brief Creates a string range from a string literal - ONLY use this for
-//    literal string values (eg: "abc"). Will not copy or take ownership of the
-//    string's memory.
-// \brief Passing a char* to this will fail because the length is calculated at
-//    compile time. For a runtime string range, use str_range(c_str).
-//
-// \param C_STRING_LITERAL - The string literal value.
-//    Can accept either a string in double quotes, or a const static char[].
-//
-#define R(C_STR) str_literal(C_STR)
+#define str_literal(C_STRING_LITERAL) ((slice_t) {                            \
+  _STR_RANGE_DEF_BODY(C_STRING_LITERAL)                                       \
+})                                                                            //
 
 // \brief Similar to R macro, just doesn't include the typename because MSVC
 //    can't handle that in some cases. Very annoying.
@@ -97,55 +92,36 @@ typedef _STR_RANGE_DEF(const,) StringRange;
 //
 // \param C_STR - the compile-time constant string literal value.
 //
-#define str_static(NAME, C_STR) static StringRange NAME = { \
+#define str_static(NAME, C_STR) static slice_t NAME = {     \
   _STR_RANGE_DEF_BODY(C_STR)                                \
 }                                                           //
+*/
 
-// \brief String is a handle type pointing to an immutable string on the heap.
-//
-// \brief Unlike StringRange, a String object has ownership of the data in its
-//    contained range. Any String object returned from a function will have to
-//    later be freed via str_delete(). Any StringRange returned from a function
-//    using the String's range will have its lifecycle bound to the String, and
-//    will be invalid once the String object is deleted.
-typedef struct _Str_Base {
-  union {
-    const StringRange range;
-    _STR_RANGE_DEF(const, const);
-  };
-}* String;
-
-#define con_type StringRange
-#define con_prefix str
-#include "array.h"
-#undef con_type
-#undef con_prefix
-typedef Array_StringRange Array_StrR;
+#include "array_slice.h"
 
 #ifdef _MSC_VER
 // Annoyingly, MSVC for some reason detects the _Generic specifier as "unused".
 #pragma warning ( disable : 4189 ) // local initialized but not referenced
 #endif
-// \brief Macro to coalesce a String, StringRange, or char* into a StringRange.
-#define _s2r(S) _Generic((S),   \
-  StringRange:  _str_range_r,   \
-  String:       _str_range_st,  \
-  char*:        str_range,      \
-  const char*:  str_range       \
-)(S)                            //
+// \brief Macro to coalesce a String, slice, or char* into a slice.
+#define _s2r(str) _Generic((str), \
+  slice_t:      slice_from_slice, \
+  String:       slice_from_str,   \
+  char*:        slice_build,      \
+  const char*:  slice_build       \
+)(str)                            //
 
 extern const String str_empty;
 extern const String str_va_end;
 extern const String str_true;
 extern const String str_false;
 
-StringRange str_range(const char* c_str);
-StringRange str_range_s(const char* c_str, index_s length);
+static inline slice_t slice_from_str(String s) { return s->slice; }
 
-#define str_write(str)              istr_write(_s2r(str))
+#define str_write(str)              slice_write(_s2r(str))
 
 String  str_new(const char* c_str);
-String  str_new_s(const char* c_str, index_s length);
+String  str_new_s(const char* c_str, index_t length);
 #define str_copy(str)               istr_copy(_s2r(str))
 String  str_from_bool(bool b);
 String  str_from_int(int i);
@@ -153,21 +129,22 @@ String  str_from_float(float f);
 
 void    str_delete(String* str);
 
-#define str_eq(lhs, rhs)            istr_eq(_s2r(lhs), _s2r(rhs))
-#define str_starts_with(str, start) istr_starts_with(_s2r(str), _s2r(start))
-#define str_ends_with(str, end)     istr_ends_with(_s2r(str), _s2r(end))
-#define str_contains(str, check)    istr_contains(_s2r(str), _s2r(check))
+#define str_eq(lhs, rhs)            slice_eq(_s2r(lhs), _s2r(rhs))
+#define str_starts_with(str, start) slice_starts_with(_s2r(str), _s2r(start))
+#define str_ends_with(str, end)     slice_ends_with(_s2r(str), _s2r(end))
+#define str_contains(str, check)    slice_contains(_s2r(str), _s2r(check))
+bool    str_is_null_or_empty(const String str);
 
-#define str_to_bool(str, out)       istr_to_bool(_s2r(str), out)
-#define str_to_int(str, out)        istr_to_int(_s2r(str), out)
-#define str_to_long(str, out)       istr_to_long(_s2r(str), out)
-#define str_to_float(str, out)      istr_to_float(_s2r(str), out)
-#define str_to_double(str, out)     istr_to_double(_s2r(str), out)
+#define str_to_bool(str, out)       slice_to_bool(_s2r(str), out)
+#define str_to_int(str, out)        slice_to_int(_s2r(str), out)
+#define str_to_long(str, out)       slice_to_long(_s2r(str), out)
+#define str_to_float(str, out)      slice_to_float(_s2r(str), out)
+#define str_to_double(str, out)     slice_to_double(_s2r(str), out)
 
-// \brief prefer s.size, but can be useful in cases where a function is needed.
+// \brief prefer s->size, but can be useful in cases where a function is needed.
 //
-// \returns s.size
-#define str_size(str)               _str_size(_s2r(str))
+// \returns s->size
+#define str_size(str)               slice_size(_s2r(str))
 
 // \brief Gets the start of the next instance of to_find in str, starting
 //    at from_pos.
@@ -175,7 +152,7 @@ void    str_delete(String* str);
 // \returns
 //    The index in str of the match, or str.size if none is present.
 #define str_index_of(str, to_find, from_pos) \
-                    istr_index_of(_s2r(str), _s2r(to_find), from_pos)
+                    slice_index_of(_s2r(str), _s2r(to_find), from_pos)
 
 // \brief Gets the start of the next instance of to_find in str, starting
 //    at from_pos.
@@ -183,7 +160,7 @@ void    str_delete(String* str);
 // \returns
 //    The index in str of the match, or str.size if none is present.
 #define str_index_of_char(str, to_find, from_pos) \
-                    istr_index_of_char(_s2r(str), to_find, from_pos)
+                    slice_index_of_char(_s2r(str), to_find, from_pos)
 
 // \brief Gets a token as a substring of str described by the starting position
 //    pos that ends with (not including) any delimeter character in to_find.
@@ -192,14 +169,14 @@ void    str_delete(String* str);
 //    If no character was found in the string, the value is equal to str.size.
 //
 // \returns
-//    A StringRange containing the token
+//    A slice containing the token
 #define str_token(str, to_find, pos) \
-                    istr_token(_s2r(str), _s2r(to_find), pos)
+                    slice_token(_s2r(str), _s2r(to_find), pos)
 
 // \brief Alias for str_index_of(str, to_find, 0)
-#define str_find(str, to_find)      istr_find(_s2r(str), _s2r(to_find))
+#define str_find(str, to_find)      slice_find(_s2r(str), _s2r(to_find))
 
-// \brief `StringRange str_substring(str, start, ?end)`
+// \brief `slice str_substring(str, start, ?end)`
 // \brief Gets a substring as a range within the input string range.
 // \brief Works like javascript string.slice.
 //
@@ -216,13 +193,13 @@ void    str_delete(String* str);
 //
 // \param __VA_ARGS__ - start, ?end
 //
-// \returns a StringRange as a substring of the input range.
-#define str_substring(str, ...)     _str_substring(str, __VA_ARGS__)
-#define str_slice(str, ...)         _str_substring(str, __VA_ARGS__)
+// \returns a slice as a substring of the input range.
+#define str_substring(str, ...)     slice_substring(_s2r(str), __VA_ARGS__)
+#define str_slice(str, ...)         slice_substring(_s2r(str), __VA_ARGS__)
 
-#define str_trim(str)               istr_trim(_s2r(str))
-#define str_trim_start(str)         istr_trim_start(_s2r(str))
-#define str_trim_end(str)           istr_trim_end(_s2r(str))
+#define str_trim(str)               slice_trim(_s2r(str))
+#define str_trim_start(str)         slice_trim_start(_s2r(str))
+#define str_trim_end(str)           slice_trim_end(_s2r(str))
 
 // \brief Splits the string into an array of substrings based on the delimiter.
 //
@@ -231,9 +208,9 @@ void    str_delete(String* str);
 // \param del - The substring to split the input along. Instances of the
 //    delimiter are removed from the resulting substrings.
 //
-// \returns An array of StringRanges whose lifetimes are bound to str.
+// \returns An array of slices whose lifetimes are bound to str.
 //    The Array must be deleted by the user via arr_str_delete(&arr).
-#define str_split(str, del)         istr_split(_s2r(str), _s2r(del))
+#define str_split(str, del)         slice_split(_s2r(str), _s2r(del))
 
 // \brief Joins an array of string ranges into a new string, each separated by a
 //    given delimiter.
@@ -296,59 +273,40 @@ void    str_delete(String* str);
 // \brief See str_format for details on formatting.
 #define str_log(...)                _str_log(__VA_ARGS__, _str_fmtarg_end)
 
-//String str_pad_left(StringRange str, index_s length, char c);
-//String str_pad_right(StringRange str, index_s length, char c);
+//String str_pad_left(slice_t str, index_t length, char c);
+//String str_pad_right(slice_t str, index_t length, char c);
 
-static inline index_s     _str_size(StringRange s) { return s.size; }
-static inline StringRange _str_range_r(StringRange range) { return range; }
-static inline StringRange _str_range_st(const String str) {
-  if (str) return str->range;
-  return str_empty->range;
+static inline index_t istr_size(slice_t s) { return s.size; }
+static inline slice_t _str_slice_r(slice_t slice) { return slice; }
+static inline slice_t _str_slice_st(const String str) {
+  if (str) return str->slice;
+  return str_empty->slice;
 }
 
-void        istr_write(StringRange str);
-String      istr_copy(StringRange str);
-bool        istr_eq(StringRange lhs, StringRange rhs);
-bool        istr_starts_with(StringRange str, StringRange starts);
-bool        istr_ends_with(StringRange str, StringRange ends);
-bool        istr_contains(StringRange str, StringRange check);
-bool        istr_contains_char(StringRange str, char check);
-bool        istr_contains_any(StringRange str, StringRange check_chars);
-bool        istr_to_bool(StringRange str, bool* out_bool);
-bool        istr_to_int(StringRange str, int* out_int);
-bool        istr_to_long(StringRange str, index_s* out_int);
-bool        istr_to_float(StringRange str, float* out_float);
-bool        istr_to_double(StringRange str, double* out_float);
-//String    istr_to_upper(StringRange str);
-//String    istr_to_lower(StringRange str);
-//String    istr_to_title(StringRange str);
-index_s     istr_index_of_char(StringRange str, char c, index_s from);
-index_s     istr_index_of(StringRange str, StringRange to_find, index_s from);
-StringRange istr_token(StringRange str, StringRange del_chrs, index_s* pos);
-//index_s   istr_index_of_last(StringRange str, StringRange find, index_s from);
-index_s     istr_find(StringRange str, StringRange to_find);
-//index_s   istr_find_last(StringRange str, StringRange to_find);
-//Array     istr_match(StringRange str, StringRange regex);
-StringRange istr_substring(StringRange str, index_s start, index_s end);
-StringRange istr_trim(StringRange str);
-StringRange istr_trim_start(StringRange str);
-StringRange istr_trim_end(StringRange str);
-Array_StrR  istr_split(StringRange str, StringRange del);
-//Array     istr_tokenize(StringRange str, const StringRange[] tokens);
-//Array     istr_parenthetize(StringRange str); // block out segments by parens? ([{}])
-String      istr_join(StringRange deliminter, const Array_StringRange strings);
-String      istr_concat(StringRange left, StringRange right);
+String      istr_copy(slice_t str);
+//String    istr_to_upper(slice_t str);
+//String    istr_to_lower(slice_t str);
+//String    istr_to_title(slice_t str);
+String      istr_join(slice_t deliminter, const Array_slice strings);
+String      istr_concat(slice_t left, slice_t right);
+String      istr_prepend(slice_t str, index_t length, char c);
+String      istr_append(slice_t str, index_t length, char c);
+String      istr_format(slice_t fmt, ...);
+
+//bool      istr_contains_any(slice_t str, slice_t check_chars);
+//index_t   istr_index_of_last(slice_t str, slice_t find, index_t from);
+//index_t   istr_find_last(slice_t str, slice_t to_find);
+//Array     istr_match(slice_t str, slice_t regex);
+//Array     istr_tokenize(slice_t str, const slice_t[] tokens);
+//Array     istr_parenthetize(slice_t str); // block out segments by parens? ([{}])
 // for replace, start with basic string replace, maybe later look into adding regex support?
 //    differentiate between regular strings and regex with the regular "a" vs "/a/"
-//String    istr_replace(StringRange str, StringRange to_rep, StringRange with);
-//String    istr_replace_all(StringRange str, StringRange r, StringRange w);
-String      istr_prepend(StringRange str, index_s length, char c);
-String      istr_append(StringRange str, index_s length, char c);
-String      istr_format(StringRange fmt, ...);
-void        istr_print(StringRange fmt, ...);
-void        istr_log(StringRange fmt, ...);
+//String    istr_replace(slice_t str, slice_t to_rep, slice_t with);
+//String    istr_replace_all(slice_t str, slice_t r, slice_t w);
+void        istr_print(slice_t fmt, ...);
+void        istr_log(slice_t fmt, ...);
 
-#define _str_sub_args(str, start, end, ...) _s2r(str), (index_s)start, (index_s)end
+#define _str_sub_args(str, start, end, ...) _s2r(str), (index_t)start, (index_t)end
 #define _str_sub_a(str, ...) _str_sub_args(str, __VA_ARGS__, _s2r(str).size)
 #define _str_substring(str, ...) istr_substring(_str_sub_a(str, __VA_ARGS__))
 
@@ -356,58 +314,56 @@ void        istr_log(StringRange fmt, ...);
 #define _str_print(fmt, ...) istr_print(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
 #define _str_log(fmt, ...) istr_log(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
 
-enum _Str_FmtArg_Type {
-  _Str_FmtArg_End,
-  _Str_FmtArg_StringRange,
-  _Str_FmtArg_Int,
-  _Str_FmtArg_Float,
-};
+typedef enum _str_fmtType_t {
+  _fmtArg_End,
+  _fmtArg_Slice,
+  _fmtArg_Int,
+  _fmtArg_Float
+} _str_fmtType_t;
 
 typedef struct {
-  int type;
+  _str_fmtType_t type;
   union {
-    StringRange range;
+    slice_t slice;
     ptrdiff_t i;
     double f;
   };
-} _Str_FmtArg;
+} _str_fmtArg_t;
 
-extern const _Str_FmtArg _str_fmtarg_end;
+extern const _str_fmtArg_t _str_fmtarg_end;
 
-static inline _Str_FmtArg _sarg_str(const String s) {
-  return (_Str_FmtArg) { .type = _Str_FmtArg_StringRange, .range = s->range };
+static inline _str_fmtArg_t _sarg_str(const String s) {
+  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = s->slice };
 }
 
-static inline _Str_FmtArg _sarg_range(StringRange r) {
-  return (_Str_FmtArg) { .type = _Str_FmtArg_StringRange, .range = r };
+static inline _str_fmtArg_t _sarg_slice(slice_t r) {
+  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = r };
 }
 
-static inline _Str_FmtArg _sarg_c_str(const char* c_str) {
-  return (_Str_FmtArg) {
-    .type = _Str_FmtArg_StringRange,
-    .range = str_range(c_str)
-  };
+static inline _str_fmtArg_t _sarg_c_str(const char* c_str) {
+  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = slice_build(c_str) };
 }
 
-static inline _Str_FmtArg _sarg_int(long long int i) {
-  return (_Str_FmtArg) { .type = _Str_FmtArg_Int, .i = i };
+static inline _str_fmtArg_t _sarg_int(long long int i) {
+  return (_str_fmtArg_t) { .type = _fmtArg_Int, .i = i };
 }
 
-static inline _Str_FmtArg _sarg_unsigned(long long unsigned int i) {
-  return (_Str_FmtArg) { .type = _Str_FmtArg_Int, .i = (ptrdiff_t)i };
+static inline _str_fmtArg_t _sarg_unsigned(long long unsigned int i) {
+  return (_str_fmtArg_t) { .type = _fmtArg_Int, .i = (ptrdiff_t)i };
 }
 
-static inline _Str_FmtArg _sarg_float(double f) {
-  return (_Str_FmtArg) { .type = _Str_FmtArg_Float, .f = f };
+static inline _str_fmtArg_t _sarg_float(double f) {
+  return (_str_fmtArg_t) { .type = _fmtArg_Float, .f = f };
 }
 
-static inline _Str_FmtArg _sarg_arg(_Str_FmtArg e) {
-  return e;
+static inline _str_fmtArg_t _sarg_arg(_str_fmtArg_t e) {
+  PARAM_UNUSED(e); // should some kind of override be allowed?
+  return _str_fmtarg_end;
 }
 
 // \brief str_format argument macro
 #define _sfa(arg) _Generic((arg),       \
-  StringRange:        _sarg_range,      \
+  slice_t:            _sarg_slice,      \
   String:             _sarg_str,        \
   char*:              _sarg_c_str,      \
   const char*:        _sarg_c_str,      \
@@ -416,7 +372,7 @@ static inline _Str_FmtArg _sarg_arg(_Str_FmtArg e) {
   unsigned int:       _sarg_unsigned,   \
   unsigned long long: _sarg_unsigned,   \
   double:             _sarg_float,      \
-  _Str_FmtArg:        _sarg_arg         \
+  _str_fmtArg_t:      _sarg_arg         \
 )(arg)                                  //
 
 #endif

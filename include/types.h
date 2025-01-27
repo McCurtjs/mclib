@@ -56,6 +56,7 @@ typedef unsigned short u16;
 typedef unsigned char byte;
 typedef size_t    jshandle;
 typedef ptrdiff_t index_s;
+typedef index_s   index_t;
 
 #ifndef NULL
 # define NULL ((void*)0)
@@ -110,6 +111,11 @@ typedef ptrdiff_t index_s;
 #ifndef MACRO_CONCAT
 # define MACRO_CONCAT_RECUR(X, Y) X ## Y
 # define MACRO_CONCAT(X, Y) MACRO_CONCAT_RECUR(X, Y)
+# define MACRO_CONCAT3(X, Y, Z) MACRO_CONCAT(X, MACRO_CONCAT_RECUR(Y, Z))
+#endif
+
+#ifndef MCOMP
+# define MCOMP(F, A) F A
 #endif
 
 #ifndef STR
