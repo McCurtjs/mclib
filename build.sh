@@ -5,8 +5,9 @@ unit_test=false
 build_type="Debug"
 skip_cmake=false
 args=""
+read_args=true
 
-while [ "$1" != "" ]; do
+while [ "$read_args" == true ] && [ "$1" != "" ]; do
   case "$1" in
     -t | --target)
       build_target="$2"
@@ -21,9 +22,9 @@ while [ "$1" != "" ]; do
       echo ": s skip-cmake                           : skips cmake"
       exit
       ;;
-    -a | --args)
-      args="$2"
-      shift 1
+    -- )
+      args="$@"
+      read_args=false
       ;;
     -r | --release)
       build_type="Release"
