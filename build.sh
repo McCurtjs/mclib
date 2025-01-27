@@ -18,8 +18,8 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
       echo ": h help                                 : prints this message"
       echo ": t target  [clang|gcc|mingw|msvc]       : sets build target"
       echo ": r release                              : release build (default is debug)"
-      echo ": a args    \" \"                          : passes args to built exe (if any)"
       echo ": s skip-cmake                           : skips cmake"
+      echo ": -- <args>                              : passes remaining args to built exe (if any)"
       exit
       ;;
     -- )
