@@ -24,8 +24,8 @@
 
 #include "str.h"
 
-#define CSPEC_CUSTOM_TYPES                                                    \
-  slice_t: "slice_t", slice_t*: "slice_t*", String: "String",                 //
+#define CSPEC_CUSTOM_TYPES                                                     \
+  slice_t: "slice_t", slice_t*: "slice_t*", String: "String"                  //
 
 #include "cspec.h"
 

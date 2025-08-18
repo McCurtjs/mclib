@@ -22,61 +22,22 @@
 * SOFTWARE.
 */
 
-#include "cspec.h"
+//
+// Dynamic Hashmap container
+//
 
-#include <stdio.h>
+#ifndef MCLIB_HASHMAP_H_
+#define MCLIB_HASHMAP_H_
 
-#include "slice.h"
-#include "str.h"
+#include "types.h"
 
-csBool resolve_types(const char** p_type, const void* value) {
-  slice_t type = slice_build(*p_type);
-  const slice_t* value_slice = NULL;
+typedef struct {
+  index_t const size;
+  index_t const size_bytes;
+  index_t const capacity;
+  index_t const element_size;
+}* Map;
 
-  if (slice_eq(type, S("slice_t*"))) {
-    value_slice = *(const slice_t**)value;
-  }
-  else if (str_eq(type, "slice_t")) {
-    value_slice = (const slice_t*)value;
-  }
-  else if (str_eq(type, "String")) {
-    value_slice = &(*(const String*)value)->slice;
-  }
+#endif
 
-  if (value_slice) {
-    cspec_out_slice(value_slice->begin, (csSize)value_slice->size);
-    return TRUE;
-  }
 
-  return FALSE;
-}
-
-// Basic output function for CSPEC printing
-void printer(const char* str, csUint len, csUint color) {
-  (void)len;
-  (void)color;
-  puts(str);
-}
-
-// Test suites
-
-extern TestSuite tests_cspec;
-extern TestSuite tests_slice;
-extern TestSuite tests_string;
-extern TestSuite tests_span;
-
-// Main
-
-int main(int argc, char* argv[]) {
-  TestSuite* test_suites[] = {
-    &tests_cspec,
-    &tests_slice,
-    &tests_string,
-    &tests_span,
-  };
-
-  cspec_opt_print_line = printer;
-  cspec_opt_resolve_user_types = resolve_types;
-
-  return cspec_run_all(test_suites);
-}

@@ -162,10 +162,8 @@ float v2line_closest(vec2 P, vec2 v, vec2 Q, vec2* R_out) {
 bool v2line_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out) {
   float div = v2cross(u, v);
   if (div == 0) return FALSE;
-  float t = (v2cross(P, u) + v2cross(u, Q)) / div;
-  if (t_out) *t_out = t;
-  if (!s_out) return TRUE;
-  *s_out = (v2cross(v, P) + v2cross(Q, v)) / -div;
+  if (t_out) *t_out = (v2cross(P, u) + v2cross(u, Q)) / div;
+  if (s_out) *s_out = (v2cross(v, P) + v2cross(Q, v)) / -div;
   return TRUE;
 }
 

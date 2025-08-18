@@ -1,9 +1,11 @@
-option(CSPEC_MEMTEST "Enable memory testing defines for spec build" OFF)
+option(CSPEC_MEMTEST "Enable memory testing defines for spec build" ON)
+option(CSPEC_ASSERT "Enable assert override for spec build" ON)
 
 add_library(McLib)
 target_include_directories(McLib PUBLIC ./include)
 target_sources(McLib PRIVATE
   src/array.c
+  src/map.c
   src/mat.c
   src/slice.c
   src/span.c
@@ -14,6 +16,7 @@ target_sources(McLib PRIVATE
   include/array.h
   include/array_byte.h
   include/array_slice.h
+  include/map.h
   include/mat.h
   include/slice.h
   include/span.h
@@ -55,6 +58,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 
   if (MSVC)
     target_compile_options(${MCLIB_TARGET} PRIVATE /W4 /WX /std:clatest)
+    target_link_libraries(${PROJECT_NAME} PRIVATE DbgHelp)
   else()
     target_compile_options(${MCLIB_TARGET} PRIVATE
       -Wall -Wextra -Wpedantic -Werror
