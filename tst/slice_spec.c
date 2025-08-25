@@ -69,7 +69,7 @@ describe(slice_basic) {
 
   it("creates a range within the given c-string string") {
     char* c_str = "This is a c-string";
-    slice_t slice = slice_build(c_str);
+    slice_t slice = slice_from_c_str(c_str);
 
     expect(slice.begin == c_str);
     expect(slice.length, == , 18);
@@ -77,7 +77,7 @@ describe(slice_basic) {
 
   it("creates a range using the _s version that specifies length") {
     char* c_str = "This is a c-string";
-    slice_t slice = slice_build_s(c_str, 4);
+    slice_t slice = slice_build(c_str, 4);
     slice_t This = S("This");
 
     expect(slice.begin == c_str);
@@ -98,8 +98,8 @@ describe(slice_eq) {
     // strings made on the stack shouldn't have the same address
     expect(&str_1[0] != &str_2[0]);
 
-    slice_t slice1 = slice(str_1);
-    slice_t slice2 = slice(str_2);
+    slice_t slice1 = S(str_1);
+    slice_t slice2 = S(str_2);
 
     expect(slice1 to match(slice2, slice_eq));
   }
@@ -108,19 +108,19 @@ describe(slice_eq) {
     char str_2[] = "Strix";
 
     // Comparing "Stri" with "Stri"
-    slice_t slice1 = slice_build_s(str_1, 4);
-    slice_t slice2 = slice_build_s(str_2, 4);
+    slice_t slice1 = slice_build(str_1, 4);
+    slice_t slice2 = slice_build(str_2, 4);
 
     expect(slice1 to match(slice2, slice_eq));
 
     // Comparing "Strix" with "Strin"
-    slice1 = slice_build_s(str_1, 5);
-    slice2 = slice_build_s(str_2, 5);
+    slice1 = slice_build(str_1, 5);
+    slice2 = slice_build(str_2, 5);
 
     expect(slice1 to not match(slice2, slice_eq));
 
     // Comparing "Strix" with "Stri"
-    slice2 = slice_build_s(str_1, 4);
+    slice2 = slice_build(str_1, 4);
 
     expect(slice1 to not match(slice2, slice_eq));
   }
@@ -131,8 +131,8 @@ describe(slice_eq) {
     // strings made on the stack shouldn't have the same address
     expect(&str_1[0] != &str_2[0]);
 
-    slice_t slice1 = slice(str_1);
-    slice_t slice2 = slice(str_2);
+    slice_t slice1 = S(str_1);
+    slice_t slice2 = S(str_2);
 
     expect(slice1 to not match(slice2, slice_eq));
 
@@ -568,6 +568,8 @@ describe(slice_trim) {
   }
 
 }
+
+#include "span_byte.h"
 
 describe(slice_conversion) {
   byte message[] = "This will be a slice!";

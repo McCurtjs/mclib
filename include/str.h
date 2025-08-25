@@ -22,36 +22,23 @@
 * SOFTWARE.
 */
 
-#ifndef _MCLIB_STRING_H_
-#define _MCLIB_STRING_H_
+#ifndef MCLIB_STRING_H_
+#define MCLIB_STRING_H_
 
 #include "types.h"
-#include "slice.h"
 
+#include "slice.h"
+#include "array_slice.h"
 
 #include <stdarg.h>
 
-/*
-#define _STR_RANGE_DEF(SRCA, SRCB)  \
-  struct {                          \
-    SRCA char*  SRCB begin;         \
-    union {                         \
-      index_t   SRCB length;        \
-      index_t   SRCB size;          \
-    };                              \
-  }                                 //
-
-#define _STR_RANGE_DEF_BODY(C_STR)  \
-  .begin = C_STR,                   \
-  .size = sizeof(C_STR)-1           //
-  */
 // \brief String is a handle type pointing to an immutable string on the heap.
 //
-// \brief Unlike StringRange, a String object has ownership of the data in its
+// \brief Unlike slice_t, a String object has ownership of the data in its
 //    contained range. Any String object returned from a function will have to
-//    later be freed via str_delete(). Any StringRange returned from a function
-//    using the String's range will have its lifecycle bound to the String, and
-//    will be invalid once the String object is deleted.
+//    later be freed via str_delete(). Any slice returned from a function using
+//    the String's range will have its lifecycle bound to the String, and will
+//    be invalid once the String object is deleted.
 typedef struct {
   union {
     const slice_t slice;
@@ -65,50 +52,12 @@ typedef struct {
   };
 }* String;
 
-/*
-// \brief Creates a string slice from a string literal - ONLY use this for
-//    literal string values (eg: "abc"). Will not copy or take ownership of the
-//    string's memory.
-// \brief Passing a char* to this will fail because the length is calculated at
-//    compile time. For a runtime string range, use str_copy(c_str).
-//
-// \param C_STRING_LITERAL - The string literal value.
-//    Can accept either a string in double quotes, or a const static char[].
-//
-#define str_literal(C_STRING_LITERAL) ((slice_t) {                            \
-  _STR_RANGE_DEF_BODY(C_STRING_LITERAL)                                       \
-})                                                                            //
-
-// \brief Similar to R macro, just doesn't include the typename because MSVC
-//    can't handle that in some cases. Very annoying.
-#define M(C_STRING_LITERAL) {           \
-  _STR_RANGE_DEF_BODY(C_STRING_LITERAL) \
-}                                       //
-
-// \brief Used to allocate a static string from a string literal. This is only
-//    necessary in MSVC because it can't understand initializer list casting.
-//
-// \param NAME - the name symbol for the static variable
-//
-// \param C_STR - the compile-time constant string literal value.
-//
-#define str_static(NAME, C_STR) static slice_t NAME = {     \
-  _STR_RANGE_DEF_BODY(C_STR)                                \
-}                                                           //
-*/
-
-#include "array_slice.h"
-
-#ifdef _MSC_VER
-// Annoyingly, MSVC for some reason detects the _Generic specifier as "unused".
-#pragma warning ( disable : 4189 ) // local initialized but not referenced
-#endif
 // \brief Macro to coalesce a String, slice, or char* into a slice.
 #define _s2r(str) _Generic((str), \
   slice_t:      slice_from_slice, \
   String:       slice_from_str,   \
-  char*:        slice_build,      \
-  const char*:  slice_build       \
+  char*:        slice_from_c_str, \
+  const char*:  slice_from_c_str  \
 )(str)                            //
 
 extern const String str_empty;
@@ -177,11 +126,11 @@ bool    str_is_null_or_empty(const String str);
 #define str_find(str, to_find)      slice_find(_s2r(str), _s2r(to_find))
 
 // \brief `slice str_substring(str, start, ?end)`
-// \brief Gets a substring as a range within the input string range.
+// \brief Gets a substring as a slice within the input string or slice.
 // \brief Works like javascript string.slice.
 //
-// \param str The string range to get a substring of. The returned substring's
-//    lifetime will be dependent on the lifetime of str.
+// \param str The string or slice to get a substring of. The returned
+//    substring's lifetime will be dependent on the lifetime of str.
 //
 // \param start - The beginning of the subrange, inclusive.
 //    - A non-negative value represents an offset from the beginning.
@@ -193,7 +142,7 @@ bool    str_is_null_or_empty(const String str);
 //
 // \param __VA_ARGS__ - start, ?end
 //
-// \returns a slice as a substring of the input range.
+// \returns a slice as a substring of the input string.
 #define str_substring(str, ...)     slice_substring(_s2r(str), __VA_ARGS__)
 #define str_slice(str, ...)         slice_substring(_s2r(str), __VA_ARGS__)
 
@@ -212,13 +161,13 @@ bool    str_is_null_or_empty(const String str);
 //    The Array must be deleted by the user via arr_str_delete(&arr).
 #define str_split(str, del)         slice_split(_s2r(str), _s2r(del))
 
-// \brief Joins an array of string ranges into a new string, each separated by a
+// \brief Joins an array of string slices into a new string, each separated by a
 //    given delimiter.
 //
 // \param del - the delimiter to insert between each string in the array.
 //   ex: (" + ", ["A", "B"]) will result in "A + B"
 //
-// \param strings - The array of string ranges to join.
+// \param strings - The array of string slices to join.
 //
 // \returns a new string, which must be deleted later by the caller.
 #define str_join(del, strings)      istr_join(_s2r(del), strings)
@@ -287,11 +236,16 @@ String      istr_copy(slice_t str);
 //String    istr_to_upper(slice_t str);
 //String    istr_to_lower(slice_t str);
 //String    istr_to_title(slice_t str);
-String      istr_join(slice_t deliminter, const Array_slice strings);
 String      istr_concat(slice_t left, slice_t right);
 String      istr_prepend(slice_t str, index_t length, char c);
 String      istr_append(slice_t str, index_t length, char c);
 String      istr_format(slice_t fmt, ...);
+
+// Should be moved below to only be included if both headers are present.
+// But also should be removed in favor of a variadic version that works more
+//    like str_format and uses the same functions to process types including
+//    Array_slice for improved flexibility.
+String      istr_join(slice_t deliminter, const Array_slice strings);
 
 //bool      istr_contains_any(slice_t str, slice_t check_chars);
 //index_t   istr_index_of_last(slice_t str, slice_t find, index_t from);
@@ -340,8 +294,16 @@ static inline _str_fmtArg_t _sarg_slice(slice_t r) {
   return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = r };
 }
 
+static inline _str_fmtArg_t _sarg_slice_ptr(const slice_t* r) {
+  if (!r) r = &slice_empty;
+  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = *r };
+}
+
 static inline _str_fmtArg_t _sarg_c_str(const char* c_str) {
-  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = slice_build(c_str) };
+  if (!c_str) c_str = slice_empty.begin;
+  return (_str_fmtArg_t) {
+    .type = _fmtArg_Slice, .slice = slice_from_c_str(c_str)
+  };
 }
 
 static inline _str_fmtArg_t _sarg_int(long long int i) {
@@ -365,6 +327,8 @@ static inline _str_fmtArg_t _sarg_arg(_str_fmtArg_t e) {
 #define _sfa(arg) _Generic((arg),       \
   slice_t:            _sarg_slice,      \
   String:             _sarg_str,        \
+  slice_t*:           _sarg_slice_ptr,  \
+  const slice_t*:     _sarg_slice_ptr,  \
   char*:              _sarg_c_str,      \
   const char*:        _sarg_c_str,      \
   int:                _sarg_int,        \

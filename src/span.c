@@ -64,3 +64,15 @@ void ispan_sort(span_t span, index_t element_size, compare_fn cmp) {
   index_t length = ispan_size(span, element_size);
   qsort(span.begin, length, element_size, cmp);
 }
+
+#include "slice.h"
+#include "span_byte.h"
+
+slice_t span_byte_to_slice(span_byte_t span) {
+  assert(span.end >= span.begin);
+  slice_t ret = { .begin = (char*)span.begin, .size = (span.end - span.begin) };
+  if (span.end > span.begin && *(span.end - 1) == '\0') {
+    ret.size -= 1;
+  }
+  return ret;
+}

@@ -22,6 +22,7 @@
 * SOFTWARE.
 */
 
+#include "span.h"
 #include "array.h"
 
 #include <stdlib.h>

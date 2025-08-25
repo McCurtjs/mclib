@@ -22,13 +22,57 @@
 * SOFTWARE.
 */
 
-#ifndef MCLIB_ARRAY_BYTE_
-#define MCLIB_ARRAY_BYTE_
+static int cmp_int_void(const void* a, const void* b) {
+  return *(int*)a - *(int*)b;
+}
 
-#include "span_byte.h"
+int cmp_int(const int* a, const int* b);
 
-#define con_type byte
-#include "array.h"
+// Defining element and key types
+#define con_type float
+#define key_type byte
+#define con_cmp cmp_int
+#include "map.h"
 #undef con_type
+#undef key_type
+#undef con_cmp
 
-#endif
+// Define with default key type (span)
+#define con_type int
+#define con_prefix int
+#include "map.h"
+#undef con_type
+#undef con_prefix
+
+#include "cspec.h"
+
+describe(map_stuff) {
+  /*
+  kv_byte_float_t t;
+  inlist_kv_byte_float_t i;
+  inlist_kv_byte_float_t n;
+  inlist_byte_t keys;
+  inlist_byte_t intinlist;
+  HMap_byte_float m;
+  HMap_int p;
+
+  byte bkey = m->items->key;
+  float bvalue = m->items->value;
+  const kv_byte_float_t* kvbf = m->items->next;
+  const inlist_byte_t* asdf = m->keys;
+
+  //const slice_t* list_foreach(key in m->keys)
+  
+
+  slice_t slice = p->items->key;
+  int ivalue = p->items->value;
+
+  //HMap_int intmap;
+
+  //*/
+}
+
+test_suite(tests_map) {
+  test_group(map_stuff),
+  test_suite_end
+};

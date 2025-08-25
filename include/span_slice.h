@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2025 Curtis McCoy
+* Copyright (c) 2024 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,15 @@
 * SOFTWARE.
 */
 
-#ifndef MCLIB_ARRAY_BYTE_
-#define MCLIB_ARRAY_BYTE_
+#ifndef MCLIB_SPAN_SLICE_
+#define MCLIB_SPAN_SLICE_
 
-#include "span_byte.h"
+#include "slice.h"
 
-#define con_type byte
-#include "array.h"
+#define con_type slice_t
+#define con_prefix slice
+#include "span.h"
 #undef con_type
+#undef con_prefix
 
 #endif

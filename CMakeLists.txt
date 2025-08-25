@@ -20,7 +20,9 @@ target_sources(McLib PRIVATE
   include/mat.h
   include/slice.h
   include/span.h
+  include/span_base.h
   include/span_byte.h
+  include/span_slice.h
   include/str.h
   include/utility.h
   include/vec.h
@@ -51,6 +53,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     tst/span_spec.c
     tst/str_spec.c
     tst/slice_spec.c
+    tst/map_spec.c
   )
 
   target_link_libraries(${MCLIB_TARGET} PRIVATE CSpec)

@@ -37,7 +37,7 @@ const slice_t slice_false = { .begin = &slice_constants[6], .size = 5 };
   assert(str.size >= 0);                                                      \
   assert(str.size > 0 ? str.begin != NULL : true)                             //
 
-slice_t slice_build(const char* c_str) {
+slice_t slice_from_c_str(const char* c_str) {
   if (c_str == NULL) return slice_empty;
   return (slice_t) {
     .begin = c_str,
@@ -321,19 +321,7 @@ slice_t slice_trim_end(slice_t str) {
   };
 }
 
-/*
-span_byte_t slice_to_span(slice_t slice) {
-  return (span_byte_t) { .begin = slice.begin, .end = slice.begin + slice.size };
-}*/
-
-slice_t span_byte_to_slice(span_byte_t span) {
-  assert(span.end >= span.begin);
-  slice_t ret = { .begin = (char*)span.begin, .size = (span.end - span.begin) };
-  if (span.end > span.begin && *(span.end - 1) == '\0') {
-    ret.size -= 1;
-  }
-  return ret;
-}
+#include "array_slice.h"
 
 Array_slice slice_split(slice_t str, slice_t del) {
   SLICE_VALID(str);
@@ -344,7 +332,7 @@ Array_slice slice_split(slice_t str, slice_t del) {
   if (del.size == 0) {
     arr_slice_reserve(ret, str.size);
     for (index_t i = 0; i < str.size; ++i) {
-      slice_t c = slice_build_s(&str.begin[i], 1);
+      slice_t c = slice_build(&str.begin[i], 1);
       arr_slice_push_back(ret, c);
     }
     return ret;
@@ -363,7 +351,8 @@ Array_slice slice_split(slice_t str, slice_t del) {
   return ret;
 }
 
-#include <stdio.h>
+#include <stdio.h> // printf, fflush
+
 void slice_write(slice_t str) {
   SLICE_VALID(str);
   uint length = (uint)str.size;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2025 Curtis McCoy
+* Copyright (c) 2024 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,14 @@
 * SOFTWARE.
 */
 
-#ifndef MCLIB_ARRAY_BYTE_
-#define MCLIB_ARRAY_BYTE_
+#ifndef MCLIB_SPAN_BASE_H_
+#define MCLIB_SPAN_BASE_H_
 
-#include "span_byte.h"
+// base span_t (void) struct is defined separately from the 
 
-#define con_type byte
-#include "array.h"
-#undef con_type
+typedef struct span_t {
+  void* begin;
+  void* end;
+} span_t;
 
 #endif

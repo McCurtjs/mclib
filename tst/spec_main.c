@@ -24,16 +24,15 @@
 
 #include "cspec.h"
 
-#include <stdio.h>
-
-#include "slice.h"
 #include "str.h"
 
+/* wait, does it not include // comments? */
+
 csBool resolve_types(const char** p_type, const void* value) {
-  slice_t type = slice_build(*p_type);
+  slice_t type = slice_from_c_str(*p_type);
   const slice_t* value_slice = NULL;
 
-  if (slice_eq(type, S("slice_t*"))) {
+  if (str_eq(type, "slice_t*")) {
     value_slice = *(const slice_t**)value;
   }
   else if (str_eq(type, "slice_t")) {
@@ -52,6 +51,10 @@ csBool resolve_types(const char** p_type, const void* value) {
 }
 
 // Basic output function for CSPEC printing
+
+//int puts(const char* s);
+#include <stdio.h>
+
 void printer(const char* str, csUint len, csUint color) {
   (void)len;
   (void)color;

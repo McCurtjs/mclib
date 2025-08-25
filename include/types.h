@@ -22,8 +22,8 @@
 * SOFTWARE.
 */
 
-#ifndef _MCLIB_TYPES_H_
-#define _MCLIB_TYPES_H_
+#ifndef MCLIB_TYPES_H_
+#define MCLIB_TYPES_H_
 
 #ifdef __WASM__
 # ifndef __DEFINED_size_t
@@ -58,11 +58,12 @@ typedef size_t    jshandle;
 typedef ptrdiff_t index_s;
 typedef index_s   index_t;
 
-#ifndef NULL
-# define NULL ((void*)0)
-#endif
-
+// Shouldn't be necessary with C23?
 #include <stdbool.h>
+
+#ifndef NULL
+# define NULL nullptr
+#endif
 
 #ifndef TRUE
 # define TRUE true
@@ -98,31 +99,41 @@ typedef index_s   index_t;
 //      until (condition);
 //      // do stuff each iteration after the conditional check
 //    }
-
 #ifndef loop
 # define loop for(;;)
 # define until(condition) if (condition) break;
 #endif
 
+// Ruby, lol
 #ifndef unless
 # define unless(condition) if (!(condition))
 #endif
 
 #ifndef MACRO_CONCAT
+// Macro to concatinate preprocessor symbols
 # define MACRO_CONCAT_RECUR(X, Y) X ## Y
-# define MACRO_CONCAT(X, Y) MACRO_CONCAT_RECUR(X, Y)
-# define MACRO_CONCAT3(X, Y, Z) MACRO_CONCAT(X, MACRO_CONCAT_RECUR(Y, Z))
+# define MACRO_CONCAT(A, B) MACRO_CONCAT_RECUR(A, B)
 #endif
 
+#ifndef MACRO_CONCAT3
+// Separating the additional concats so they aren't removed by the CSpec include
+# define MACRO_CONCAT3(A, B, C) MACRO_CONCAT(A, MACRO_CONCAT_RECUR(B, C))
+# define MACRO_CONCAT4(A, B, C, D) MACRO_CONCAT(A, MACRO_CONCAT3(B, C, D))
+# define MACRO_CONCAT5(A, B, C, D, E) MACRO_CONCAT(A, MACRO_CONCAT4(B, C, D, E))
+#endif
+
+// Macro-composer that calls a given macro with a given list of arguments
 #ifndef MCOMP
 # define MCOMP(F, A) F A
 #endif
 
+// Stringifies a macro argument (ie: `STR(xyz)` becomes `"xyz"`
 #ifndef STR
 # define STR_RECUR(S) #S
 # define STR(S) STR_RECUR(S)
 #endif
 
+// Used to count the number of items in an array
 #ifndef ARRAY_COUNT
 # define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(*arr))
 #endif
@@ -164,14 +175,20 @@ typedef index_s   index_t;
 //    to void in the function body works on all three with max level warnings.
 #define PARAM_UNUSED(PARAM) (void)PARAM;
 
-#ifndef _MSC_VER
-# define SWITCH_FALLTHROUGH __attribute__((fallthrough))
-#else
+#ifdef _MSC_VER
+#
+# // Visual Studio doesn't have an explicit fallthrough specifier
 # define SWITCH_FALLTHROUGH
+#
+# // Annoyingly, MSVC for some reason detects the _Generic specifier as "unused".
+# pragma warning ( disable : 4189 ) // local initialized but not referenced
+#
+// Specifier to indicate an intentional fallthrough on a switch case
+#else
+#
+# // Specifier for intentional fallthrough on switch case statements
+# define SWITCH_FALLTHROUGH __attribute__((fallthrough))
+#
 #endif
-
-// Using this in container classes for return values that act as properties
-// Is this a bad pattern? Probably, but it's an idea I'm trying out.
-#define CV const volatile
 
 #endif

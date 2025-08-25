@@ -22,11 +22,11 @@
 * SOFTWARE.
 */
 
-int cmp_int_void(const void* a, const void* b) {
+static int cmp_int_void(const void* a, const void* b) {
   return *(int*)a - *(int*)b;
 }
 
-int cmp_int(const int* a, const int* b) {
+static int cmp_int(const int* a, const int* b) {
   return *a - *b;
 }
 

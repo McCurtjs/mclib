@@ -22,6 +22,9 @@
 * SOFTWARE.
 */
 
+#ifndef MCLIB_DYNAMIC_ARRAY_H_
+#define MCLIB_DYNAMIC_ARRAY_H_
+
 //
 // Dynamic Array Container
 //
@@ -39,6 +42,7 @@
 // #define con_type T
 // #define con_prefix t
 // #define con_cmp compare_fn // optional, reuqired for sort/search functions
+// #include "span.h" // prerequisite for array type
 // #include "array.h"
 // #undef con_type
 // #undef con_prefix
@@ -89,33 +93,28 @@
 // T*       arr_t_ref_find(Array_T, predicate);
 //
 
-#ifndef _MCLIB_DYNAMIC_ARRAY_H_
-#define _MCLIB_DYNAMIC_ARRAY_H_
-
 #include "types.h"
-
-#ifndef con_skip_dependencies
-#include "span.h"
-#endif
+#include "span_base.h"
 
 typedef struct {
   union {
     span_t    const span;
     struct {
-      void*   const begin;
-      void*   const end;
+      void* const begin;
+      void* const end;
       index_t const element_size;
     };
-    void*     const arr; // TMP
+    void* const arr; // TMP
   };
   index_t     const capacity;
   index_t     const size;
   index_t     const size_bytes;
-//Allocator   const alloc;
-}* Array;
+  //Allocator   const alloc;
+}*Array;
 
 #define array_new(TYPE) _array_new_(sizeof(TYPE))
-#define array_new_reserve(TYPE, capacity) _array_new_reserve_(sizeof(TYPE), capacity)
+#define array_new_reserve(TYPE, capacity) \
+                          _array_new_reserve_(sizeof(TYPE), capacity)
 Array   _array_new_(index_t elemenet_size);
 Array   _array_new_reserve_(index_t element_size, index_t capacity);
 Array   array_copy(Array to_copy);
@@ -128,24 +127,27 @@ void    array_clear(Array array);
 void    array_free(Array array);
 void    array_delete(Array* array);
 span_t  array_release(Array* array);
-index_t array_write(Array array, index_t position, const void* in_element);
-index_t array_write_back(Array array, const void* in_element);
-void*   array_emplace(Array array, index_t position);
-void*   array_emplace_back(Array array);
+index_t array_write(Array array, index_t position, const void* in_element); // no size modify (bool)
+index_t array_write_back(Array array, const void* in_element); // remove this
+//index_t array_insert(Array array, index_t position, const void* in_element);
+//index_t array_push_back(Array array, const void* in_element);
+void* array_emplace(Array array, index_t position);
+void* array_emplace_back(Array array);
 span_t  array_emplace_range(Array array, index_t position, index_t count);
 span_t  array_emplace_back_range(Array array, index_t count);
 index_t array_remove(Array array, index_t position);
 index_t array_remove_range(Array array, index_t position, index_t count);
 index_t array_remove_unstable(Array array, index_t position);
 index_t array_pop_back(Array array);
-void*   array_ref(Array array, index_t index);
-void*   array_ref_front(Array array);
-void*   array_ref_back(Array array);
+void* array_ref(Array array, index_t index);
+void* array_ref_front(Array array);
+void* array_ref_back(Array array);
 bool    array_read(const Array array, index_t index, void* out_element);
 bool    array_read_front(const Array array, void* out_element);
 bool    array_read_back(const Array array, void* out_element);
 bool    array_contains(const Array array, const void* to_find);
-void    array_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
+//void    array_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
+//void    array_ref_search
 //void*   array_ref_find(Array array, bool (*predicate)(const void* el));
 //void    array_filter(Array array, bool (*filter)(const void* el));
 
@@ -180,26 +182,25 @@ void    array_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
 // specialized container/template type
 #ifdef con_type
 
+// The matching span type is required, but to avoid collisoins since we can't do
+//    include guards for specializations, we have to require that the matching
+//    span type was already created before this one.
+// #include "span.h"
+
 // Specialized container functions are declared as arr_<prefix>_<fn>
 //    ex: - if con_prefix is 'str', you'll get a function arr_str_push_back
 //        - if con_prefix is not set, you'll get arr_String_push_back
+
 #ifdef con_prefix
-# define _full_prefix MACRO_CONCAT(arr_, con_prefix)
-# define _span_full_prefix MACRO_CONCAT(span_, con_prefix)
-# define _con_type con_prefix
+# define _con_name con_prefix
 #else
-# define _full_prefix MACRO_CONCAT(arr_, con_type)
-# define _span_full_prefix MACRO_CONCAT(span_, con_type)
-# define _con_type con_type
+# define _con_name con_type
 #endif
 
-// The type of the specialized array class will be Array_<type>.
-//    for example: Array_String, Array_Entity, etc.
-#define _arr_type   MACRO_CONCAT(Array_, _con_type)
-#define _span_type  MACRO_CONCAT(_span_full_prefix, _t)
-
-#define _prefix(_fn) MACRO_CONCAT(_full_prefix, _fn)
-#define _span_prefix(_fn) MACRO_CONCAT(_span_full_prefix, _fn)
+#define _arr_type MACRO_CONCAT(Array_, _con_name)
+#define _prefix(_FN) MACRO_CONCAT3(arr_, _con_name, _FN)
+#define _span_type MACRO_CONCAT3(span_, _con_name, _t)
+#define _span_prefix(_FN) MACRO_CONCAT3(span_, _con_name, _FN)
 
 // Annoyingly have to redefine the struct to match - if we just typedef the
 //    pointer type, it'll happily accept either as equivalent, but the whole
@@ -580,12 +581,10 @@ static inline index_t _prefix(_find)
 
 #endif // con_cmp
 
-#undef _con_type
+#undef _con_name
 #undef _arr_type
+#undef _prefix
 #undef _span_type
 #undef _span_prefix
-#undef _span_full_prefix
-#undef _full_prefix
-#undef _prefix
 
 #endif

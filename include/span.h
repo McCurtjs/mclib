@@ -22,6 +22,9 @@
 * SOFTWARE.
 */
 
+#ifndef MCLIB_SPAN_H_
+#define MCLIB_SPAN_H_
+
 //
 // Container Span
 //
@@ -74,15 +77,8 @@
 // void     span_a_set_bytes(span_a_t);
 //
 
-#ifndef _MCLIB_SPAN_H_
-#define _MCLIB_SPAN_H_
-
 #include "types.h"
-
-typedef struct span_t {
-  void* begin;
-  void* end;
-} span_t;
+#include "span_base.h"
 
 static inline index_t ispan_size_bytes(span_t span) {
   byte* begin = span.begin;
@@ -96,91 +92,11 @@ static inline index_t ispan_size(span_t span, index_t element_size) {
   return ispan_size_bytes(span) / element_size;
 }
 
-/*
-static inline void* ispan_ref(span_t span, index_t index) {
-  if (index < 0) return NULL;
-  byte* begin = span.begin;
-  byte* end = span.end;
-  assert(begin <= end);
-  if (!begin || end <= begin) return NULL;
-  byte* ret = begin + (index * span.element_size);
-  if (ret >= end) return NULL;
-  return ret;
-}
-
-static inline void* ispan_ref_front(span_t span) {
-  byte* begin = span.begin;
-  byte* end = span.end;
-  assert(begin <= end);
-  if (!begin || end <= begin) return NULL;
-  return begin;
-}
-
-static inline void* ispan_ref_back(span_t span) {
-  byte* end = span.end;
-  if (!span.begin || span.end <= span.begin) return NULL;
-  return end - span.element_size;
-}
-
-static inline span_t ispan_drop_front(span_t span) {
-  byte* begin = span.begin;
-  byte* end = span.end;
-  assert(begin <= end);
-  if (end - begin <= 0) return span;
-  span.begin = begin + span.element_size;
-  return span;
-}
-
-static inline span_t ispan_drop_back(span_t span) {
-  byte* begin = span.begin;
-  byte* end = span.end;
-  assert(begin <= end);
-  if (end - begin <= 0) return span;
-  span.end = end - span.element_size;
-  return span;
-}
-
-static inline span_t ispan_subspan(span_t span, index_t start, index_t finish) {
-  byte* begin = span.begin;
-  byte* end = span.end;
-  index_t size = ispan_size(span);
-  assert(begin <= end);
-  if (begin == end) return span;
-  if (start < 0) start = size + start;
-  if (start < 0) start = 0;
-  if (finish > size) finish = size;
-  if (finish < 0) finish = size + finish;
-  if (finish < start) finish = start;
-  span.begin = begin + start * span.element_size;
-  span.end = begin + finish * span.element_size;
-  return span;
-}
-
-static inline span_t ispan_first(span_t span, index_t count) {
-  byte* begin = span.begin;
-  byte* end = span.end;
-  assert(begin <= end);
-  if (begin + count * span.element_size >= end) return span;
-  span.end = begin + count * span.element_size;
-  return span;
-}
-
-static inline span_t ispan_last(span_t span, index_t count) {
-  byte* begin = span.begin;
-  byte* end = span.end;
-  assert(begin <= end);
-  if (end - count * span.element_size < begin) return span;
-  span.begin = end - count * span.element_size;
-  return span;
-}//*/
-
-void ispan_set_bytes(span_t span, byte b);
-
 typedef int (*compare_fn)(const void* a, const void* b);
 
+void ispan_set_bytes(span_t span, byte b);
 bool ispan_eq(span_t a, span_t b);
 bool ispan_eq_deep(span_t lhs, span_t rhs, index_t el_size, compare_fn cmp);
-
 void ispan_sort(span_t span, index_t element_size, compare_fn cmp);
 
 #define span_foreach(VAR, SPAN)                                               \
@@ -196,13 +112,13 @@ void ispan_sort(span_t span, index_t element_size, compare_fn cmp);
 #ifdef con_type
 
 #ifdef con_prefix
-# define _full_prefix MACRO_CONCAT(span_, con_prefix)
+# define _con_name con_prefix
 #else
-# define _full_prefix MACRO_CONCAT(span_, con_type)
+# define _con_name con_type
 #endif
 
-#define _span_type MACRO_CONCAT(_full_prefix, _t)
-#define _prefix(_fn) MACRO_CONCAT(_full_prefix, _fn)
+#define _span_type MACRO_CONCAT3(span_, _con_name, _t)
+#define _prefix(_fn) MACRO_CONCAT3(span_, _con_name, _fn)
 
 typedef struct _span_type {
   con_type* begin;
@@ -211,7 +127,7 @@ typedef struct _span_type {
 
 #define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
 
-static inline _span_type _full_prefix
+static inline _span_type MACRO_CONCAT(span_, _con_name)
 (con_type* begin, con_type* end) {
   assert(begin <= end);
   return (_span_type) { .begin = begin, .end = end };
@@ -399,9 +315,8 @@ static inline void _prefix(_sort)
 
 #endif
 
+#undef _con_name
 #undef _span_type
 #undef _prefix
-#undef _span_full_prefix
-#undef _full_prefix
 
 #endif

@@ -22,8 +22,8 @@
 * SOFTWARE.
 */
 
-#ifndef _MCLIB_SLICE_H_
-#define _MCLIB_SLICE_H_
+#ifndef MCLIB_SLICE_H_
+#define MCLIB_SLICE_H_
 
 #include "types.h"
 
@@ -48,41 +48,34 @@ typedef struct slice_t {
   };
 } slice_t;
 
-// String Constants
+////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////
 
-// \brief constant slice for an empty string
+// \brief slice constant for an empty string
 extern const slice_t slice_empty;
 
-// \brief constant slice for a "true" string
+// \brief slice constant for a "true" string
 extern const slice_t slice_true;
 
-// \brief constant slice for a "false" string
+// \brief slice constant for a "false" string
 extern const slice_t slice_false;
+
+////////////////////////////////////////////////////////////////////////////////
+// Construction
+////////////////////////////////////////////////////////////////////////////////
 
 // \brief Similar to slice macro, just doesn't include the typename because MSVC
 //    can't handle that in some cases. Very annoying. (prefer "slice" or "S").
-#define slice_s(C_STR_LITERAL) {                                              \
+
+// \brief Creates a string slice from a string literal (eg: S("Abc")).
+//
+// \param C_STR_LITERAL - The string literal value.
+//    Can accept either a string in double quotes, or a const static char[].
+#define S(C_STR_LITERAL) ((slice_t) {                                         \
   .begin = C_STR_LITERAL,                                                     \
   .size = sizeof(C_STR_LITERAL) - 1                                           \
-}                                                                             //
-
-// \brief Creates a string slice from a string literal - ONLY use this for
-//    literal string values (eg: slice("abc")). Will not copy or take ownership of the
-//    string's memory.
-// \brief Passing a char* to this will fail because the length is calculated at
-//    compile time. For a runtime slice of a null-terminated string,
-//    use slice_from_ptr().
-//
-// \param C_STRING_LITERAL - The string literal value.
-//    Can accept either a string in double quotes, or a const static char[].
-//
-#define slice(C_STR_LITERAL) ((slice_t) slice_s(C_STR_LITERAL))
-
-// \brief Alias for slice(c_str)
-#define S(C_STR_LITERAL) slice(C_STR_LITERAL)
-
-// \brief Alias for slice_body for MSVC
-#define M(C_STR_LITERAL) slice(C_STR_LITERAL)
+})                                                                            //
 
 // \brief Used to allocate a static string from a string literal. This is only
 //    necessary in MSVC because it can't understand initializer list casting.
@@ -96,12 +89,12 @@ extern const slice_t slice_false;
 }                                                                             //
 
 // \brief Builds a slice from a c_string using strlen to find the length.
-slice_t slice_build(const char* c_str);
+//
+// \brief In general, prefer the S("str") macro to avoid use of strlen.
+slice_t slice_from_c_str(const char* c_str);
 
 // \brief Builds a slice from a c_string using the given length.
-// 
-// \brief Preferable to just use { .begin = str, .length = len }
-static inline slice_t slice_build_s(const char* c_str, index_t length) {
+static inline slice_t slice_build(const char* c_str, index_t length) {
   assert(length >= 0);
   assert(c_str == NULL ? length == 0 : true);
   return (slice_t) { .begin = c_str, .length = length };
@@ -112,6 +105,11 @@ static inline slice_t slice_build_s(const char* c_str, index_t length) {
 static inline slice_t slice_from_slice(slice_t s) { return s; }
 
 static inline index_t slice_size(slice_t s) { return s.size; }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Slice functions
+////////////////////////////////////////////////////////////////////////////////
 
 bool        slice_eq(slice_t lhs, slice_t rhs);
 bool        slice_starts_with(slice_t str, slice_t starts);
@@ -147,39 +145,8 @@ void        slice_write(slice_t str);
 #define _slice_sub_v(str, ...) MCOMP(_slice_sub_args, (str, __VA_ARGS__, str.size))
 #define slice_substring(str, ...) islice_substring(_slice_sub_v(str, __VA_ARGS__))
 
-#include "span_byte.h"
-
-//span_byte_t slice_to_span(slice_t slice);
-slice_t span_byte_to_slice(span_byte_t span);
-
-#include "array_slice.h"
-
-Array_slice slice_split(slice_t str, slice_t del);
-
+#ifdef MCLIB_SPAN_BYTE_
+# include "span_byte.h"
 #endif
 
-/*
-
-Ideas for Arena allocator:
-
-arena_t or Arena stores block of memory (either allocated on the heap, or declared on the stack).
-
-struct arena_t {
-  byte* base; // null for malloc
-  index_t size;
-  struct arena_t* prev;
-  bool is_auto;
-};
-
-Arenas operate as a stack, making a new one takes over allocations until released. If "base" is
-    null, use default malloc. Previous allocator contains current, unless "default" is re-added
-    onto the stack.
-
-If an arena runs out of space, instead of failing, a new arena could be added to the stack with 
-    the "is_auto" flag set. When popping the stack to remove an allocator, if the flag is set
-    keep popping until the top of the stack has is_auto == false (so it functions as if it was
-    just one allocator).
-Add uint max_autos that sets how many auto allocators can be created? (decrement by one each time
-    another is added to the stack).
-
-*/
+#endif

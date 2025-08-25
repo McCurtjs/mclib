@@ -86,12 +86,14 @@ sources_test=" \
   ./tst/span_spec.c \
   ./tst/slice_spec.c \
   ./tst/str_spec.c \
+  ./tst/map_spec.c \
 "
 
 sources=" \
   ./src/span.c \
   ./src/slice.c \
   ./src/array.c \
+  ./src/map.c \
   ./src/str.c \
   ./src/utility.c \
 "
@@ -134,7 +136,8 @@ elif [ "$build_target" = "gcc" ]; then
 
   mkdir -p build/gcc/$build_type
 
-  gcc -o build/gcc/$build_type/test.exe $flags_memtest $includes $sources $sources_test
+  gcc -o build/gcc/$build_type/test.exe \
+    $flags_memtest $includes $sources $sources_test -std=c23 -pedantic
 
   if [ "$?" == "0" ]; then
     ./build/gcc/$build_type/test.exe $args
