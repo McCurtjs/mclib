@@ -100,16 +100,7 @@ inline static bool str_is_literal(String str) {
 // Direct string str_ functions
 ////////////////////////////////////////////////////////////////////////////////
 
-String str_new(const char* c_str) {
-  if (!c_str) return str_empty;
-  index_t length = strlen(c_str);
-  String_Internal* ret = str_new_internal(length);
-  if (!ret) return str_empty;
-  memcpy(&ret->head, c_str, length);
-  return str_terminate(ret);
-}
-
-String str_new_s(const char* c_str, index_t length) {
+String str_build(const char* c_str, index_t length) {
   if (!c_str) return str_empty;
   String_Internal* ret = str_new_internal(length);
   if (!ret) return str_empty;
@@ -122,11 +113,13 @@ String str_from_bool(bool b) {
 }
 
 String str_from_int(int i) {
-  return str_new(itos(i));
+  slice_t tmp = slice_from_c_str(itos(i));
+  return istr_copy(tmp);
 }
 
 String str_from_float(float f) {
-  return str_new(ftos(f));
+  slice_t tmp = slice_from_c_str(ftos(f));
+  return istr_copy(tmp);
 }
 
 void str_delete(String* str) {

@@ -69,9 +69,8 @@ static inline slice_t slice_from_str(String s) { return s->slice; }
 
 #define str_write(str)              slice_write(_s2r(str))
 
-String  str_new(const char* c_str);
-String  str_new_s(const char* c_str, index_t length);
 #define str_copy(str)               istr_copy(_s2r(str))
+String  str_build(const char* c_str, index_t length);
 String  str_from_bool(bool b);
 String  str_from_int(int i);
 String  str_from_float(float f);

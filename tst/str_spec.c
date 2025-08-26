@@ -29,26 +29,14 @@
 
 #include "cspec.h"
 
-describe(str_new) {
+describe(str_build) {
   String subject = NULL;
 
   char* c_str = "This is a c-string";
 
-  it("makes a copy of the c_string using malloc") {
-    subject = str_new(c_str);
-    expect(subject to match(c_str, str_eq));
-  }
-
   it("makes a copy using the _s version") {
-    subject = str_new_s(c_str, 4);
+    subject = str_build(c_str, 4);
     expect(subject to match("This", str_eq));
-  }
-
-  it("ensures the direct and range pointers are the same/shared in union") {
-    subject = str_new(c_str);
-    expect(&subject->begin == &subject->slice.begin);
-    expect(&subject->size == &subject->slice.size);
-    expect(&subject->size == &subject->length);
   }
 
   if (subject) {
@@ -79,10 +67,17 @@ describe(str_copy) {
   }
 
   it("allocates a new copy of the string from another dynamic string") {
-    String str = str_new(c_str);
+    String str = str_copy(c_str);
     subject = str_copy(str);
     expect(subject to match(str, str_eq));
     str_delete(&str);
+  }
+
+  it("ensures the direct and range pointers are the same/shared in union") {
+    subject = str_copy(c_str);
+    expect(&subject->begin == &subject->slice.begin);
+    expect(&subject->size == &subject->slice.size);
+    expect(&subject->size == &subject->length);
   }
 
   if (subject) {
@@ -179,7 +174,7 @@ describe(str_from_float) {
 describe(str_delete) {
 
   it("frees the memory and zeroes the pointer") {
-    String subject = str_new("Test string");
+    String subject = str_copy("Test string");
     expect(subject != NULL);
     expect(malloc_count == 1);
     str_delete(&subject);
@@ -275,9 +270,9 @@ describe(str_join) {
 
   context("with an array of dynamic String objects") {
 
-    String str1 = str_new("Str 1");
-    String str2 = str_new("Str 2");
-    String str3 = str_new("Str 3");
+    String str1 = str_copy("Str 1");
+    String str2 = str_copy("Str 2");
+    String str3 = str_copy("Str 3");
     tokens = arr_slice_new_reserve(3);
     arr_slice_push_back(tokens, str1->slice);
     arr_slice_push_back(tokens, str2->slice);
@@ -740,7 +735,7 @@ describe(str_format) {
 }
 
 test_suite(tests_string) {
-  test_group(str_new),
+  test_group(str_build),
   test_group(str_copy),
   test_group(str_from_bool),
   test_group(str_from_int),
