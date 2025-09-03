@@ -24,8 +24,19 @@
 
 #include "slice.h"
 
+#include "utility.h" // hash
+
 #include <string.h> // strlen, memcmp
 #include <ctype.h> // tolower, isdigit, isspace
+
+// Disable annoying warnings in test when assert is replaced with cspec_assert.
+//    these warnings appear because intellisense doesn't recognize that
+//    cspec_assert blocks further execution.
+#if defined(MCLIB_TEST_MODE) && defined(_MSC_VER)
+# pragma warning ( disable : 6011 )
+# pragma warning ( disable : 6387 )
+# pragma warning ( disable : 28182 )
+#endif
 
 const char slice_constants[] = "\0true\0false";
 
@@ -34,8 +45,8 @@ const slice_t slice_true = { .begin = &slice_constants[1], .size = 4 };
 const slice_t slice_false = { .begin = &slice_constants[6], .size = 5 };
 
 #define SLICE_VALID(str)                                                      \
-  assert(str.size >= 0);                                                      \
-  assert(str.size > 0 ? str.begin != NULL : true)                             //
+  assert((str).size >= 0);                                                    \
+  assert((str).size > 0 ? (str).begin != NULL : true)                         //
 
 slice_t slice_from_c_str(const char* c_str) {
   if (c_str == NULL) return slice_empty;
@@ -43,6 +54,13 @@ slice_t slice_from_c_str(const char* c_str) {
     .begin = c_str,
     .length = strlen(c_str),
   };
+}
+
+int slice_compare(slice_t lhs, slice_t rhs) {
+  SLICE_VALID(lhs);
+  SLICE_VALID(rhs);
+  if (lhs.size != rhs.size) return (int)(rhs.size - lhs.size);
+  return memcmp(lhs.begin, rhs.begin, lhs.size);
 }
 
 bool slice_eq(slice_t lhs, slice_t rhs) {
@@ -319,6 +337,21 @@ slice_t slice_trim_end(slice_t str) {
     .begin = str.begin,
     .size = end,
   };
+}
+
+hash_t slice_hash(slice_t str) {
+  SLICE_VALID(str);
+  return hash(str.begin, str.size);
+}
+
+int slice_compare_vptr(const void* lhs, const void* rhs) {
+  assert(lhs && rhs);
+  return slice_compare(*(slice_t*)lhs, *(slice_t*)rhs);
+}
+
+hash_t slice_hash_vptr(const void* str) {
+  assert(str);
+  return slice_hash(*(slice_t*)str);
 }
 
 #include "array_slice.h"

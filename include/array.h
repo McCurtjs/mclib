@@ -100,11 +100,11 @@ typedef struct {
   union {
     span_t    const span;
     struct {
-      void* const begin;
-      void* const end;
+      void*   const begin;
+      void*   const end;
       index_t const element_size;
     };
-    void* const arr; // TMP
+    void*     const arr; // TMP
   };
   index_t     const capacity;
   index_t     const size;
@@ -112,11 +112,11 @@ typedef struct {
   //Allocator   const alloc;
 }*Array;
 
-#define array_new(TYPE) _array_new_(sizeof(TYPE))
+#define array_new(TYPE) iarray_new(sizeof(TYPE))
 #define array_new_reserve(TYPE, capacity) \
-                          _array_new_reserve_(sizeof(TYPE), capacity)
-Array   _array_new_(index_t elemenet_size);
-Array   _array_new_reserve_(index_t element_size, index_t capacity);
+                          iarray_new_reserve(sizeof(TYPE), capacity)
+Array  iarray_new(index_t elemenet_size);
+Array  iarray_new_reserve(index_t element_size, index_t capacity);
 Array   array_copy(Array to_copy);
 Array   array_copy_span(span_t to_copy, index_t element_size);
 //Array   array_copy_span_deep(span_t to_copy, void (*copy_fn)(void* dst, void* src));
@@ -131,17 +131,17 @@ index_t array_write(Array array, index_t position, const void* in_element); // n
 index_t array_write_back(Array array, const void* in_element); // remove this
 //index_t array_insert(Array array, index_t position, const void* in_element);
 //index_t array_push_back(Array array, const void* in_element);
-void* array_emplace(Array array, index_t position);
-void* array_emplace_back(Array array);
+void*   array_emplace(Array array, index_t position);
+void*   array_emplace_back(Array array);
 span_t  array_emplace_range(Array array, index_t position, index_t count);
 span_t  array_emplace_back_range(Array array, index_t count);
 index_t array_remove(Array array, index_t position);
 index_t array_remove_range(Array array, index_t position, index_t count);
 index_t array_remove_unstable(Array array, index_t position);
 index_t array_pop_back(Array array);
-void* array_ref(Array array, index_t index);
-void* array_ref_front(Array array);
-void* array_ref_back(Array array);
+void*   array_ref(Array array, index_t index);
+void*   array_ref_front(Array array);
+void*   array_ref_back(Array array);
 bool    array_read(const Array array, index_t index, void* out_element);
 bool    array_read_front(const Array array, void* out_element);
 bool    array_read_back(const Array array, void* out_element);

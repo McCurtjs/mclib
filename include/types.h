@@ -25,35 +25,48 @@
 #ifndef MCLIB_TYPES_H_
 #define MCLIB_TYPES_H_
 
+// Define or delcare assert depending on test mode status
+#ifdef assert
+extern void cspec_assert(_Bool condition);
+# define MCLIB_TEST_MODE
+#else
+# ifdef __WASM__
+#   // Provide assert that works with wasm...
+#   if __has_builtin(__builtin_trap)
+#     define assert(CONDITION) (!(CONDITION) ? __builtin_trap() : 0);
+#   else
+#     define assert(CONDITION)
+#   endif
+# else
+#   include <assert.h>
+# endif
+#endif
+
 #ifdef __WASM__
 # ifndef __DEFINED_size_t
-#  define __DEFINED_size_t
+#   define __DEFINED_size_t
 typedef unsigned long size_t;
 typedef          long ptrdiff_t;
 # endif
-
-
+#
 # ifndef __has_builtin
 #  define __has_builtin(x) 0
 # endif
-
-// Provide assert that works with wasm...
-# ifndef assert
-#	 if __has_builtin(__builtin_trap)
-#   define assert(CONDITION) (!(CONDITION) ? __builtin_trap() : 0);
-#  else
-#   define assert(CONDITION)
-#  endif
-# endif
 #else
 # include <corecrt.h>
-# include <assert.h>
+#endif
+
+#if defined(__x86_64__) || defined(_WIN64) || defined(__LP_64__)
+# define MCLIB_64
+#else
+# define MCLIB_32
 #endif
 
 typedef unsigned int uint;
 typedef unsigned short ushort;
 typedef unsigned short u16;
 typedef unsigned char byte;
+typedef size_t    hash_t;
 typedef size_t    jshandle;
 typedef ptrdiff_t index_s;
 typedef index_s   index_t;
@@ -101,7 +114,7 @@ typedef index_s   index_t;
 //    }
 #ifndef loop
 # define loop for(;;)
-# define until(condition) if (condition) break;
+# define until(condition) if (condition) break
 #endif
 
 // Ruby, lol

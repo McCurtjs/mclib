@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "murmur3.h"
+
 // WASI doesn't support stof yet, which is annoying. Too lazy to make a function
 // right now, pulled from Karl Knechtel at:
 // https://stackoverflow.com/questions/4392665/converting-string-to-float-without-stof-in-c
@@ -128,4 +130,30 @@ void memrev(void* p, unsigned size) {
     *s++ = *e;
     *e-- = t;
   }
+}
+
+// Most significant bit algorithm, from:
+//    https://aggregate.org/MAGIC/#Most%20Significant%201%20Bit
+size_t msb(size_t x) {
+  x |= (x >> 1);
+  x |= (x >> 2);
+  x |= (x >> 4);
+  x |= (x >> 8);
+  x |= (x >> 16);
+#ifdef MCLIB_64
+  x |= (x >> 32);
+#endif
+  return(x & ~(x >> 1));
+}
+
+hash_t hash(const void* src, index_t size) {
+  hash_t ret;
+#ifdef MCLIB_64
+  byte output[16];
+  MurmurHash3_x64_128(src, (int)size, 0, &output);
+  ret = *(hash_t*)output;
+#else
+  MurmurHash3_x86_32(key, m->key_size, 0, &ret);
+#endif
+  return ret;
 }

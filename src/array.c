@@ -31,6 +31,14 @@
 
 #include "types.h"
 
+// Disable annoying warnings in test when assert is replaced with cspec_assert.
+//    these warnings appear because intellisense doesn't recognize that
+//    cspec_assert blocks further execution.
+#if defined(MCLIB_TEST_MODE) && defined(_MSC_VER)
+# pragma warning ( disable : 6011 )
+# pragma warning ( disable : 6387 )
+#endif
+
 // internal opaque structure:
 typedef struct Array_Internal {
   // public (read only)
@@ -57,14 +65,14 @@ static const span_t span_empty = { .begin = NULL, .end = NULL };
   MAX(DARRAY_STARTING_SIZE, a->capacity + a->capacity / 2)
 
 #define DARRAY_INTERNAL \
-  assert(a_in); \
-  Array_Internal* a = (Array_Internal*)(a_in)
+  Array_Internal* a = (Array_Internal*)(a_in); \
+  assert(a)
 
 #define DARRAY_INTERNAL_CONST \
-  assert(a_in); \
-  const Array_Internal* a = (const Array_Internal*)(a_in)
+  const Array_Internal* a = (const Array_Internal*)(a_in); \
+  assert(a)
 
-Array _array_new_(index_t element_size) {
+Array iarray_new(index_t element_size) {
   Array_Internal* ret = malloc(sizeof(Array_Internal));
   assert(ret);
   *ret = (Array_Internal) {
@@ -78,8 +86,8 @@ Array _array_new_(index_t element_size) {
   return (Array)ret;
 }
 
-Array _array_new_reserve_(index_t element_size, index_t capacity) {
-  Array_Internal* ret = (Array_Internal*)_array_new_(element_size);
+Array iarray_new_reserve(index_t element_size, index_t capacity) {
+  Array_Internal* ret = (Array_Internal*)iarray_new(element_size);
   if (capacity <= 0) return (Array)ret;
   byte* mem = malloc(element_size * capacity);
   assert(mem);
@@ -96,18 +104,18 @@ Array array_copy(Array a_in) {
 
 Array array_copy_span(span_t span, index_t element_size) {
   assert(span.begin <= span.end);
-  if (span.begin >= span.end) return _array_new_(element_size);
+  if (span.begin >= span.end) return iarray_new(element_size);
   index_t element_count = ispan_size(span, element_size);
-  Array_Internal* ret = (Array_Internal*)_array_new_reserve_(element_size, element_count);
+  Array_Internal* ret = (Array_Internal*)iarray_new_reserve(element_size, element_count);
   memcpy(ret->begin, span.begin, ret->capacity);
   return (Array)ret;
 }
 
 void array_reserve(Array a_in, index_t capacity) {
   DARRAY_INTERNAL;
-  if (!a || a->size >= capacity) return;
+  if (a->size >= capacity) return;
   byte* new_data = realloc(a->begin, a->element_size * capacity);
-  assert(new_data); // TODO: better handling of critical memory situations
+  assert(new_data);
   a->begin = new_data;
   a->end = a->begin + a->size * a->capacity;
   a->capacity = capacity;
@@ -115,7 +123,7 @@ void array_reserve(Array a_in, index_t capacity) {
 
 void array_truncate(Array a_in, index_t max_size) {
   DARRAY_INTERNAL;
-  if (!a || a->capacity <= max_size) return;
+  if (a->capacity <= max_size) return;
   if (max_size <= 0) {
     array_free(a_in);
     return;
@@ -148,7 +156,7 @@ void array_clear(Array a_in) {
 }
 
 void array_free(Array a_in) {
-  if (!a_in) return; // why is it ok to array_free on a NULL array?
+  if (!a_in) return;
   DARRAY_INTERNAL;
   if (!a->begin) return;
   array_clear(a_in);
@@ -314,7 +322,7 @@ index_t array_pop_back(Array a_in) {
 
 void* array_ref(Array a_in, index_t index) {
   DARRAY_INTERNAL;
-  if (index >= a->size) return NULL;
+  if (index < 0 || index >= a->size) return NULL;
   return a->data + index * a->element_size;
 }
 

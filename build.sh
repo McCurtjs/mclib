@@ -96,15 +96,17 @@ sources=" \
   ./src/map.c \
   ./src/str.c \
   ./src/utility.c \
+  ./lib/murmur3/murmur3.c \
 "
 
 includes=" \
-  -I ./include -I ./lib/cspec \
+  -I ./include -I ./lib/cspec -I ./lib/murmur3 \
 "
 
 flags_memtest=" \
   -Dmalloc=cspec_malloc -Drealloc=cspec_realloc \
   -Dcalloc=cspec_calloc -Dfree=cspec_free \
+  -Dassert=cspec_assert \
 ";
 
 # WASM not supported here
@@ -124,7 +126,7 @@ elif [ "$build_target" = "clang" ]; then
 
   mkdir -p build/$build_target/$build_type
 
-  clang $flags_memtest -o build/clang/$build_type/test.exe \
+  clang -std=c2x $flags_memtest -o build/clang/$build_type/test.exe \
     $flags_common $flags_debug_opt $includes $sources $sources_test
 
   if [ "$?" == "0" ]; then
@@ -136,8 +138,8 @@ elif [ "$build_target" = "gcc" ]; then
 
   mkdir -p build/gcc/$build_type
 
-  gcc -o build/gcc/$build_type/test.exe \
-    $flags_memtest $includes $sources $sources_test -std=c23 -pedantic
+  gcc -std=c2x -o build/gcc/$build_type/test.exe \
+    $flags_memtest $includes $sources $sources_test -pedantic
 
   if [ "$?" == "0" ]; then
     ./build/gcc/$build_type/test.exe $args
@@ -147,7 +149,8 @@ elif [ "$build_target" = "gcc" ]; then
 elif [ "$build_target" = "mingw" ]; then
 
   if [ "$skip_cmake" != true ]; then
-    cmake -G "MinGW Makefiles" -S . -B build/mingw/$build_type -DCMAKE_BUILD_TYPE=$build_type
+    cmake -G "MinGW Makefiles" -S . -B build/mingw/$build_type \
+      -DCSPEC_MEMTEST=ON -DCSPEC_ASSERT=ON
     if [ "$?" != "0" ]; then
       exit
     fi
@@ -164,7 +167,8 @@ elif [ "$build_target" = "mingw" ]; then
 # CMake MSVC
 elif [ "$build_target" = "msvc" ]; then
 
-  cmake -G "Visual Studio 17 2022" -S . -B build/msvc
+  cmake -G "Visual Studio 17 2022" -S . -B build/msvc \
+    -DCSPEC_MEMTEST=ON -DCSPEC_ASSERT=ON
   if [ "$?" != "0" ]; then
     exit
   fi

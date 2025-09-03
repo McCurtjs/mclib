@@ -111,6 +111,7 @@ static inline index_t slice_size(slice_t s) { return s.size; }
 // Slice functions
 ////////////////////////////////////////////////////////////////////////////////
 
+int         slice_compare(slice_t lhs, slice_t rhs);
 bool        slice_eq(slice_t lhs, slice_t rhs);
 bool        slice_starts_with(slice_t str, slice_t starts);
 bool        slice_ends_with(slice_t str, slice_t ends);
@@ -139,6 +140,10 @@ slice_t     slice_trim_end(slice_t str);
 //Array     slice_tokenize(slice_t str, const slice_t[] tokens);
 //Array     slice_parenthetize(slice_t str); // block out segments by parens? ([{}])
 void        slice_write(slice_t str);
+hash_t      slice_hash(slice_t str);
+
+int         slice_compare_vptr(const void* lhs, const void* rhs);
+hash_t      slice_hash_vptr(const void* str);
 
 // slice_substring argument default
 #define _slice_sub_args(str, start, end, ...) (str), (start), (end)

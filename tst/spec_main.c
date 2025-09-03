@@ -67,19 +67,29 @@ extern TestSuite tests_cspec;
 extern TestSuite tests_slice;
 extern TestSuite tests_string;
 extern TestSuite tests_span;
+extern TestSuite tests_map;
 
 // Main
 
 int main(int argc, char* argv[]) {
+
+# ifdef CSPEC_MSVC
+  /* Test values for Visual Studio without having to modify properties */
+  argv = (char* []){ argv[0], "-ps", "map_spec.c" };
+  argc = 1;
+# endif
+
   TestSuite* test_suites[] = {
     &tests_cspec,
     &tests_slice,
     &tests_string,
     &tests_span,
+    &tests_map,
   };
 
   cspec_opt_print_line = printer;
   cspec_opt_resolve_user_types = resolve_types;
+  cspec_opt_print_backtrace = cspec_default_print_backtrace;
 
   return cspec_run_all(test_suites);
 }
