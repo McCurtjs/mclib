@@ -9,18 +9,19 @@ read_args=true
 
 while [ "$read_args" == true ] && [ "$1" != "" ]; do
   case "$1" in
-    -t | --target)
-      build_target="$2"
-      shift 1
-      ;;
     -h | --help)
       echo ": - -- Options"
       echo ": h help                                 : prints this message"
       echo ": t target  [clang|gcc|mingw|msvc]       : sets build target"
       echo ": r release                              : release build (default is debug)"
       echo ": s skip-cmake                           : skips cmake"
+      echo ": u update                               : update submodules"
       echo ": -- <args>                              : passes remaining args to built exe (if any)"
       exit
+      ;;
+    -t | --target)
+      build_target="$2"
+      shift 1
       ;;
     -- )
       args="$@"
@@ -32,6 +33,10 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
     -s | --skip-cmake)
       skip_cmake=true
       ;;
+    -u | --update)
+      git submodule update --init # --recursive
+      build_target="none"
+      ;;
     *)
       echo ": Unknown parameter: $1"
       exit
@@ -39,6 +44,10 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
   esac
   shift 1
 done
+
+if [ "$build_target" == "none" ]; then
+  exit
+fi
 
 # Get make executable
 make_exe="no_make"
