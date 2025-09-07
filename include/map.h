@@ -60,7 +60,7 @@ typedef int (*compare_fn)(const void* lhs, const void* rhs);
 typedef hash_t (*hash_fn)(const void* key);
 typedef void (*delete_fn)(void** to_delete);
 
-typedef struct {
+typedef struct _opaque_Map_base {
   const index_t size;
   const index_t capacity;
   const index_t key_size;

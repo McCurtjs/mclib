@@ -96,7 +96,7 @@
 #include "types.h"
 #include "span_base.h"
 
-typedef struct {
+typedef struct _opaque_Array_base {
   union {
     span_t    const span;
     struct {
@@ -205,7 +205,7 @@ bool    array_contains(const Array array, const void* to_find);
 // Annoyingly have to redefine the struct to match - if we just typedef the
 //    pointer type, it'll happily accept either as equivalent, but the whole
 //    point is to prompt type errors.
-typedef struct {
+typedef struct MACRO_CONCAT3(_opaque_, _arr_type, _base) {
   union {
     _span_type span;
     struct {

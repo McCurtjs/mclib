@@ -73,11 +73,11 @@ extern TestSuite tests_map;
 
 int main(int argc, char* argv[]) {
 
-# ifdef CSPEC_MSVC
+#ifdef CSPEC_MSVC
   /* Test values for Visual Studio without having to modify properties */
   argv = (char* []){ argv[0], "-ps", "map_spec.c" };
   argc = 1;
-# endif
+#endif
 
   TestSuite* test_suites[] = {
     &tests_cspec,

@@ -74,6 +74,20 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   if (MSVC)
     target_compile_options(${MCLIB_TARGET} PRIVATE /W4 /WX /std:clatest)
     target_link_libraries(${PROJECT_NAME} PRIVATE DbgHelp)
+
+    # Add a C++ project in MSVC for natvis support
+    add_library(Natvis_injector)
+    target_sources(Natvis_injector PRIVATE McLib.natvis)
+    set_target_properties(Natvis_injector PROPERTIES LINKER_LANGUAGE CXX)
+
+    # Testbed project for checking Natvis output
+    add_executable(Natvis_test)
+    set_property(TARGET Natvis_test PROPERTY C_STANDARD 23)
+    target_sources(Natvis_test PRIVATE tst/natvis.c)
+    target_link_libraries(Natvis_test PRIVATE McLib)
+    target_link_libraries(Natvis_test PRIVATE CSpec)
+    target_link_libraries(Natvis_test PRIVATE DbgHelp)
+    target_compile_options(Natvis_test PRIVATE /std:clatest)
   else()
     target_compile_options(${MCLIB_TARGET} PRIVATE
       -std=c2x -Wall -Wextra -Wpedantic -Werror -Wno-unused-value

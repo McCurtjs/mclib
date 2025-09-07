@@ -39,7 +39,7 @@
 //    later be freed via str_delete(). Any slice returned from a function using
 //    the String's range will have its lifecycle bound to the String, and will
 //    be invalid once the String object is deleted.
-typedef struct {
+typedef struct _opaque_String_base {
   union {
     const slice_t slice;
     struct {

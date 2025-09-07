@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="vec2i">
+    <DisplayString>vec2i: ❮ {x}, {y} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Order">2</Item>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="vec2">
+    <DisplayString>vec2: ❮ {x}, {y} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Order">2</Item>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="vec3i">
+    <DisplayString>vec3i: ❮ {x}, {y}, {z} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Order">3</Item>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+      <Item Name="Z">z</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="vec3b">
+    <DisplayString>vec3b: ❮ {(int)r}, {(int)g}, {(int)b} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Order">3</Item>
+      <Item Name="R">r,X</Item>
+      <Item Name="G">g,X</Item>
+      <Item Name="B">b,X</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="vec3">
+    <DisplayString>vec3: ❮ {x}, {y}, {z} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Order">3</Item>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+      <Item Name="Z">z</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="vec4b">
+    <DisplayString>vec4b: ❮ {(int)r}, {(int)g}, {(int)b}, {(int)a} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Order">4</Item>
+      <Item Name="R">r,X</Item>
+      <Item Name="G">g,X</Item>
+      <Item Name="B">b,X</Item>
+      <Item Name="A">a,X</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="vec4">
+    <DisplayString>vec4: ❮ {x}, {y}, {z}, {w} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Order">4</Item>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+      <Item Name="Z">z</Item>
+      <Item Name="W">w</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="mat4">
+    <DisplayString>mat4: 4 x 4</DisplayString>
+    <Expand HideRawView="true">
+      <ArrayItems>
+        <Size>4</Size>
+        <ValuePointer>col</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="slice_t">
+    <DisplayString Condition="size == 0">slice_t: length = 0 &lt;empty&gt;</DisplayString>
+    <DisplayString>slice_t: length = {size} {begin,[size]}</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Length">size</Item>
+      <Item Name="Value">begin,[size]</Item>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="_opaque_String_base">
+    <DisplayString Condition="size == 0">String: length = 0 &lt;empty&gt;</DisplayString>
+    <DisplayString>String: length = {size} "{begin,sb}"</DisplayString>
+    <Expand HideRawView="true">
+      <ExpandedItem Condition="this != 0">slice</ExpandedItem>
+      <Synthetic Condition="this == 0" Name="Length">
+        <DisplayString>0</DisplayString>
+      </Synthetic>
+      <Synthetic Condition="this == 0" Name="Value">
+        <DisplayString>&lt;empty&gt;</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="span_t">
+    <AlternativeType Name="span_byte_t"/>
+    <DisplayString> size_bytes = {(char*)end - (char*)begin}</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Bytes">(char*)end - (char*)begin</Item>
+      <ArrayItems>
+        <Size>(char*)end - (char*)begin</Size>
+        <ValuePointer>(char*)begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="span_slice_t">
+    <DisplayString> size = {(slice_t*)end - (slice_t*)begin}, bytes = {(char*)end - (char*)begin}</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Size">(slice_t*)end - (slice_t*)begin</Item>
+      <Item Name="Bytes">(char*)end - (char*)begin</Item>
+      <ArrayItems>
+        <Size>(slice_t*)end - (slice_t*)begin</Size>
+        <ValuePointer>(slice_t*)begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="_opaque_Array_base">
+    <AlternativeType Name="_opaque_Array_byte_base"/>
+    <DisplayString>Array: size = {size}</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Size">size</Item>
+      <Item Name="Capacity">capacity</Item>
+      <Item Name="Element Size">element_size</Item>
+      <Item Name="Bytes">size_bytes</Item>
+      <CustomListItems>
+        <Variable Name="i" InitialValue="0"/>
+        <Loop Condition="i &lt; size">
+          <If Condition="element_size == sizeof(char)">
+            <Item Name="[{i}]">*((char*)begin + i)</Item>
+          </If>
+          <Elseif Condition="element_size == sizeof(int)">
+            <Item Name="[{i}]">*((int*)begin + i)</Item>
+          </Elseif>
+          <Else>
+            <Item Name="[{i}]">((char*)begin + i * element_size),[element_size]</Item>
+          </Else>
+          <Exec>++i</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="_opaque_Array_slice_base">
+    <DisplayString>Array: size = {size}</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Size">size</Item>
+      <Item Name="Capacity">capacity</Item>
+      <Item Name="Element Size">element_size</Item>
+      <Item Name="Bytes">size_bytes</Item>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>(slice_t*)begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="_opaque_Map_base">
+    <DisplayString>Map: size = {size}</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Size">size</Item>
+      <Item Name="Capacity">capacity</Item>
+      <Item Name="Key Size">key_size</Item>
+      <Item Name="Element Size">element_size</Item>
+      <CustomListItems>
+        <Variable Name="map" InitialValue="(Map_Internal*)this"/>
+        <Variable Name="i" InitialValue="0"/>
+        <Variable Name="display_index" InitialValue="0"/>
+        <Variable Name="cell" InitialValue="(Map_Cell*)map->data->begin"/>
+        <Loop Condition="i &lt; capacity">
+          <If Condition="cell->hash">
+            <Item Name="┏━ .Hash">cell->hash,X</Item>
+
+            <!-- Print key -->
+            <If Condition="key_size == sizeof(int)">
+              <Item Name="┃ ╴.Key [{display_index}]">*(int*)&amp;cell->key_start</Item>
+            </If>
+            <Else>
+              <Item Name="┃ ╴.Key [{display_index}]">&amp;cell->key_start,[key_size]</Item>
+            </Else>
+
+            <!-- Print value -->
+            <If Condition="element_size == sizeof(int)">
+              <Item Name="┗━ .Value">*(int*)(&amp;cell->key_start + key_size)</Item>
+            </If>
+            <Else>
+              <Item Name="┗━ .Value">&amp;cell->key_start + key_size,[element_size]</Item>
+            </Else>
+
+            <Exec>++display_index</Exec>
+          </If>
+          <Exec>cell = (Map_Cell*)((char*)cell + map->cell_size)</Exec>
+          <Exec>++i</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

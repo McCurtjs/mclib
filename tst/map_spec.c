@@ -88,14 +88,18 @@ describe(map_ensure) {
 
   HMap map = map_new(int, int, NULL, NULL);
 
-  it("throws an assert when given a NULL key") {
-    expect(to_assert);
-    map_ensure(map, NULL);
-  }
+  context("Critical failure cases") {
 
-  it("throws an assert when given a NULL map") {
-    expect(to_assert);
-    map_ensure(NULL, &(int){ 1 });
+    it("throws an assert when given a NULL key") {
+      expect(to_assert);
+      map_ensure(map, NULL);
+    }
+
+    it("throws an assert when given a NULL map") {
+      expect(to_assert);
+      map_ensure(NULL, &(int){ 1 });
+    }
+
   }
 
   it("will initialize a default capacity of 8 when adding to an empty map") {

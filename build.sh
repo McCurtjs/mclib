@@ -6,6 +6,7 @@ build_type="Debug"
 skip_cmake=false
 args=""
 read_args=true
+open=false
 
 while [ "$read_args" == true ] && [ "$1" != "" ]; do
   case "$1" in
@@ -16,6 +17,7 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
       echo ": r release                              : release build (default is debug)"
       echo ": s skip-cmake                           : skips cmake"
       echo ": u update                               : update submodules"
+      echo ": o open                                 : opens the IDE for msvc target"
       echo ": -- <args>                              : passes remaining args to built exe (if any)"
       exit
       ;;
@@ -36,6 +38,9 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
     -u | --update)
       git submodule update --init # --recursive
       build_target="none"
+      ;;
+    -o | --open)
+      open=true
       ;;
     *)
       echo ": Unknown parameter: $1"
@@ -178,8 +183,9 @@ elif [ "$build_target" = "msvc" ]; then
 
   cmake -G "Visual Studio 17 2022" -S . -B build/msvc \
     -DCSPEC_MEMTEST=ON -DCSPEC_ASSERT=ON
-  if [ "$?" != "0" ]; then
-    exit
+  if [ "$?" == "0" ] && [ "$open" == true ]; then
+    echo ": Opening Visual Studio"
+    start ./build/msvc/McLib_specs.sln
   fi
 
 # No matching build types
