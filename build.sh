@@ -17,6 +17,7 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
       echo ": r release                              : release build (default is debug)"
       echo ": s skip-cmake                           : skips cmake"
       echo ": u update                               : update submodules"
+      echo ": p pull                                 : pull with submodules"
       echo ": o open                                 : opens the IDE for msvc target"
       echo ": -- <args>                              : passes remaining args to built exe (if any)"
       exit
@@ -37,6 +38,12 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
       ;;
     -u | --update)
       git submodule update --init --remote # --recursive
+      echo ": Updating with submodules"
+      build_target="none"
+      ;;
+    -p | --pull)
+      git pull --recurse-submodules
+      echo ": Pulling with submodules"
       build_target="none"
       ;;
     -o | --open)
