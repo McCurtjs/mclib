@@ -29,8 +29,6 @@
 #include <memory.h>
 #include <string.h>
 
-#include "types.h"
-
 // Disable annoying warnings in test when assert is replaced with cspec_assert.
 //    these warnings appear because intellisense doesn't recognize that
 //    cspec_assert blocks further execution.
@@ -368,7 +366,7 @@ bool array_contains(const Array a_in, const void* element) {
   assert(element);
   if (a->size <= 0) return false;
   for (index_t i = 0; i < a->size; ++i) {
-    if (memcmp(element, a->data + i * a->element_size, a->element_size)) {
+    if (!memcmp(element, a->data + i * a->element_size, a->element_size)) {
       return true;
     }
   }

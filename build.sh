@@ -36,7 +36,7 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
       skip_cmake=true
       ;;
     -u | --update)
-      git submodule update --init # --recursive
+      git submodule update --init --remote # --recursive
       build_target="none"
       ;;
     -o | --open)
