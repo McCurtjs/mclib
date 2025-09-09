@@ -4,16 +4,19 @@ build_target="clang"
 unit_test=false
 build_type="Debug"
 skip_cmake=false
+clean=false
+clean_only=false
 args=""
-read_args=true
 open=false
 
-while [ "$read_args" == true ] && [ "$1" != "" ]; do
+while [ "$1" != "" ]; do
   case "$1" in
     -h | --help)
       echo ": - -- Options"
       echo ": h help                                 : prints this message"
       echo ": t target  [clang|gcc|mingw|msvc]       : sets build target"
+      echo ": c clean                                : cleans build files for target"
+      echo ":   clean-only                           : cleans files for target then exits"
       echo ": r release                              : release build (default is debug)"
       echo ": s skip-cmake                           : skips cmake"
       echo ": u update                               : update submodules"
@@ -28,7 +31,14 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
       ;;
     -- )
       args="$@"
-      read_args=false
+      break 1
+      ;;
+    -c | --clean)
+      clean=true
+      clean_only=true
+      ;;
+    --rebuild)
+      clean=true
       ;;
     -r | --release)
       build_type="Release"
@@ -56,6 +66,16 @@ while [ "$read_args" == true ] && [ "$1" != "" ]; do
   esac
   shift 1
 done
+
+# Clean files from build target
+if [ $clean = true ]; then
+  echo ": Deleting build files for $build_target"
+  rm -rf ./build/$build_target
+  if [ $clean_only = true ]; then
+    exit
+  fi
+  echo ": Continuing build..."
+fi
 
 if [ "$build_target" == "none" ]; then
   exit
@@ -190,6 +210,7 @@ elif [ "$build_target" = "msvc" ]; then
 
   cmake -G "Visual Studio 17 2022" -S . -B build/msvc \
     -DCSPEC_MEMTEST=ON -DCSPEC_ASSERT=ON
+
   if [ "$?" == "0" ] && [ "$open" == true ]; then
     echo ": Opening Visual Studio"
     start ./build/msvc/McLib_specs.sln
