@@ -85,8 +85,8 @@
     <DisplayString Condition="size == 0">slice_t: length = 0 &lt;empty&gt;</DisplayString>
     <DisplayString>slice_t: length = {size} {begin,[size]}</DisplayString>
     <Expand HideRawView="true">
-      <Item Name="Length">size</Item>
       <Item Name="Value">begin,[size]</Item>
+      <Item Name="Length">size</Item>
       <ArrayItems>
         <Size>size</Size>
         <ValuePointer>begin</ValuePointer>
@@ -132,10 +132,11 @@
     </Expand>
   </Type>
 
-  <Type Name="_opaque_Array_base">
-    <AlternativeType Name="_opaque_Array_byte_base"/>
+  <Type Name="array_t">
+    <AlternativeType Name="array_byte_t"/>
     <DisplayString>Array: size = {size}</DisplayString>
     <Expand HideRawView="true">
+      <Item Condition="element_size == 1" Name="[String]">begin,[size]</Item>
       <Item Name="Size">size</Item>
       <Item Name="Capacity">capacity</Item>
       <Item Name="Element Size">element_size</Item>
@@ -158,7 +159,7 @@
     </Expand>
   </Type>
 
-  <Type Name="_opaque_Array_slice_base">
+  <Type Name="array_slice_t">
     <DisplayString>Array: size = {size}</DisplayString>
     <Expand HideRawView="true">
       <Item Name="Size">size</Item>

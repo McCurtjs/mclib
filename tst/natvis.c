@@ -63,6 +63,21 @@ int main(void) {
   array_write_back(arr, &(int){ 0xFFFFFFFF });
   array_write_back(arr, &(int){ 0xAAAAAAAA });
 
+  array_t local_array = arr_build(int);
+  array_write_back(&local_array, &ints[3]);
+  array_free(&local_array);
+
+  array_byte_t asdf = arr_byte_build_reserve(5);
+  arr_byte_write_back(&asdf, &(int){ 65 });
+  arr_byte_write_back(&asdf, &(int){ 66 });
+  arr_byte_write_back(&asdf, &(int){ 67 });
+  array_slice_t oisjdg = arr_slice_build();
+  arr_slice_write_back(&oisjdg, &slices[2]);
+  arr_slice_write_back(&oisjdg, &slices[2]);
+  arr_slice_write_back(&oisjdg, &slices[2]);
+  arr_slice_write_back(&oisjdg, &slices[2]);
+  arr_slice_write_back(&oisjdg, &slices[2]);
+
   Array arrv2 = array_new(vec2);
   array_write_back(arrv2, &v2zero);
   array_write_back(arrv2, &v2ones);

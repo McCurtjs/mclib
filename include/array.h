@@ -96,7 +96,7 @@
 #include "types.h"
 #include "span_base.h"
 
-typedef struct _opaque_Array_base {
+typedef struct array_t {
   union {
     span_t    const span;
     struct {
@@ -110,42 +110,47 @@ typedef struct _opaque_Array_base {
   index_t     const size;
   index_t     const size_bytes;
   //Allocator   const alloc;
-}*Array;
+} array_t, *Array;
 
-#define array_new(TYPE) iarray_new(sizeof(TYPE))
-#define array_new_reserve(TYPE, capacity) \
+#define   array_new(TYPE) iarray_new(sizeof(TYPE))
+#define   array_new_reserve(TYPE, capacity) \
                           iarray_new_reserve(sizeof(TYPE), capacity)
-Array  iarray_new(index_t elemenet_size);
-Array  iarray_new_reserve(index_t element_size, index_t capacity);
-Array   array_copy(Array to_copy);
-Array   array_copy_span(span_t to_copy, index_t element_size);
+#define   arr_build(TYPE) iarr_build(sizeof(TYPE))
+#define   arr_build_reserve(TYPE, capacity) \
+                          iarr_build_reserve(sizeof(TYPE), capacity)
+Array    iarray_new(index_t elemenet_size);
+Array    iarray_new_reserve(index_t element_size, index_t capacity);
+array_t  iarr_build(index_t element_size);
+array_t  iarr_build_reserve(index_t element_size, index_t capacity);
+Array     array_copy(Array to_copy);
+Array     array_copy_span(span_t to_copy, index_t element_size);
 //Array   array_copy_span_deep(span_t to_copy, void (*copy_fn)(void* dst, void* src));
-void    array_reserve(Array array, index_t capacity);
-void    array_truncate(Array array, index_t capacity);
-void    array_trim(Array array);
-void    array_clear(Array array);
-void    array_free(Array array);
-void    array_delete(Array* array);
-span_t  array_release(Array* array);
-index_t array_write(Array array, index_t position, const void* in_element); // no size modify (bool)
-index_t array_write_back(Array array, const void* in_element); // remove this
+void      array_reserve(Array array, index_t capacity);
+void      array_truncate(Array array, index_t capacity);
+void      array_trim(Array array);
+void      array_clear(Array array);
+void      array_free(Array array);
+void      array_delete(Array* array);
+span_t    array_release(Array* array);
+index_t   array_write(Array array, index_t position, const void* in_element); // no size modify (bool)
+index_t   array_write_back(Array array, const void* in_element); // remove this
 //index_t array_insert(Array array, index_t position, const void* in_element);
 //index_t array_push_back(Array array, const void* in_element);
-void*   array_emplace(Array array, index_t position);
-void*   array_emplace_back(Array array);
-span_t  array_emplace_range(Array array, index_t position, index_t count);
-span_t  array_emplace_back_range(Array array, index_t count);
-index_t array_remove(Array array, index_t position);
-index_t array_remove_range(Array array, index_t position, index_t count);
-index_t array_remove_unstable(Array array, index_t position);
-index_t array_pop_back(Array array);
-void*   array_ref(Array array, index_t index);
-void*   array_ref_front(Array array);
-void*   array_ref_back(Array array);
-bool    array_read(const Array array, index_t index, void* out_element);
-bool    array_read_front(const Array array, void* out_element);
-bool    array_read_back(const Array array, void* out_element);
-bool    array_contains(const Array array, const void* to_find);
+void*     array_emplace(Array array, index_t position);
+void*     array_emplace_back(Array array);
+span_t    array_emplace_range(Array array, index_t position, index_t count);
+span_t    array_emplace_back_range(Array array, index_t count);
+index_t   array_remove(Array array, index_t position);
+index_t   array_remove_range(Array array, index_t position, index_t count);
+index_t   array_remove_unstable(Array array, index_t position);
+index_t   array_pop_back(Array array);
+void*     array_ref(Array array, index_t index);
+void*     array_ref_front(Array array);
+void*     array_ref_back(Array array);
+bool      array_read(const Array array, index_t index, void* out_element);
+bool      array_read_front(const Array array, void* out_element);
+bool      array_read_back(const Array array, void* out_element);
+bool      array_contains(const Array array, const void* to_find);
 //void    array_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
 //void    array_ref_search
 //void*   array_ref_find(Array array, bool (*predicate)(const void* el));
@@ -198,6 +203,7 @@ bool    array_contains(const Array array, const void* to_find);
 #endif
 
 #define _arr_type MACRO_CONCAT(Array_, _con_name)
+#define _arr_local_type MACRO_CONCAT3(array_, _con_name, _t)
 #define _prefix(_FN) MACRO_CONCAT3(arr_, _con_name, _FN)
 #define _span_type MACRO_CONCAT3(span_, _con_name, _t)
 #define _span_prefix(_FN) MACRO_CONCAT3(span_, _con_name, _FN)
@@ -205,7 +211,7 @@ bool    array_contains(const Array array, const void* to_find);
 // Annoyingly have to redefine the struct to match - if we just typedef the
 //    pointer type, it'll happily accept either as equivalent, but the whole
 //    point is to prompt type errors.
-typedef struct MACRO_CONCAT3(_opaque_, _arr_type, _base) {
+typedef struct _arr_local_type {
   union {
     _span_type span;
     struct {
@@ -222,7 +228,7 @@ typedef struct MACRO_CONCAT3(_opaque_, _arr_type, _base) {
   index_t const capacity;
   index_t const size;
   index_t const size_bytes;
-}* _arr_type;
+} _arr_local_type, *_arr_type;
 
 // \brief Initializes a new array of the given type. Allocates no new space for
 //    the array contents until an item is added.
@@ -243,6 +249,41 @@ static inline _arr_type _prefix(_new)
 static inline _arr_type _prefix(_new_reserve)
 (index_t capacity) {
   return (_arr_type)array_new_reserve(con_type, capacity);
+}
+
+// \brief Initializes an array of the given type in local storage. The contents
+//    of the array will still be on the heap, but the header will be stored on
+//    the stack.
+//
+// \brief When using these types, pass the `array_t` header to the `arr_`
+//    functions using `&the_array`.
+//
+// \brief Note: when finished with the array, to deallocate pass its address to
+//    `arr_free` rather than trying to pass it to `arr_delete`.
+//
+// \returns An empty dynamic array header that can be used with the array
+//    functions by passing its address (ie, `&my_arr`).
+static inline _arr_local_type _prefix(_build)
+(void) {
+  array_t ret = arr_build(con_type);
+  return *(_arr_local_type*)(&ret);
+}
+
+// \brief Initializes an array of the given type in local storage. Pre-allocates
+//    heap space for N elements to be added without needing to expand the array.
+//
+//
+// \brief Note: when finished with the array, to deallocate pass its address to
+//    `arr_free` rather than trying to pass it to `arr_delete`.
+//
+// \param capacity - the number of elements to reserve space for
+//
+// \returns An empty dynamic array header that can be used with the array
+//    functions by passing its address (ie, `&my_arr`).
+static inline _arr_local_type _prefix(_build_reserve)
+(index_t capacity) {
+  array_t ret = arr_build_reserve(con_type, capacity);
+  return *(_arr_local_type*)(&ret);
 }
 
 // \brief Reserves space in the array so that it can contain at least N
@@ -583,6 +624,7 @@ static inline index_t _prefix(_find)
 
 #undef _con_name
 #undef _arr_type
+#undef _arr_local_type
 #undef _prefix
 #undef _span_type
 #undef _span_prefix

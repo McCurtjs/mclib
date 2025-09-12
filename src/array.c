@@ -95,6 +95,34 @@ Array iarray_new_reserve(index_t element_size, index_t capacity) {
   return (Array)ret;
 }
 
+array_t iarr_build(index_t element_size) {
+  return (array_t) {
+    .begin = NULL,
+    .end = NULL,
+    .element_size = element_size,
+    .capacity = 0,
+    .size = 0,
+    .size_bytes = 0,
+  };
+}
+
+array_t iarr_build_reserve(index_t element_size, index_t capacity) {
+  void* data = NULL;
+  if (capacity > 0) {
+    data = malloc(element_size * capacity);
+    assert(data);
+  }
+
+  return (array_t) {
+    .begin = data,
+    .end = data,
+    .element_size = element_size,
+    .capacity = MAX(capacity, 0),
+    .size = 0,
+    .size_bytes = 0,
+  };
+}
+
 Array array_copy(Array a_in) {
   DARRAY_INTERNAL;
   return array_copy_span(a->span, a->element_size);
