@@ -23,7 +23,6 @@
 */
 
 #include "map.h"
-#include "array.h"
 #include "utility.h" // msb, hash
 
 #include <stdlib.h> // malloc/free
@@ -79,7 +78,7 @@ typedef struct Map_Internal {
 
   Map_Cell* free_list;
 
-  Array data;
+  byte* data;
   // Array_Internal size space to avoid extra jump?
 } Map_Internal;
 
@@ -180,16 +179,8 @@ static Map_Cell* _cell_take_from_free_list(Map_Internal* m) {
   return ret;
 }
 
-// Helper to initialize an empty map with valid free list.
-static void _map_initialize(Map_Internal* m, index_t new_size) {
-  index_t capacity = msb(new_size) << 1;
-  m->data = iarray_new_reserve(m->cell_size, MAX(capacity, MIN_CAPACITY));
-  m->size = 0;
-  m->capacity = m->data->capacity;
-
-  array_emplace_back_range(m->data, m->capacity);
-
-  m->free_list = m->data->begin;
+static void _map_clear(Map_Internal* m) {
+  m->free_list = (Map_Cell*)m->data;
 
   // Link the map slots together to create the free list.
   Map_Cell* cell = m->free_list;
@@ -209,12 +200,21 @@ static void _map_initialize(Map_Internal* m, index_t new_size) {
   cell->free_next = NULL;
 }
 
+// Helper to initialize an empty map with valid free list.
+static void _map_initialize(Map_Internal* m, index_t new_size) {
+  m->capacity = MAX(msb(new_size) << 1, MIN_CAPACITY);
+  m->size = 0;
+  m->data = malloc(m->cell_size * m->capacity);
+  assert(m->data);
+  _map_clear(m);
+}
+
 // Helper to get the expected slot for the given hash value.
 static Map_Cell* _map_get_slot(Map_Internal* m, hash_t hash) {
   assert(hash); // can't be 0
-  if (m->capacity == 0) return NULL;
-  hash_t index = hash & (m->capacity - 1);
-  Map_Cell* cell = array_ref(m->data, index);
+  if (m->capacity <= 0) return NULL;
+  hash_t index = hash & (m->capacity - 1); // 0x010000 -> 0x001111
+  Map_Cell* cell = (Map_Cell*)(m->data + m->cell_size * index);
   return cell;
 }
 
@@ -228,15 +228,13 @@ static Map_Cell* _map_get_slot_init(Map_Internal* m, hash_t hash) {
 void map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash);
 
 // Helper to copy the contents of an old map into a new map.
-static void _map_clone(Map_Internal* m, span_t old_data) {
-  Map_Cell* cell = old_data.begin;
+static void _map_clone(Map_Internal* m, void* old_data, index_t old_capacity) {
+  Map_Cell* cell = old_data;
 
-  while (cell < (Map_Cell*)old_data.end) {
-
+  for (index_t i = 0; i < old_capacity; ++i) {
     if (cell->hash != 0) {
       void* key = _cell_key(cell);
       void* value = _cell_value(m, cell);
-
       map_write_hash((HMap)m, key, value, cell->hash);
     }
 
@@ -260,10 +258,11 @@ static bool _map_check_expand(Map_Internal* m, index_t new_size) {
     return TRUE;
   }
 
-  span_t old_data = array_release(&m->data);
+  byte* old_data = m->data;
+  index_t old_capacity = m->capacity;
   _map_initialize(m, MAX(new_size, m->capacity));
-  _map_clone(m, old_data);
-  free(old_data.begin);
+  _map_clone(m, old_data, old_capacity);
+  free(old_data);
   return TRUE;
 }
 
@@ -296,7 +295,6 @@ HMap imap_new
 
 void map_callback_dtor(HMap m_in, delete_fn del_key, delete_fn del_value) {
   HMAP_INTERNAL;
-  assert(!m->data);
   m->delete_key = del_key;
   m->delete_value = del_value;
 }
@@ -316,34 +314,35 @@ void map_reserve(HMap m_in, index_t capacity) {
     _map_initialize(m, capacity);
   }
   else {
-    span_t old_data = array_release(&m->data);
+    void* old_data = m->data;
+    index_t old_capacity = m->capacity;
     _map_initialize(m, capacity);
-    _map_clone(m, old_data);
-    free(old_data.begin);
+    _map_clone(m, old_data, old_capacity);
+    free(old_data);
   }
 }
 
 void map_delete(HMap* m_in) {
   if (!m_in || !*m_in) return;
-  Map_Internal* m = (Map_Internal*)*m_in;
-  array_delete(&m->data);
+  Map_Internal* m = *(Map_Internal**)m_in;
+  free(m->data);
   free(m);
   *m_in = NULL;
 }
 
 void map_clear(HMap m_in) {
   HMAP_INTERNAL;
-  array_clear(m->data);
-  _map_initialize(m, m->capacity);
+  _map_clear(m);
   m->size = 0;
 }
 
 void map_free(HMap m_in) {
   HMAP_INTERNAL;
-  array_delete(&m->data);
+  free(m->data);
   m->size = 0;
   m->capacity = 0;
   m->free_list = NULL;
+  m->data = NULL;
 }
 
 ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {

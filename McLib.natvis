@@ -183,7 +183,7 @@
         <Variable Name="map" InitialValue="(Map_Internal*)this"/>
         <Variable Name="i" InitialValue="0"/>
         <Variable Name="display_index" InitialValue="0"/>
-        <Variable Name="cell" InitialValue="(Map_Cell*)map->data->begin"/>
+        <Variable Name="cell" InitialValue="(Map_Cell*)map->data"/>
         <Loop Condition="i &lt; capacity">
           <If Condition="cell->hash">
             <Item Name="┏━ .Hash">cell->hash,X</Item>
