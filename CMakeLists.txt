@@ -3,7 +3,7 @@ option(CSPEC_ASSERT "Enable assert override for spec build" OFF)
 
 add_library(McLib)
 set_property(TARGET McLib PROPERTY C_STANDARD 23)
-target_include_directories(McLib PUBLIC ./include)
+target_include_directories(McLib PUBLIC include)
 target_sources(McLib PRIVATE
   src/array.c
   src/map.c
@@ -32,7 +32,7 @@ target_sources(McLib PRIVATE
 # Include Murmur3 library for default hashing solution
 add_library(Murmur3)
 set_property(TARGET Murmur3 PROPERTY C_STANDARD 23)
-target_include_directories(Murmur3 PUBLIC ./lib/murmur3)
+target_include_directories(Murmur3 PUBLIC lib/murmur3)
 target_sources(Murmur3 PRIVATE
   lib/murmur3/murmur3.c
   lib/murmur3/murmur3.h
