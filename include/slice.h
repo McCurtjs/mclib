@@ -62,6 +62,20 @@ extern const slice_t slice_true;
 extern const slice_t slice_false;
 
 ////////////////////////////////////////////////////////////////////////////////
+// User-provided hook for output
+////////////////////////////////////////////////////////////////////////////////
+
+// \brief The base print function for McLib. This can be pointed to a custom
+//    externally provided printer instead depending on context.
+//
+// \brief A default printer is provided using printf unless the build is set to
+//    WASM or if MCLIB_NO_STDIO is defined.
+//
+// \param str - the slice to print. May not be null-terminated, but should only
+//    print str.length characters in the string.
+extern void (*slice_write)(slice_t str);
+
+////////////////////////////////////////////////////////////////////////////////
 // Construction
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -83,7 +97,6 @@ extern const slice_t slice_false;
 // \param NAME - the name symbol for the static variable
 //
 // \param C_STR_LITERAL - the compile-time constant string literal value.
-//
 #define slice_static(NAME, C_STR_LITERAL) static slice_t NAME = {             \
   slice_body(C_STR_LITERAL)                                                   \
 }                                                                             //
@@ -105,7 +118,6 @@ static inline slice_t slice_build(const char* c_str, index_t length) {
 static inline slice_t slice_from_slice(slice_t s) { return s; }
 
 static inline index_t slice_size(slice_t s) { return s.size; }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Slice functions
@@ -139,7 +151,6 @@ slice_t     slice_trim_end(slice_t str);
 //Array_slice slice_split(slice_t str, slice_t del);
 //Array     slice_tokenize(slice_t str, const slice_t[] tokens);
 //Array     slice_parenthetize(slice_t str); // block out segments by parens? ([{}])
-void        slice_write(slice_t str);
 hash_t      slice_hash(slice_t str);
 
 int         slice_compare_vptr(const void* lhs, const void* rhs);

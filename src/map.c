@@ -258,6 +258,8 @@ static bool _map_check_expand(Map_Internal* m, index_t new_size) {
     return TRUE;
   }
 
+  // TODO: If we're set to not expand, don't
+
   byte* old_data = m->data;
   index_t old_capacity = m->capacity;
   _map_initialize(m, MAX(new_size, m->capacity));
@@ -362,6 +364,11 @@ ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
         .is_new = FALSE,
       };
     }
+  }
+
+  // TODO: if the map capacity is locked, check if we've reached capacity
+  if (/*locked && */ m->size >= m->capacity) {
+    return (ensure_t) { .value = NULL, .is_new = FALSE };
   }
 
   // if our key is not already in the map, check expansion and update slot

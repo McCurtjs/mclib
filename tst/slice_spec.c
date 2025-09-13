@@ -439,7 +439,7 @@ describe(slice_index_of) {
   }
 
   it("looping end-pos can be used to track through the string") {
-    index_s tracker = 0;
+    index_t tracker = 0;
 
     tracker = slice_index_of(str, S("i"), tracker);
     slice_t result = islice_substring(str, tracker, str.size);

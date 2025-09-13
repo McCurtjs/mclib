@@ -153,7 +153,7 @@ hash_t hash(const void* src, index_t size) {
   MurmurHash3_x64_128(src, (int)size, 0, &output);
   ret = *(hash_t*)output;
 #else
-  MurmurHash3_x86_32(key, m->key_size, 0, &ret);
+  MurmurHash3_x86_32(src, (int)size, 0, &ret);
 #endif
   return ret;
 }

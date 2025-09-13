@@ -384,11 +384,25 @@ Array_slice slice_split(slice_t str, slice_t del) {
   return ret;
 }
 
+#if defined(__WASM__) || defined(MCLIB_NO_STDIO)
+
+// No default printer for WASM or when requested to be disabled.
+static void _slice_write_default(slice_t str) {
+  PARAM_UNUSED(str);
+}
+
+#else
+
 #include <stdio.h> // printf, fflush
 
-void slice_write(slice_t str) {
+// Default output method for printing string slices with printf.
+static void _slice_write_default(slice_t str) {
   SLICE_VALID(str);
   uint length = (uint)str.size;
   printf("%.*s\n", length, str.begin);
   fflush(stdout); // SDL Window blocks console output for some reason
 }
+
+#endif
+
+void (*slice_write)(slice_t str) = _slice_write_default;
