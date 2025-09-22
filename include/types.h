@@ -70,6 +70,9 @@ typedef size_t    hash_t;
 typedef size_t    jshandle;
 typedef ptrdiff_t index_t;
 
+// Common pointer types
+typedef struct _opaque_String_base* String;
+
 // Shouldn't be necessary with C23?
 #include <stdbool.h>
 

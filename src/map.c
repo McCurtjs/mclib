@@ -166,7 +166,7 @@ static void _cell_move_to_free_list(Map_Internal* m, Map_Cell* cell) {
   cell->hash = 0;
   cell->free_prev = NULL;
   cell->free_next = m->free_list;
-  cell->free_next->free_prev = cell;
+  m->free_list->free_prev = cell;
   m->free_list = cell;
 }
 
@@ -248,7 +248,7 @@ static bool _map_check_expand(Map_Internal* m, index_t new_size) {
 
   // Don't need to expand if the new size is under 75% of capacity
   if (new_size < cap75) {
-    return TRUE;
+    return FALSE;
   }
 
   // Handle the case for our first allocation
@@ -382,6 +382,7 @@ ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
 
     if (slot != cell) {
       _cell_move(m, _cell_take_from_free_list(m), slot);
+      slot->bucket_next = slot;
     }
 
     // the other cell does belong here, so add the new key to its bucket
@@ -498,7 +499,6 @@ bool map_remove_hash(HMap m_in, const void* key, hash_t hash) {
   else if (cell == slot) {
     Map_Cell* next = slot->bucket_next;
     _cell_move(m, slot, next);
-    slot->bucket_next = next->bucket_next;
     _cell_move_to_free_list(m, next);
   }
 

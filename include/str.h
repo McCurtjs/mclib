@@ -61,7 +61,6 @@ typedef struct _opaque_String_base {
 )(str)                            //
 
 extern const String str_empty;
-extern const String str_va_end;
 extern const String str_true;
 extern const String str_false;
 
@@ -333,6 +332,7 @@ static inline _str_fmtArg_t _sarg_arg(_str_fmtArg_t e) {
   int:                _sarg_int,        \
   long long:          _sarg_int,        \
   unsigned int:       _sarg_unsigned,   \
+  unsigned long:      _sarg_unsigned,   \
   unsigned long long: _sarg_unsigned,   \
   double:             _sarg_float,      \
   _str_fmtArg_t:      _sarg_arg         \

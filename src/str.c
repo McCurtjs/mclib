@@ -49,22 +49,9 @@ typedef struct {
   char head;
 } String_Internal;
 
-extern char slice_constants[];
-
-static struct slice_t str_constants[] = {
-  { .begin = &slice_constants[0], .size = 0 },
-  { .begin = &slice_constants[0], .size = 0 },
-  { .begin = &slice_constants[1], .size = 4 },
-  { .begin = &slice_constants[6], .size = 5 },
-};
-
-static String const str_constants_begin = (String)&str_constants[0];
-static String const str_constants_end = (String)&str_constants[0] + ARRAY_COUNT(str_constants);
-
-const String str_empty  = (String)&str_constants[0];
-const String str_va_end = (String)&str_constants[1];
-const String str_true   = (String)&str_constants[2];
-const String str_false  = (String)&str_constants[3];
+const String str_empty  = (String)&slice_empty;
+const String str_true   = (String)&slice_true;
+const String str_false  = (String)&slice_false;
 
 static String_Internal* str_new_internal(index_t length) {
   if (length <= 0) return NULL; // prompt callers to return empty string
@@ -93,7 +80,7 @@ inline static String str_terminate(String_Internal* str) {
 #endif
 
 inline static bool str_is_literal(String str) {
-  return (str >= str_constants_begin && str < str_constants_end);
+  return str == str_empty || str == str_true || str == str_false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

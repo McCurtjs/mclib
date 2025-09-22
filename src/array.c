@@ -257,7 +257,7 @@ void* array_emplace_back(Array a_in) {
 span_t array_emplace_range(Array a_in, index_t position, index_t count) {
   DARRAY_INTERNAL;
   assert(position >= 0);
-  assert(count > 0);
+  assert(count >= 0);
   if (position >= a->size) {
     return array_emplace_back_range(a_in, count);
   }
@@ -278,7 +278,7 @@ span_t array_emplace_range(Array a_in, index_t position, index_t count) {
 
 span_t array_emplace_back_range(Array a_in, index_t count) {
   DARRAY_INTERNAL;
-  assert(count > 0);
+  assert(count >= 0);
   if (a->size + count >= a->capacity) {
     array_reserve(a_in, a->size + count);
   }

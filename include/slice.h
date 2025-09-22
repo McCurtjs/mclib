@@ -131,6 +131,7 @@ bool        slice_contains(slice_t str, slice_t check);
 bool        slice_contains_char(slice_t str, char check);
 bool        slice_is_empty(slice_t str);
 //bool      slice_contains_any(slice_t str, slice_t check_chars);
+
 bool        slice_to_bool(slice_t str, bool* out_bool);
 bool        slice_to_int(slice_t str, int* out_int);
 bool        slice_to_long(slice_t str, index_t* out_int);
@@ -144,6 +145,7 @@ slice_t     slice_token(slice_t str, slice_t del_chrs, index_t* pos);
 //index_t   slice_index_of_last(slice_t str, slice_t find, index_t from);
 //index_t   slice_find_last(slice_t str, slice_t to_find);
 //Array     slice_match(slice_t str, slice_t regex);
+
 slice_t    islice_substring(slice_t str, index_t start, index_t end);
 slice_t     slice_trim(slice_t str);
 slice_t     slice_trim_start(slice_t str);
@@ -151,6 +153,7 @@ slice_t     slice_trim_end(slice_t str);
 //Array_slice slice_split(slice_t str, slice_t del);
 //Array     slice_tokenize(slice_t str, const slice_t[] tokens);
 //Array     slice_parenthetize(slice_t str); // block out segments by parens? ([{}])
+
 hash_t      slice_hash(slice_t str);
 
 int         slice_compare_vptr(const void* lhs, const void* rhs);
