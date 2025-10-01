@@ -43,5 +43,3 @@ slice_t span_byte_to_slice(span_byte_t span);
 
 # endif
 #endif
-
-

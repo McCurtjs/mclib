@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -32,5 +32,12 @@
 #include "span.h"
 #undef con_type
 #undef con_prefix
+
+bool            slice_contains_any(slice_t str, span_slice_t any);
+bool            slice_find_any(slice_t str, span_slice_t any, slice_t* out_slice);
+bool            slice_find_last_any(slice_t str, span_slice_t any, slice_t* out_slice);
+index_t         slice_index_of_any(slice_t str, span_slice_t any);
+index_t         slice_index_of_last_any(slice_t str, span_slice_t any);
+token_result_t  slice_token_any(slice_t str, span_slice_t any, index_t* pos);
 
 #endif

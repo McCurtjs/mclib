@@ -27,7 +27,6 @@
 
 #include "types.h"
 
-#include "slice.h"
 #include "array_slice.h"
 
 #include <stdarg.h>
@@ -52,6 +51,23 @@ typedef struct _opaque_String_base {
   };
 }* String;
 
+////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////
+
+// \brief String constant for an empty string
+extern const String str_empty;
+
+// \brief String constant for a "true" string
+extern const String str_true;
+
+// \brief String constant for a "false" string
+extern const String str_false;
+
+////////////////////////////////////////////////////////////////////////////////
+// Helper tools for type coalescing and variadic formgat arguments
+////////////////////////////////////////////////////////////////////////////////
+
 // \brief Macro to coalesce a String, slice, or char* into a slice.
 #define _s2r(str) _Generic((str), \
   slice_t:      slice_from_slice, \
@@ -60,13 +76,27 @@ typedef struct _opaque_String_base {
   const char*:  slice_from_c_str  \
 )(str)                            //
 
-extern const String str_empty;
-extern const String str_true;
-extern const String str_false;
+typedef enum _str_argtype_t {
+  _str_arg_end,
+  _str_arg_slice,
+  _str_arg_span,
+  _str_arg_int,
+  _str_arg_float
+} _str_argtype_t;
 
-static inline slice_t slice_from_str(String s) { return s->slice; }
+typedef struct _str_arg_t {
+  _str_argtype_t type;
+  union {
+    slice_t slice;
+    span_slice_t span;
+    ptrdiff_t i;
+    double f;
+  };
+} _str_arg_t;
 
-#define str_write(str)              slice_write(_s2r(str))
+////////////////////////////////////////////////////////////////////////////////
+// Construction and basic type serialization
+////////////////////////////////////////////////////////////////////////////////
 
 #define str_copy(str)               istr_copy(_s2r(str))
 String  str_build(const char* c_str, index_t length);
@@ -76,11 +106,15 @@ String  str_from_float(float f);
 
 void    str_delete(String* str);
 
-#define str_eq(lhs, rhs)            slice_eq(_s2r(lhs), _s2r(rhs))
-#define str_starts_with(str, start) slice_starts_with(_s2r(str), _s2r(start))
-#define str_ends_with(str, end)     slice_ends_with(_s2r(str), _s2r(end))
-#define str_contains(str, check)    slice_contains(_s2r(str), _s2r(check))
-bool    str_is_null_or_empty(const String str);
+static inline slice_t slice_from_str(String s) { return s->slice; }
+
+// \brief Returns size of a string. Equivalent to str->size, but can also be
+//    applied to slices and c-strings.
+#define str_size(str)               slice_size(_s2r(str))
+
+////////////////////////////////////////////////////////////////////////////////
+// Usage
+////////////////////////////////////////////////////////////////////////////////
 
 #define str_to_bool(str, out)       slice_to_bool(_s2r(str), out)
 #define str_to_int(str, out)        slice_to_int(_s2r(str), out)
@@ -88,18 +122,23 @@ bool    str_is_null_or_empty(const String str);
 #define str_to_float(str, out)      slice_to_float(_s2r(str), out)
 #define str_to_double(str, out)     slice_to_double(_s2r(str), out)
 
-// \brief prefer s->size, but can be useful in cases where a function is needed.
-//
-// \returns s->size
-#define str_size(str)               slice_size(_s2r(str))
+#define str_compare(lhs, rhs)       slice_compare(_s2r(lhs), _s2r(rhs))
+#define str_eq(lhs, rhs)            slice_eq(_s2r(lhs), _s2r(rhs))
+#define str_starts_with(str, start) slice_starts_with(_s2r(str), _s2r(start))
+#define str_ends_with(str, end)     slice_ends_with(_s2r(str), _s2r(end))
+#define str_contains(str, check)    slice_contains(_s2r(str), _s2r(check))
+#define str_contains_char(s, chs)   slice_contains_char(_s2r(s), _s2r(chs))
+bool    str_is_null_or_empty(const String str);
+
+#define str_find(str, target, out)  slice_find_str(_s2r(str), _s2r(target))
+#define str_find_last(str, t, out)  slice_find_last_str(_s2r(str), _s2r(t), out))
 
 // \brief Gets the start of the next instance of to_find in str, starting
 //    at from_pos.
 //
 // \returns
 //    The index in str of the match, or str.size if none is present.
-#define str_index_of(str, to_find, from_pos) \
-                    slice_index_of(_s2r(str), _s2r(to_find), from_pos)
+#define str_index_of(str, target)   slice_index_of_str(_s2r(str), _s2r(target))
 
 // \brief Gets the start of the next instance of to_find in str, starting
 //    at from_pos.
@@ -117,11 +156,14 @@ bool    str_is_null_or_empty(const String str);
 //
 // \returns
 //    A slice containing the token
-#define str_token(str, to_find, pos) \
-                    slice_token(_s2r(str), _s2r(to_find), pos)
+#define str_token(str, delim, pos)  slice_token_str(_s2r(str), _s2r(delim), pos)
 
-// \brief Alias for str_index_of(str, to_find, 0)
-#define str_find(str, to_find)      slice_find(_s2r(str), _s2r(to_find))
+#define str_token_char(str, delims, pos) \
+                    slice_token_char(_s2r(str), _s2r(delims), pos)
+
+////////////////////////////////////////////////////////////////////////////////
+// Usage
+////////////////////////////////////////////////////////////////////////////////
 
 // \brief `slice str_substring(str, start, ?end)`
 // \brief Gets a substring as a slice within the input string or slice.
@@ -144,9 +186,18 @@ bool    str_is_null_or_empty(const String str);
 #define str_substring(str, ...)     slice_substring(_s2r(str), __VA_ARGS__)
 #define str_slice(str, ...)         slice_substring(_s2r(str), __VA_ARGS__)
 
+// \brief Returns a slice with leading and trailing whitespace omitted.
 #define str_trim(str)               slice_trim(_s2r(str))
+
+// \brief Returns a slice with leading whitespace omitted.
 #define str_trim_start(str)         slice_trim_start(_s2r(str))
+
+// \brief Returns a slice with trailing whitespace omitted.
 #define str_trim_end(str)           slice_trim_end(_s2r(str))
+
+////////////////////////////////////////////////////////////////////////////////
+// Usage
+////////////////////////////////////////////////////////////////////////////////
 
 // \brief Splits the string into an array of substrings based on the delimiter.
 //
@@ -157,7 +208,20 @@ bool    str_is_null_or_empty(const String str);
 //
 // \returns An array of slices whose lifetimes are bound to str.
 //    The Array must be deleted by the user via arr_str_delete(&arr).
-#define str_split(str, del)         slice_split(_s2r(str), _s2r(del))
+#define str_split(str, ...) istr_split(_s2r(str),   \
+  (_str_arg_t[]) { _va_exp(_spa, __VA_ARGS__) },    \
+  _va_count(__VA_ARGS__)                            \
+)                                                   //
+
+// \brief Joins the provided strings, characters, and slices into one string.
+//
+// \param args - variadic set of strings, slices, chars, and slice spans.
+//
+// \returns a new string, which must be deleted later by the caller.
+#define str_concat(...) istr_concat(                \
+  (_str_arg_t[]) { _va_exp(_spa, __VA_ARGS__) },    \
+  _va_count(__VA_ARGS__)                            \
+)                                                   //
 
 // \brief Joins an array of string slices into a new string, each separated by a
 //    given delimiter.
@@ -165,15 +229,24 @@ bool    str_is_null_or_empty(const String str);
 // \param del - the delimiter to insert between each string in the array.
 //   ex: (" + ", ["A", "B"]) will result in "A + B"
 //
-// \param strings - The array of string slices to join.
+// \param args - variadic set of strings, slices, chars, and slice spans.
 //
 // \returns a new string, which must be deleted later by the caller.
-#define str_join(del, strings)      istr_join(_s2r(del), strings)
-#define str_concat(left, right)     istr_concat(_s2r(left), _s2r(right))
+#define str_join(del, ...) istr_join(_s2r(del),     \
+  (_str_arg_t[]) { _va_exp(_spa, __VA_ARGS__) },    \
+  _va_count(__VA_ARGS__)                            \
+)                                                   //
+
 #define str_replace(str, tok, w)    istr_replace(_s2r(str), _s2r(tok), _s2r(w))
 #define str_replace_all(s, t, w)    istr_replace_all(_s2r(s), _s2r(t), _s2r(w))
 #define str_prepend(str, length, c) istr_prepend(_s2r(str), length, c)
 #define str_append(str, length, c)  istr_append(_s2r(str), length, c)
+
+////////////////////////////////////////////////////////////////////////////////
+// Output
+////////////////////////////////////////////////////////////////////////////////
+
+#define str_write(str)              slice_write(_s2r(str))
 
 // \brief `String str_format(fmt, ...)`
 // \brief Builds a new string from a format string and variable arguments.
@@ -223,6 +296,10 @@ bool    str_is_null_or_empty(const String str);
 //String str_pad_left(slice_t str, index_t length, char c);
 //String str_pad_right(slice_t str, index_t length, char c);
 
+////////////////////////////////////////////////////////////////////////////////
+// Internal string functions for slice input
+////////////////////////////////////////////////////////////////////////////////
+
 static inline index_t istr_size(slice_t s) { return s.size; }
 static inline slice_t _str_slice_r(slice_t slice) { return slice; }
 static inline slice_t _str_slice_st(const String str) {
@@ -231,19 +308,15 @@ static inline slice_t _str_slice_st(const String str) {
 }
 
 String      istr_copy(slice_t str);
-//String    istr_to_upper(slice_t str);
-//String    istr_to_lower(slice_t str);
-//String    istr_to_title(slice_t str);
-String      istr_concat(slice_t left, slice_t right);
+String      istr_concat(_str_arg_t args[], index_t count);
+String      istr_join(slice_t delim, _str_arg_t args[], index_t count);
 String      istr_prepend(slice_t str, index_t length, char c);
 String      istr_append(slice_t str, index_t length, char c);
 String      istr_format(slice_t fmt, ...);
+//String    istr_to_upper(slice_t str);
+//String    istr_to_lower(slice_t str);
 
-// Should be moved below to only be included if both headers are present.
-// But also should be removed in favor of a variadic version that works more
-//    like str_format and uses the same functions to process types including
-//    Array_slice for improved flexibility.
-String      istr_join(slice_t deliminter, const Array_slice strings);
+Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count);
 
 //bool      istr_contains_any(slice_t str, slice_t check_chars);
 //index_t   istr_index_of_last(slice_t str, slice_t find, index_t from);
@@ -266,57 +339,53 @@ void        istr_log(slice_t fmt, ...);
 #define _str_print(fmt, ...) istr_print(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
 #define _str_log(fmt, ...) istr_log(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
 
-typedef enum _str_fmtType_t {
-  _fmtArg_End,
-  _fmtArg_Slice,
-  _fmtArg_Int,
-  _fmtArg_Float
-} _str_fmtType_t;
+////////////////////////////////////////////////////////////////////////////////
+// Variadic arg implementation for formatting and join
+////////////////////////////////////////////////////////////////////////////////
 
-typedef struct {
-  _str_fmtType_t type;
-  union {
-    slice_t slice;
-    ptrdiff_t i;
-    double f;
-  };
-} _str_fmtArg_t;
+extern const _str_arg_t _str_fmtarg_end;
 
-extern const _str_fmtArg_t _str_fmtarg_end;
-
-static inline _str_fmtArg_t _sarg_str(const String s) {
-  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = s->slice };
+static inline _str_arg_t _sarg_str(const String s) {
+  return (_str_arg_t) { .type = _str_arg_slice, .slice = s->slice };
 }
 
-static inline _str_fmtArg_t _sarg_slice(slice_t r) {
-  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = r };
+static inline _str_arg_t _sarg_slice(slice_t r) {
+  return (_str_arg_t) { .type = _str_arg_slice, .slice = r };
 }
 
-static inline _str_fmtArg_t _sarg_slice_ptr(const slice_t* r) {
+static inline _str_arg_t _sarg_slice_ptr(const slice_t* r) {
   if (!r) r = &slice_empty;
-  return (_str_fmtArg_t) { .type = _fmtArg_Slice, .slice = *r };
+  return (_str_arg_t) { .type = _str_arg_slice, .slice = *r };
 }
 
-static inline _str_fmtArg_t _sarg_c_str(const char* c_str) {
+static inline _str_arg_t _sarg_span(span_slice_t s) {
+  return (_str_arg_t) { .type = _str_arg_span, .span = s };
+}
+
+static inline _str_arg_t _sarg_array(Array_slice a) {
+  return (_str_arg_t) { .type = _str_arg_span, .span = a->span };
+}
+
+static inline _str_arg_t _sarg_c_str(const char* c_str) {
   if (!c_str) c_str = slice_empty.begin;
-  return (_str_fmtArg_t) {
-    .type = _fmtArg_Slice, .slice = slice_from_c_str(c_str)
+  return (_str_arg_t) {
+    .type = _str_arg_slice, .slice = slice_from_c_str(c_str)
   };
 }
 
-static inline _str_fmtArg_t _sarg_int(long long int i) {
-  return (_str_fmtArg_t) { .type = _fmtArg_Int, .i = i };
+static inline _str_arg_t _sarg_int(long long int i) {
+  return (_str_arg_t) { .type = _str_arg_int, .i = i };
 }
 
-static inline _str_fmtArg_t _sarg_unsigned(long long unsigned int i) {
-  return (_str_fmtArg_t) { .type = _fmtArg_Int, .i = (ptrdiff_t)i };
+static inline _str_arg_t _sarg_unsigned(long long unsigned int i) {
+  return (_str_arg_t) { .type = _str_arg_int, .i = (long long)i };
 }
 
-static inline _str_fmtArg_t _sarg_float(double f) {
-  return (_str_fmtArg_t) { .type = _fmtArg_Float, .f = f };
+static inline _str_arg_t _sarg_float(double f) {
+  return (_str_arg_t) { .type = _str_arg_float, .f = f };
 }
 
-static inline _str_fmtArg_t _sarg_arg(_str_fmtArg_t e) {
+static inline _str_arg_t _sarg_arg(_str_arg_t e) {
   PARAM_UNUSED(e); // should some kind of override be allowed?
   return _str_fmtarg_end;
 }
@@ -335,7 +404,20 @@ static inline _str_fmtArg_t _sarg_arg(_str_fmtArg_t e) {
   unsigned long:      _sarg_unsigned,   \
   unsigned long long: _sarg_unsigned,   \
   double:             _sarg_float,      \
-  _str_fmtArg_t:      _sarg_arg         \
+  _str_arg_t:         _sarg_arg         \
+)(arg)                                  //
+
+// \brief str_split and str_join argument macro
+#define _spa(arg) _Generic((arg),       \
+  slice_t:            _sarg_slice,      \
+  String:             _sarg_str,        \
+  slice_t*:           _sarg_slice_ptr,  \
+  const slice_t*:     _sarg_slice_ptr,  \
+  span_slice_t:       _sarg_span,       \
+  Array_slice:        _sarg_array,      \
+  char*:              _sarg_c_str,      \
+  const char*:        _sarg_c_str,      \
+  int:                _sarg_int         \
 )(arg)                                  //
 
 #endif

@@ -53,7 +53,7 @@ const String str_empty  = (String)&slice_empty;
 const String str_true   = (String)&slice_true;
 const String str_false  = (String)&slice_false;
 
-static String_Internal* str_new_internal(index_t length) {
+static String_Internal* _istr_new(index_t length) {
   if (length <= 0) return NULL; // prompt callers to return empty string
   // Include an extra byte for the null terminator
   String_Internal* ret = malloc(sizeof(slice_t) + length + 1);
@@ -89,7 +89,7 @@ inline static bool str_is_literal(String str) {
 
 String str_build(const char* c_str, index_t length) {
   if (!c_str) return str_empty;
-  String_Internal* ret = str_new_internal(length);
+  String_Internal* ret = _istr_new(length);
   if (!ret) return str_empty;
   memcpy(&ret->head, c_str, length);
   return str_terminate(ret);
@@ -125,64 +125,221 @@ bool str_is_null_or_empty(const String str) {
 ////////////////////////////////////////////////////////////////////////////////
 
 String istr_copy(slice_t str) {
-  String_Internal* ret = str_new_internal(str.size);
+  String_Internal* ret = _istr_new(str.size);
   if (!ret) return str_empty;
   memcpy(ret->begin, str.begin, str.size);
   return str_terminate(ret);
 }
 
-//bool istr_contains_any(slice_t str, slice_t check_chars) {
-//  // TODO: this, and istr_token, and str_ versions
-//}
-
-String istr_join(slice_t del, const Array_slice strings) {
-  const index_t slice_count = strings->size;
-  if (slice_count == 0) return str_empty;
-
+static index_t _istr_args_length(_str_arg_t args[], index_t argc) {
   index_t length = 0;
 
-  slice_t* array_foreach(slice, strings) {
-    length += slice->size;
+  // accumulate length of final combined string
+  for (index_t i = 0; i < argc; ++i) {
+    switch (args[i].type) {
+
+      case _str_arg_slice: {
+        length += args[i].slice.size;
+      } break;
+
+      case _str_arg_span: {
+        span_slice_t span = args[i].span;
+        for (slice_t* slice = span.begin; slice != span.end; ++slice) {
+          length += slice->size;
+        }
+      } break;
+
+      case _str_arg_int: {
+        length += 1;
+      } break;
+
+      default: {
+        assert(false);
+      } break;
+
+    }
   }
 
-  length += del.size * (slice_count - 1);
+  return length;
+}
 
-  String_Internal* ret = str_new_internal(length);
+static index_t _istr_args_count(_str_arg_t args[], index_t argc) {
+  index_t count = 0;
+
+  // accumulate length of final combined string
+  for (index_t i = 0; i < argc; ++i) {
+    switch (args[i].type) {
+
+    case _str_arg_slice:
+    case _str_arg_int:
+      ++count;
+      break;
+
+    case _str_arg_span:
+      count += span_slice_size(args[i].span);
+      break;
+
+    default: {
+      assert(false);
+    } break;
+
+    }
+  }
+
+  return count;
+}
+
+static char* _istr_arg_write(char* dst, _str_arg_t* arg) {
+  switch (arg->type) {
+
+    case _str_arg_slice:
+      memcpy(dst, arg->slice.begin, arg->slice.size);
+      return dst + arg->slice.size;
+
+    case _str_arg_span:
+      span_slice_t span = arg->span;
+      for (slice_t* slice = span.begin; slice != span.end; ++slice) {
+        memcpy(dst, slice->begin, slice->size);
+        return dst + slice->size;
+      }
+      return dst;
+
+    case _str_arg_int:
+      *dst = (char)arg->i;
+      return dst + 1;
+
+    default:
+      assert(false);
+      break;
+
+  }
+
+  return dst;
+}
+
+String istr_concat(_str_arg_t args[], index_t count) {
+  if (count <= 0) return str_empty;
+
+  index_t length = _istr_args_length(args, count);
+  String_Internal* ret = _istr_new(length);
+  if (!ret) return str_empty;
+
+  char* dst = ret->begin;
+  for (index_t i = 0; i < count; ++i) {
+    dst = _istr_arg_write(dst, &args[i]);
+  }
+
+  return str_terminate(ret);
+}
+
+String istr_join(slice_t del, _str_arg_t args[], index_t count) {
+  if (count <= 0) return str_empty;
+  if (del.size < 0) del = slice_empty;
+
+  index_t full_count = _istr_args_count(args, count);
+  if (full_count <= 0) return str_empty;
+  index_t length = _istr_args_length(args, count);
+  length += del.size * (full_count - 1);
+
+  String_Internal* ret = _istr_new(length);
   if (!ret) return str_empty;
 
   char* dst = ret->begin;
 
-  array_foreach_index(slice, i, strings) {
-    memcpy(dst, slice->begin, slice->size);
-    dst += slice->size;
+  for (index_t i = 0; i < count; ++i) {
+    if (args[i].type != _str_arg_span) {
+      dst = _istr_arg_write(dst, &args[i]);
 
-    if (i != slice_count - 1) {
-      memcpy(dst, del.begin, del.size);
-      dst += del.size;
+      if (i != count - 1) {
+        memcpy(dst, del.begin, del.size);
+        dst += del.size;
+      }
+    } else {
+      span_slice_t span = args[i].span;
+
+      for (index_t j = 0; j < span_slice_size(span); ++j) {
+        memcpy(dst, span.begin[j].begin, span.begin[j].size);
+        dst += span.begin[j].size;
+
+        if (i != count - 1 || j != span_slice_size(span) - 1) {
+          memcpy(dst, del.begin, del.size);
+          dst += del.size;
+        }
+      }
     }
   }
 
   return str_terminate(ret);
 }
 
-String istr_concat(slice_t left, slice_t right) {
-  index_t length = left.size + right.size;
-  String_Internal* ret = str_new_internal(length);
-  if (!ret) return str_empty;
-  memcpy(ret->begin, left.begin, left.size);
-  memcpy(ret->begin + left.size, right.begin, right.size);
-  return str_terminate(ret);
+Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count) {
+  Array_slice ret = arr_slice_new_reserve(_istr_args_count(args, count) * 2);
+
+  if (count <= 0) {
+    arr_slice_push_back(ret, str);
+    arr_slice_truncate(ret, ret->size);
+    return ret;
+  }
+  
+  index_t pos = 0;
+  while (pos < str.size) {
+    index_t index = str.size;
+    slice_t* slice = arr_slice_emplace_back(ret);
+
+    for (index_t i = 0; i < count; ++i) {
+      if (args[i].type == _str_arg_int) {
+        slice->begin = (char*)&args[pos++].i;
+        slice->size = 1;
+        index = pos + 1;
+        break;
+      }
+
+      index_t check = pos;
+      slice_t next;
+
+      if (args[i].type == _str_arg_slice) {
+        next = slice_token_str(str, args[i].slice, &check).token;
+      } else if (args[i].type == _str_arg_span) {
+        next = slice_token_any(str, args[i].span, &check).token;
+      } else {
+        assert(false);
+        next = slice_empty;
+      }
+
+      if (check < index) {
+        *slice = next;
+        index = check;
+      }
+    }
+
+    if (index == str.size) {
+      *slice = slice_substring(str, pos);
+    }
+
+    pos = index;
+  }
+
+  return ret;
+}
+
+Array_slice istr_split_tokens(slice_t str, _str_arg_t args[], index_t count) {
+  PARAM_UNUSED(str);
+  PARAM_UNUSED(args);
+  PARAM_UNUSED(count);
+  return NULL;
 }
 
 String istr_prepend(slice_t str, index_t length, char c) {
-  String_Internal* ret = str_new_internal(str.size + length);
+  String_Internal* ret = _istr_new(str.size + length);
+  if (!ret) return str_empty;
   memset(ret->begin, c, length);
   memcpy(ret->begin + length, str.begin, str.size);
   return str_terminate(ret);
 }
 
 String istr_append(slice_t str, index_t length, char c) {
-  String_Internal* ret = str_new_internal(str.size + length);
+  String_Internal* ret = _istr_new(str.size + length);
+  if (!ret) return str_empty;
   memcpy(ret->begin, str.begin, str.size);
   memset(ret->begin + str.size, c, length);
   return str_terminate(ret);
@@ -202,7 +359,7 @@ String istr_append(slice_t str, index_t length, char c) {
 #define con_skip_dependencies
 #include "array_byte.h"
 
-const _str_fmtArg_t _str_fmtarg_end = { .type = _fmtArg_End, .i = 0 };
+const _str_arg_t _str_fmtarg_end = { .type = _str_arg_end, .i = 0 };
 
 enum _fmtSpec_alignment_t {
   _fmtSpec_Left,
@@ -560,11 +717,11 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
     return;
   }
 
-  _str_fmtArg_t* arg = array_ref(params, spec.index);
+  _str_arg_t* arg = array_ref(params, spec.index);
 
   switch (arg->type) {
 
-    case _fmtArg_Slice: {
+    case _str_arg_slice: {
 
       index_t width = MAX(spec.width, arg->slice.size);
       index_t excess = width - arg->slice.size;
@@ -601,7 +758,7 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
 
     } break;
 
-    case _fmtArg_Int: {
+    case _str_arg_int: {
 
       ptrdiff_t i = arg->i;
       index_t start = out->size;
@@ -627,7 +784,7 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
 
     } break;
 
-    case _fmtArg_Float: {
+    case _str_arg_float: {
 
       double f = arg->f;
       index_t start = out->size;
@@ -666,17 +823,17 @@ static String format_va(slice_t fmt, va_list args) {
   // TODO: Move this to its own section, possibly want to split out a new 
   //    header just for this function, especially if other dependent types
   //    end up being supported (such as vec3).
-  Array params = array_new(_str_fmtArg_t);
+  Array params = array_new(_str_arg_t);
   index_t reserve_size = sizeof(String_Internal) + fmt.size;
 
-  _str_fmtArg_t arg;
+  _str_arg_t arg;
 
   loop{
-    arg = va_arg(args, _str_fmtArg_t);
+    arg = va_arg(args, _str_arg_t);
 
-    until(arg.type == _fmtArg_End);
+    until(arg.type == _str_arg_end);
 
-    reserve_size += (arg.type == _fmtArg_Slice) ? arg.slice.size : 3;
+    reserve_size += (arg.type == _str_arg_slice) ? arg.slice.size : 3;
 
     array_write_back(params, &arg);
   }

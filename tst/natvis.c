@@ -68,9 +68,9 @@ int main(void) {
   array_free(&local_array);
 
   array_byte_t asdf = arr_byte_build_reserve(5);
-  arr_byte_write_back(&asdf, &(int){ 65 });
-  arr_byte_write_back(&asdf, &(int){ 66 });
-  arr_byte_write_back(&asdf, &(int){ 67 });
+  arr_byte_write_back(&asdf, (byte*)&(int){ 65 });
+  arr_byte_write_back(&asdf, (byte*)&(int){ 66 });
+  arr_byte_write_back(&asdf, (byte*)&(int){ 67 });
   array_slice_t oisjdg = arr_slice_build();
   arr_slice_write_back(&oisjdg, &slices[2]);
   arr_slice_write_back(&oisjdg, &slices[2]);

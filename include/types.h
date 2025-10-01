@@ -124,6 +124,21 @@ typedef struct _opaque_String_base* String;
 # define unless(condition) if (!(condition))
 #endif
 
+#ifndef c_array_foreach_index
+# define c_array_foreach_index(ITER, INDEX, ARR)                              \
+  ITER = NULL;                                                                \
+  for                                                                         \
+  ( size_t INDEX = 0                                                          \
+  ; INDEX < ARRAY_COUNT(ARR) ? (ITER = (void*)&(ARR[INDEX])), 1 : 0           \
+  ; ++INDEX                                                                   \
+  )                                                                           //
+#endif
+
+#ifndef c_array_foreach
+# define c_array_foreach(ITER, ARR)                                           \
+  c_array_foreach_index(ITER, MACRO_CONCAT(_iter_, __LINE__) , ARR)           //
+#endif
+
 #ifndef MACRO_CONCAT
 // Macro to concatinate preprocessor symbols
 # define MACRO_CONCAT_RECUR(X, Y) X ## Y
@@ -182,6 +197,12 @@ typedef struct _opaque_String_base* String;
 
 #define _va_exp(F, ...)                                                       \
         _va_exp_va(F,__VA_ARGS__,m,l,k,j,i,h,g,f,e,d,c,b,a,9,8,7,6,5,4,3,2,1) //
+
+// Variadic counter to get the number of variadic arguments
+#define _va_count_va(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,X,...) X
+#define _va_count(...) _va_count_va(                                          \
+  __VA_ARGS__,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0      \
+)                                                                             //
 
 // Squelches warnings about unused parameters.
 // Ideally, for GCC and Clang this should be __attribute__((unused)) in the

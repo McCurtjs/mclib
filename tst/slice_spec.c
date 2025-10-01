@@ -24,10 +24,25 @@
 
 #include "slice.h"
 
-#define CSPEC_CUSTOM_TYPES                                                     \
+bool cspec_match_slice(
+  const slice_t* lhs, const slice_t* rhs, size_t L, size_t R
+) {
+  PARAM_UNUSED(L);
+  PARAM_UNUSED(R);
+  if (!lhs || !rhs) return false;
+  return slice_eq(*lhs, *rhs);
+}
+
+#define CSPEC_CUSTOM_TYPES                                                    \
   slice_t: "slice_t", slice_t*: "slice_t*"                                    //
 
+#define CSPEC_CUSTOM_MATCH_FNS                                                \
+  slice_t: cspec_match_slice, slice_t*: cspec_match_slice                     //
+
+
 #include "cspec.h"
+
+#include "span_slice.h"
 
 describe(slice_basic) {
 
@@ -86,6 +101,191 @@ describe(slice_basic) {
   }
 
   expect(malloc_count, == , 0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Parsing for basic types
+////////////////////////////////////////////////////////////////////////////////
+
+describe(slice_to_bool) {
+  bool out = false, * p_out = &out;
+
+  it("fails when no output parameter is given") {
+    p_out = NULL;
+    expect(to_assert);
+    expect(slice_to_bool to be_false given(slice_true, p_out));
+  }
+
+  it("converts from exact strings") {
+    expect(slice_to_bool to be_true given(S("true"), p_out));
+    expect(out to be_true);
+
+    expect(slice_to_bool to be_true given(S("false"), p_out));
+    expect(out to be_false);
+
+    expect(slice_to_bool to be_true given(slice_true, p_out));
+    expect(out to be_true);
+
+    expect(slice_to_bool to be_true given(slice_false, p_out));
+    expect(out to be_false);
+  }
+
+  it("is case insensitive") {
+    expect(slice_to_bool to be_true given(S("TRUE"), p_out));
+    expect(out to be_true);
+
+    expect(slice_to_bool to be_true given(S("FALSE"), p_out));
+    expect(out to be_false);
+
+    expect(slice_to_bool to be_true given(S("True"), p_out));
+    expect(out to be_true);
+
+    expect(slice_to_bool to be_true given(S("False"), p_out));
+    expect(out to be_false);
+  }
+
+  it("fails to convert empty or too-short strings") {
+    expect(slice_to_bool to be_false given(slice_empty, p_out));
+    expect(slice_to_bool to be_false given(S("tru"), p_out));
+    expect(slice_to_bool to be_false given(S("fals"), p_out));
+  }
+
+  it("does not accept leading spaces") {
+    expect(slice_to_bool to be_false given(S(" true"), p_out));
+    expect(slice_to_bool to be_false given(S(" false"), p_out));
+  }
+
+  it("fails to convert strings with non-matching characters") {
+    expect(slice_to_bool to be_false given(S("trub"), p_out));
+    expect(slice_to_bool to be_false given(S("falze"), p_out));
+  }
+
+  it("allows additional characters after the matching portion") {
+    expect(slice_to_bool to be_true given(S("true stuff"), p_out));
+    expect(out to be_true);
+
+    expect(slice_to_bool to be_true given(S("false statement"), p_out));
+    expect(out to be_false);
+  }
+
+}
+
+describe(slice_to_int) {
+  int out = 0, * p_out = &out;
+
+  //it("fails when no output parameter is given") {
+  //  p_out = NULL;
+  //  expect(slice_to_int to be_false given(S("123235"), p_out));
+  //}
+
+  it("fails when input is empty") {
+    expect(slice_to_int to be_false given(slice_empty, p_out));
+  }
+
+  it("converts unsinged numbers") {
+    expect(slice_to_int to be_true given(S("0"), p_out));
+    expect(out, == , 0);
+
+    expect(slice_to_int to be_true given(S("10"), p_out));
+    expect(out, == , 10);
+
+    expect(slice_to_int to be_true given(S("123401234"), p_out));
+    expect(out, == , 123401234);
+  }
+
+  it("converts signed numbers") {
+    expect(slice_to_int to be_true given(S("+0"), p_out));
+    expect(out, == , 0);
+
+    expect(slice_to_int to be_true given(S("+10"), p_out));
+    expect(out, == , 10);
+
+    expect(slice_to_int to be_true given(S("+123401234"), p_out));
+    expect(out, == , 123401234);
+
+    expect(slice_to_int to be_true given(S("-1"), p_out));
+    expect(out, == , -1);
+
+    expect(slice_to_int to be_true given(S("-10"), p_out));
+    expect(out, == , -10);
+
+    expect(slice_to_int to be_true given(S("-7482934"), p_out));
+    expect(out, == , -7482934);
+  }
+
+  it("allows trailing characters") {
+    expect(slice_to_int to be_true given(S("0 items"), p_out));
+    expect(out, == , 0);
+
+    expect(slice_to_int to be_true given(S("10 monkeys"), p_out));
+    expect(out, == , 10);
+
+    expect(slice_to_int to be_true given(S("3985206 is a number"), p_out));
+    expect(out, == , 3985206);
+  }
+
+  it("doesn't allow leading spaces") {
+    expect(slice_to_int to be_false given(S(" 5"), p_out));
+  }
+
+  it("fails with non-numeric input") {
+    expect(slice_to_int to be_false given(S("a5"), p_out));
+  }
+
+}
+
+describe(slice_to_long) {
+
+}
+
+describe(slice_to_float) {
+
+}
+
+describe(slice_to_double) {
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Comparisons
+////////////////////////////////////////////////////////////////////////////////
+
+describe(slice_compare) {
+
+  slice_t lhs = S("Asdf");
+
+  it("returns 0 on equal slices") {
+    expect(slice_compare to be_zero given(lhs, S("Asdf")));
+    expect(slice_compare to be_zero given(slice_empty, slice_empty));
+  }
+
+  it("returns negative when given a lower case or shorter string") {
+    expect(slice_compare to be_negative given(lhs, S("asdf")));
+    expect(slice_compare to be_negative given(lhs, S("Asd")));
+  }
+
+  it("returns positive when given a higher case or longer string") {
+    expect(slice_compare to be_positive given(lhs, S("AsdF")));
+    expect(slice_compare to be_positive given(lhs, S("Asdfg")));
+  }
+
+  it("maintains order for numbers of equal length") {
+    lhs = S("4");
+    expect(slice_compare to be_negative given(lhs, S("6")));
+    expect(slice_compare to be_positive given(lhs, S("3")));
+    expect(slice_compare to be_positive given(lhs, S("-2")));
+    lhs = S("53");
+    expect(slice_compare to be_negative given(lhs, S("84")));
+    expect(slice_compare to be_positive given(lhs, S("43")));
+  }
+
+  it("maints order for ISO-standard dates of equal length") {
+    lhs = S("1987/04/21");
+    expect(slice_compare to be_positive given(lhs, S("1987/04/12")));
+    expect(slice_compare to be_positive given(lhs, S("1986/04/21")));
+    expect(slice_compare to be_negative given(lhs, S("2000/01/01")));
+  }
+
 }
 
 describe(slice_eq) {
@@ -213,10 +413,6 @@ describe(slice_contains) {
     expect(slice to not match(S("IS A"), slice_contains));
   }
 
-  it("returns true given an empty string") {
-    expect(slice to match(S(""), slice_contains));
-  }
-
   it("returns true given the full string") {
     expect(slice to match(S("This is a string"), slice_contains));
   }
@@ -225,9 +421,32 @@ describe(slice_contains) {
     expect(slice to not match(S("This is a string."), slice_contains));
   }
 
+  it("fails when given an empty targets string") {
+    expect(to_assert);
+    expect(slice to not match(S(""), slice_contains));
+  }
+
 }
 
 describe(slice_contains_char) {
+  slice_t slice = S("This is a string");
+
+  it("handles a basic true use case") {
+    expect(slice to match(S("dcba"), slice_contains_char));
+  }
+
+  it("handles a basic false use case") {
+    expect(slice to not match(S("pomlkjfedcb"), slice_contains_char));
+  }
+
+  it("is case sensitive") {
+    expect(slice to not match(S("A"), slice_contains_char));
+  }
+
+  it("fails if no targets are given") {
+    expect(to_assert);
+    expect(slice to not match(slice_empty, slice_contains_char));
+  }
 
 }
 
@@ -253,215 +472,308 @@ describe(slice_is_empty) {
 
 }
 
-describe(slice_to_bool) {
-  bool out = false, * p_out = &out;
+////////////////////////////////////////////////////////////////////////////////
+// Basic searching
+////////////////////////////////////////////////////////////////////////////////
 
-  //it("fails when no output parameter is given") {
-  //  p_out = NULL;
-  //  expect(slice_to_bool to be_false given(slice_true, p_out));
-  //}
+describe(slice_find_str) {
 
-  it("converts from exact strings") {
-    expect(slice_to_bool to be_true given(S("true"), p_out));
-    expect(out to be_true);
-
-    expect(slice_to_bool to be_true given(S("false"), p_out));
-    expect(out to be_false);
-
-    expect(slice_to_bool to be_true given(slice_true, p_out));
-    expect(out to be_true);
-
-    expect(slice_to_bool to be_true given(slice_false, p_out));
-    expect(out to be_false);
-  }
-
-  it("is case insensitive") {
-    expect(slice_to_bool to be_true given(S("TRUE"), p_out));
-    expect(out to be_true);
-
-    expect(slice_to_bool to be_true given(S("FALSE"), p_out));
-    expect(out to be_false);
-
-    expect(slice_to_bool to be_true given(S("True"), p_out));
-    expect(out to be_true);
-
-    expect(slice_to_bool to be_true given(S("False"), p_out));
-    expect(out to be_false);
-  }
-
-  it("fails to convert empty or too-short strings") {
-    expect(slice_to_bool to be_false given(slice_empty, p_out));
-    expect(slice_to_bool to be_false given(S("tru"), p_out));
-    expect(slice_to_bool to be_false given(S("fals"), p_out));
-  }
-
-  it("does not accept leading spaces") {
-    expect(slice_to_bool to be_false given(S(" true"), p_out));
-    expect(slice_to_bool to be_false given(S(" false"), p_out));
-  }
-
-  it("fails to convert strings with non-matching characters") {
-    expect(slice_to_bool to be_false given(S("trub"), p_out));
-    expect(slice_to_bool to be_false given(S("falze"), p_out));
-  }
-
-  it("allows additional characters after the matching portion") {
-    expect(slice_to_bool to be_true given(S("true stuff"), p_out));
-    expect(out to be_true);
-
-    expect(slice_to_bool to be_true given(S("false statement"), p_out));
-    expect(out to be_false);
-  }
-
-}
-
-describe(slice_to_int) {
-  int out = 0, *p_out = &out;
-
-  //it("fails when no output parameter is given") {
-  //  p_out = NULL;
-  //  expect(slice_to_int to be_false given(S("123235"), p_out));
-  //}
-
-  it("fails when input is empty") {
-    expect(slice_to_int to be_false given(slice_empty, p_out));
-  }
-
-  it("converts unsinged numbers") {
-    expect(slice_to_int to be_true given(S("0"), p_out));
-    expect(out, == , 0);
-
-    expect(slice_to_int to be_true given(S("10"), p_out));
-    expect(out, == , 10);
-
-    expect(slice_to_int to be_true given(S("123401234"), p_out));
-    expect(out, == , 123401234);
-  }
-
-  it("converts signed numbers") {
-    expect(slice_to_int to be_true given(S("+0"), p_out));
-    expect(out, == , 0);
-
-    expect(slice_to_int to be_true given(S("+10"), p_out));
-    expect(out, == , 10);
-
-    expect(slice_to_int to be_true given(S("+123401234"), p_out));
-    expect(out, == , 123401234);
-
-    expect(slice_to_int to be_true given(S("-1"), p_out));
-    expect(out, == , -1);
-
-    expect(slice_to_int to be_true given(S("-10"), p_out));
-    expect(out, == , -10);
-
-    expect(slice_to_int to be_true given(S("-7482934"), p_out));
-    expect(out, == , -7482934);
-  }
-
-  it("allows trailing characters") {
-    expect(slice_to_int to be_true given(S("0 items"), p_out));
-    expect(out, == , 0);
-
-    expect(slice_to_int to be_true given(S("10 monkeys"), p_out));
-    expect(out, == , 10);
-
-    expect(slice_to_int to be_true given(S("3985206 is a number"), p_out));
-    expect(out, == , 3985206);
-  }
-
-  it("doesn't allow leading spaces") {
-    expect(slice_to_int to be_false given(S(" 5"), p_out));
-  }
-
-  it("fails with non-numeric input") {
-    expect(slice_to_int to be_false given(S("a5"), p_out));
-  }
-
-}
-
-describe(slice_to_long) {
-
-}
-
-describe(slice_to_float) {
-
-}
-
-describe(slice_to_double) {
-
-}
-
-describe(slice_find) {
-  /*
   slice_t range = S("This is a string");
+  slice_t result;
+
+  it("finds nothing in empty strings") {
+    expect(slice_find_str to be_false given(slice_empty, S(" "), NULL));
+  }
 
   it("finds an index") {
-    slice_t is = S("is");
-    expect(slice_find(range, is), == , 2u);
+    expect(slice_find_str to be_true given(range, S("is a"), &result));
+    expect(result to match(S("is a"), slice_eq));
   }
 
   it("fails to find a substring that isn't present") {
-    slice_t np = S("not present");
-    expect(slice_find(range, np), == , range.size);
+    expect(slice_find_str to be_false given(range, S("not present"), NULL));
   }
 
   it("can find the first word in the string") {
-    slice_t This = S("This");
-    expect(slice_find(range, This), == , 0u);
+    expect(slice_find_str to be_true given(range, S("This"), NULL));
+  }
+
+  context("failure cases") {
+
+    expect(to_assert);
+
+    it("fails when given an empty target string") {
+      expect(slice_find_str to be_false given(range, slice_empty, &result));
+    }
+
+    it("fails when all parameters are empty") {
+      expect(slice_find_str to be_false given(slice_empty, slice_empty, NULL));
+    }
+
   }
 
   expect(malloc_count == 0);
-  */
+
 }
 
-describe(slice_index_of) {
+describe(slice_find_last_str) {
+
+  slice_t subject = S("This string has duplicate strings");
+  slice_t result;
+
+  it("finds the last instance of the search string") {
+    expect(slice_find_last_str to be_true given(subject, S("string"), &result));
+    expect(result to match(S("string"), slice_eq));
+    expect(result.begin, == , subject.begin + 26);
+  }
+
+  it("can find the first value in the string") {
+    expect(slice_find_last_str to be_true given(subject, S("T"), &result));
+    expect(result to match(S("T"), slice_eq));
+    expect(result.begin, == , subject.begin);
+  }
+
+  it("can find the very last value in the string") {
+    expect(slice_find_last_str to be_true given(subject, S("rings"), &result));
+    expect(result to match(S("rings"), slice_eq));
+    expect(result.begin, == , subject.begin + 28);
+  }
+
+  it("returns false when the search string isn't found") {
+    expect(slice_find_last_str to be_false given(subject, S("bucket"), &result));
+  }
+
+  it("is case-sensitive") {
+    expect(slice_find_last_str to be_false given(subject, S("HAS"), &result));
+  }
+
+  it("allows the output parameter to be omitted") {
+    expect(slice_find_last_str to be_true given(subject, S("dup"), NULL));
+    expect(slice_find_last_str to be_false given(subject, S("bucket"), NULL));
+  }
+
+  it("fails when no valid search term is provided") {
+    expect(to_assert);
+    slice_find_last_str(subject, slice_empty, NULL);
+  }
+
+  expect(malloc_count == 0);
+
+}
+
+describe(slice_index_of_str) {
   slice_t str = S("This is a string");
   slice_t is = S("is");
 
   it("finds an index") {
-    expect(slice_index_of(str, is, 0), == , 2u);
+    expect(slice_index_of_str(str, is), == , 2u);
   }
 
   it("fails to find a substring that isn't present") {
-    expect(slice_index_of(str, S("Not present"), 0), == , str.size);
-  }
-
-  it("begins the search from a given position") {
-    expect(slice_index_of(str, is, 3), == , 5u);
-  }
-
-  it("fails to find a word in the string that starts before the start_pos") {
-    expect(slice_index_of(str, is, 6), == , str.size);
-  }
-
-  it("fails to find anything if the start pos is after the end of the string") {
-    expect(slice_index_of(str, is, 99), == , str.size);
-  }
-
-  it("looping end-pos can be used to track through the string") {
-    index_t tracker = 0;
-
-    tracker = slice_index_of(str, S("i"), tracker);
-    slice_t result = islice_substring(str, tracker, str.size);
-    expect(result to match(S("is is a string"), slice_eq));
-
-    tracker = slice_index_of(str, S("i"), tracker + 1);
-    result = slice_substring(str, tracker, str.size);
-    expect(result to match(S("is a string"), slice_eq));
-
-    tracker = slice_index_of(str, S("i"), tracker + 1);
-    result = slice_substring(str, tracker, str.size);
-    expect(result to match(S("ing"), slice_eq));
-
-    tracker = slice_index_of(str, S("i"), tracker + 1);
-    expect(tracker, == , str.size);
+    expect(slice_index_of_str(str, S("Not present")), == , str.size);
   }
 
 }
 
-describe(slice_token) {
+describe(slice_index_of_last_str) {
 
 }
+
+describe(slice_index_of_char) {
+
+}
+
+describe(slice_index_of_last_char) {
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Tokenization
+////////////////////////////////////////////////////////////////////////////////
+
+describe(slice_token_str) {
+
+  slice_t slice = S("and one and two and three and one");
+  index_t pos = 0;
+  token_result_t result;
+
+  it("returns an empty string when the delimiter is the start of the string") {
+    slice_t delim = S("and");
+    result = slice_token_str(slice, delim, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.token.begin, != , slice_empty.begin);
+    expect(result.delimiter to match(S("and")));
+    expect(pos, == , 3);
+  }
+
+  it("returns the rest of the string when the delimiter is not present") {
+    slice_t delim = S("andy");
+    result = slice_token_str(slice, delim, &pos);
+    expect(result.token to match(slice));
+    expect(result.delimiter to match(slice_empty));
+    expect(pos, == , slice.size);
+  }
+
+  it("can read each sub-token in order") {
+    slice_t delim = S("and");
+
+    result = slice_token_str(slice, delim, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(S("and")));
+
+    result = slice_token_str(slice, delim, &pos);
+    expect(result.token to match(S(" one ")));
+    expect(result.delimiter to match(S("and")));
+
+    result = slice_token_str(slice, delim, &pos);
+    expect(result.token to match(S(" two ")));
+    expect(result.delimiter to match(S("and")));
+
+    result = slice_token_str(slice, delim, &pos);
+    expect(result.token to match(S(" three ")));
+    expect(result.delimiter to match(S("and")));
+
+    result = slice_token_str(slice, delim, &pos);
+    expect(result.token to match(S(" one")));
+    expect(result.delimiter to match(slice_empty));
+    expect(pos to match(slice.size));
+  }
+
+  it("Can change the search delimiter on each non-destructive call") {
+    result = slice_token_str(slice, S("one"), &pos);
+    expect(result.token to match(S("and ")));
+    expect(result.delimiter to match(S("one")));
+
+    result = slice_token_str(slice, S("two"), &pos);
+    expect(result.token to match(S(" and ")));
+    expect(result.delimiter to match(S("two")));
+
+    result = slice_token_str(slice, S("three"), &pos);
+    expect(result.token to match(S(" and ")));
+    expect(result.delimiter to match(S("three")));
+
+    result = slice_token_str(slice, S("one"), &pos);
+    expect(result.token to match(S(" and ")));
+    expect(result.delimiter to match(S("one")));
+
+    result = slice_token_str(slice, S("four"), &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+    expect(pos to match(slice.size));
+  }
+
+  it("finds nothing in an empty string") {
+    result = slice_token_str(slice_empty, S("."), &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("fails when no valid search term is provided") {
+    expect(to_assert);
+    slice_token_str(slice, slice_empty, NULL);
+  }
+
+}
+
+describe(slice_token_char) {
+
+  slice_t slice = S("xyz?w, a?b, a?2jk");
+  index_t pos = 0;
+  token_result_t result;
+
+  it("returns an empty string when the delimiter is the start of the string") {
+    result = slice_token_char(slice, S("x"), &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.token.begin, != , slice_empty.begin);
+    expect(result.delimiter to match(S("x")));
+    expect(pos, == , 1);
+  }
+
+  it("returns the rest of the string when the delimiter is not present") {
+    slice_t delim = S("$");
+    result = slice_token_char(slice, delim, &pos);
+    expect(result.token to match(slice));
+    expect(result.delimiter to match(slice_empty));
+    expect(pos, == , slice.size);
+  }
+
+  it("can read each token in order") {
+    slice_t delims = S("?,");
+
+    result = slice_token_char(slice, delims, &pos);
+    expect(result.token to match(S("xyz")));
+    expect(result.delimiter to match(S("?")));
+
+    result = slice_token_char(slice, delims, &pos);
+    expect(result.token to match(S("w")));
+    expect(result.delimiter to match(S(",")));
+
+    result = slice_token_char(slice, delims, &pos);
+    expect(result.token to match(S(" a")));
+    expect(result.delimiter to match(S("?")));
+
+    result = slice_token_char(slice, delims, &pos);
+    expect(result.token to match(S("b")));
+    expect(result.delimiter to match(S(",")));
+
+    result = slice_token_char(slice, delims, &pos);
+    expect(result.token to match(S(" a")));
+    expect(result.delimiter to match(S("?")));
+
+    result = slice_token_char(slice, delims, &pos);
+    expect(result.token to match(S("2jk")));
+    expect(result.delimiter to match(slice_empty));
+    expect(pos to match(slice.size));
+  }
+
+  it("finds nothing in an empty string") {
+    result = slice_token_char(slice_empty, S("."), &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("fails when no valid search term is provided") {
+    expect(to_assert);
+    slice_token_char(slice, slice_empty, NULL);
+  }
+
+}
+
+describe(slice_token_any) {
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Split
+////////////////////////////////////////////////////////////////////////////////
+
+describe(slice_split_str) {
+
+}
+
+describe(slice_split_str_with_delim) {
+
+}
+
+describe(slice_split_char) {
+
+}
+
+describe(slice_split_char_with_delim) {
+
+}
+
+describe(slice_split_any) {
+
+}
+
+describe(slice_split_any_with_delim) {
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Substrings
+////////////////////////////////////////////////////////////////////////////////
 
 describe(slice_substring) {
 
@@ -569,6 +881,18 @@ describe(slice_trim) {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Misc.
+////////////////////////////////////////////////////////////////////////////////
+
+describe(slice_hash) {
+
+}
+
+describe(slice_compare_vptr) {
+
+}
+
 #include "span_byte.h"
 
 describe(slice_conversion) {
@@ -651,23 +975,38 @@ describe(slice_split) {
 
 test_suite(tests_slice) {
   test_group(slice_basic),
+  test_group(slice_to_bool),
+  test_group(slice_to_int),
+  test_group(slice_to_long),
+  test_group(slice_to_float),
+  test_group(slice_to_double),
+  test_group(slice_compare),
   test_group(slice_eq),
   test_group(slice_starts_with),
   test_group(slice_ends_with),
   test_group(slice_contains),
   test_group(slice_contains_char),
   test_group(slice_is_empty),
-  test_group(slice_to_bool),
-  test_group(slice_to_int),
-  test_group(slice_to_long),
-  test_group(slice_to_float),
-  test_group(slice_to_double),
-  test_group(slice_find),
-  test_group(slice_index_of),
-//test_group(slice_index_of_char),
-  test_group(slice_token),
+  test_group(slice_find_str),
+  test_group(slice_find_last_str),
+  test_group(slice_index_of_str),
+  test_group(slice_index_of_last_str),
+  test_group(slice_index_of_char),
+  test_group(slice_index_of_last_char),
+  test_group(slice_token_str),
+  test_group(slice_token_char),
+  test_group(slice_token_any),
+  test_group(slice_split_str),
+  test_group(slice_split_str_with_delim),
+  test_group(slice_split_char),
+  test_group(slice_split_char_with_delim),
+  test_group(slice_split_any),
+  test_group(slice_split_any_with_delim),
   test_group(slice_substring),
   test_group(slice_trim),
+  test_group(slice_hash),
+  test_group(slice_hash),
+  test_group(slice_compare_vptr),
   test_group(slice_conversion),
   //test_group(slice_split),
   test_suite_end

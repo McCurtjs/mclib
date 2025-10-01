@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,8 @@
 */
 
 #include "slice.h"
+
+#include "array_slice.h"
 
 #include "utility.h" // hash
 
@@ -57,67 +59,9 @@ slice_t slice_from_c_str(const char* c_str) {
   };
 }
 
-// Compares two slices returning 0 if equivalent, or -1 or 1 if the left slice
-// is lexicographically less than or greater than the right slice.
-int slice_compare(slice_t lhs, slice_t rhs) {
-  SLICE_VALID(lhs);
-  SLICE_VALID(rhs);
-  if (lhs.size != rhs.size) return (int)(rhs.size - lhs.size);
-  return memcmp(lhs.begin, rhs.begin, lhs.size);
-}
-
-// True if the slice is lexicographically equivalent to the other string.
-// Comparison is case-sensitive.
-bool slice_eq(slice_t lhs, slice_t rhs) {
-  SLICE_VALID(lhs);
-  SLICE_VALID(rhs);
-  if (lhs.size != rhs.size) return FALSE;
-  return memcmp(lhs.begin, rhs.begin, lhs.size) == 0;
-}
-
-// True if the slice starts with the given string, false otherwise.
-bool slice_starts_with(slice_t str, slice_t starts) {
-  SLICE_VALID(str);
-  SLICE_VALID(starts);
-  if (starts.size > str.size) return FALSE;
-  return memcmp(str.begin, starts.begin, starts.size) == 0;
-}
-
-// True if the slice ends with the given string, false otherwise.
-bool slice_ends_with(slice_t str, slice_t ends) {
-  SLICE_VALID(str);
-  SLICE_VALID(ends);
-  if (ends.size > str.size) return FALSE;
-  return memcmp(str.begin + str.size - ends.size, ends.begin, ends.size) == 0;
-}
-
-// True if the slice contains the given check string, false otherwise.
-bool slice_contains(slice_t str, slice_t check) {
-  return slice_find(str, check, NULL);
-}
-
-// True if the slice contains the given character, false otherwise.
-bool slice_contains_char(slice_t str, char check) {
-  SLICE_VALID(str);
-  for (index_t i = 0; i < str.size; ++i) {
-    if (str.begin[i] == check) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// True if the slice contains only whitespace, false otherwise.
-bool slice_is_empty(slice_t str) {
-  SLICE_VALID(str);
-  if (str.size == 0) return true;
-  for (index_t i = 0; i < str.size; ++i) {
-    if (!isspace(str.begin[i])) {
-      return false;
-    }
-  }
-  return true;
-}
+////////////////////////////////////////////////////////////////////////////////
+// Parsing for basic types
+////////////////////////////////////////////////////////////////////////////////
 
 // Parses the string into a boolean value. Parsing is not case sensitive.
 //
@@ -245,81 +189,392 @@ bool slice_to_double(slice_t str, double* out) {
   return TRUE;
 }
 
-// Returns true if a given search string is contianed in the string, or false
-//    otherwise. Optionally can assign a given slice to the location of the
-//    found slice contained in the string.
-bool slice_find(slice_t str, slice_t to_find, slice_t* out_opt_slice) {
+////////////////////////////////////////////////////////////////////////////////
+// Comparisons
+////////////////////////////////////////////////////////////////////////////////
+
+// Compares two slices returning 0 if equivalent, or -1 or 1 if the left slice
+// is lexicographically less than or greater than the right slice.
+int slice_compare(slice_t lhs, slice_t rhs) {
+  SLICE_VALID(lhs);
+  SLICE_VALID(rhs);
+  if (lhs.size != rhs.size) return (int)(rhs.size - lhs.size);
+  return memcmp(lhs.begin, rhs.begin, lhs.size);
+}
+
+// True if the slice is lexicographically equivalent to the other string.
+// Comparison is case-sensitive.
+bool slice_eq(slice_t lhs, slice_t rhs) {
+  SLICE_VALID(lhs);
+  SLICE_VALID(rhs);
+  if (lhs.size != rhs.size) return FALSE;
+  return memcmp(lhs.begin, rhs.begin, lhs.size) == 0;
+}
+
+// True if the slice starts with the given string, false otherwise.
+bool slice_starts_with(slice_t str, slice_t starts) {
   SLICE_VALID(str);
-  SLICE_VALID(to_find);
-  index_t index = slice_index_of(str, to_find, 0);
-  if (index >= str.length) return false;
-  if (!out_opt_slice) return true;
-  out_opt_slice->begin = str.begin + index;
-  out_opt_slice->size = to_find.size;
+  SLICE_VALID(starts);
+  if (starts.size > str.size) return FALSE;
+  return memcmp(str.begin, starts.begin, starts.size) == 0;
+}
+
+// True if the slice ends with the given string, false otherwise.
+bool slice_ends_with(slice_t str, slice_t ends) {
+  SLICE_VALID(str);
+  SLICE_VALID(ends);
+  if (ends.size > str.size) return FALSE;
+  return memcmp(str.begin + str.size - ends.size, ends.begin, ends.size) == 0;
+}
+
+// True if the slice contains the given target string, false otherwise.
+bool slice_contains(slice_t str, slice_t target) {
+  return slice_find_str(str, target, NULL);
+}
+
+// True if the slice contains at least one of the target characters.
+bool slice_contains_char(slice_t str, slice_t targets) {
+  return slice_index_of_char(str, targets) != str.size;
+}
+
+// True if the slice contains only whitespace, false otherwise.
+bool slice_is_empty(slice_t str) {
+  SLICE_VALID(str);
+  if (str.size == 0) return true;
+  for (index_t i = 0; i < str.size; ++i) {
+    if (!isspace(str.begin[i])) {
+      return false;
+    }
+  }
   return true;
 }
 
-// Gets the index of a character in the string from a given starting position.
-index_t slice_index_of_char(slice_t str, char c, index_t from_pos) {
+////////////////////////////////////////////////////////////////////////////////
+// Basic searching
+////////////////////////////////////////////////////////////////////////////////
+
+// Returns true if the string contains the target string, false otherwise.
+// If the target is found, an optional output can be set to the found result.
+bool slice_find_str(slice_t str, slice_t target, slice_t* out_opt_slice) {
   SLICE_VALID(str);
-  if (from_pos >= str.size) return str.size;
-  if (from_pos < 0) from_pos += str.size;
-  if (from_pos < 0) from_pos = 0;
-  for (index_t i = from_pos; i < str.size; ++i) {
-    if (str.begin[i] == c) {
-      return i;
-    }
+  SLICE_VALID(target);
+  index_t index = slice_index_of_str(str, target);
+  if (index == str.size) return false;
+  if (out_opt_slice) {
+    out_opt_slice->begin = str.begin + index;
+    out_opt_slice->size = target.size;
   }
-  return str.size;
+  return true;
+}
+
+// Returns true if the string contains the target string, false otherwise.
+// If the target is found, an optional output can be set to the found result.
+bool slice_find_last_str(slice_t str, slice_t target, slice_t* out_opt_slice) {
+  SLICE_VALID(str);
+  SLICE_VALID(target);
+  index_t index = slice_index_of_last_str(str, target);
+  if (!out_opt_slice) return index != str.size;
+  out_opt_slice->begin = str.begin + index;
+  out_opt_slice->size = target.size;
+  return index != str.size;
 }
 
 // Gets the index of the search string in `str`.
-index_t slice_index_of(slice_t str, slice_t to_find, index_t from_pos) {
+//
+// \returns the index of the substring, or str.size if not found.
+index_t slice_index_of_str(slice_t str, slice_t target) {
   SLICE_VALID(str);
-  SLICE_VALID(to_find);
-  if (str.size < to_find.size) return str.size;
-  if (from_pos >= str.size) return str.size;
-  if (from_pos < 0) from_pos += str.size;
-  if (from_pos < 0) from_pos = 0;
-  if (to_find.size == 0) return MIN(from_pos, str.size);
-  index_t j;
-  for (index_t i = from_pos; i <= str.size - to_find.size; ++i) {
-    j = 0;
-    while (j < to_find.size) {
-      if (str.begin[i + j] != to_find.begin[j]) break;
-      if (++j == to_find.size) return i;
+  SLICE_VALID(target);
+  assert(target.size > 0);
+  if (str.size < target.size) return str.size;
+  index_t sublength = str.size - target.size;
+  for (index_t i = 0; i <= sublength; ++i) {
+    for (index_t j = 0; j < target.size;) {
+      if (str.begin[i + j] != target.begin[j]) break;
+      if (++j >= target.size) return i;
     }
   }
   return str.size;
 }
 
-// Get the next slice in the string that terminates with any of the given
-//    delimiter characters, starting at the provided position `pos`.
+// Gets the index of the last instance of the target in the string.
 //
-// \param dels - string of possible characters that appear between tokens.
+// \returns the index of the substring, or str.size if not found.
+index_t slice_index_of_last_str(slice_t str, slice_t target) {
+  SLICE_VALID(str);
+  SLICE_VALID(target);
+  assert(target.size > 0);
+  if (str.size < target.size) return str.size;
+  for (index_t i = str.size - target.size; i >= 0; --i) {
+    index_t j = 0;
+    while (j < target.size) {
+      if (str.begin[i + j] != target.begin[j]) break;
+      if (++j >= target.size) return i;
+    }
+  }
+  return str.size;
+}
+
+// Gets the index of any of the given charactesr in the targets slice.
+//
+// \returns the index of the character, or str.size if not found.
+index_t slice_index_of_char(slice_t str, slice_t targets) {
+  SLICE_VALID(str);
+  SLICE_VALID(targets);
+  assert(targets.size > 0);
+  for (index_t i = 0; i < str.size; ++i) {
+    for (index_t j = 0; j < targets.size; ++j) {
+      if (str.begin[i] == targets.begin[j]) {
+        return i;
+      }
+    }
+  }
+  return str.size;
+}
+
+// Gets the index of any of the given charactesr in the targets slice.
+//
+// \returns the index of the character, or str.size if not found.
+index_t slice_index_of_last_char(slice_t str, slice_t targets) {
+  SLICE_VALID(str);
+  SLICE_VALID(targets);
+  assert(targets.size > 0);
+  for (index_t i = str.size - 1; i >= 0; --i) {
+    for (index_t j = 0; j < targets.size; ++j) {
+      if (str.begin[i] == targets.begin[j]) {
+        return i;
+      }
+    }
+  }
+  return str.size;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Tokenization
+////////////////////////////////////////////////////////////////////////////////
+
+#define _token_result_empty (token_result_t) { slice_empty, slice_empty }
+
+// Get the next slice in the string that terminates with the given delimiter,
+//    starting at the provided position `pos`.
+//
+// \param delim - string of possible characters that appear between tokens.
 //
 // \param pos - pointer to an index representing the starting position of the
 //              token. After running, this value is changed to one past the next
 //              delimiter, and can be re-passed in with the same underlying
 //              string to continue reading the next token.
-slice_t slice_token(slice_t str, slice_t dels, index_t* pos) {
+token_result_t slice_token_str(slice_t str, slice_t delim, index_t* pos) {
+  SLICE_VALID(str);
+  SLICE_VALID(delim);
   assert(pos != NULL);
-  assert(dels.size > 0);
-  if (str.size <= *pos) return slice_empty;
-  slice_t ret = slice_substring(str, *pos);
+  assert(delim.size > 0);
+  if (str.size <= *pos) return _token_result_empty;
 
-  for (index_t i = 0; i < str.size; ++i) {
-    for (index_t d = 0; d < dels.size; ++d) {
-      if (ret.begin[i] != dels.begin[d]) continue;
-      ret.size = i;
-      *pos += i + 1;
-      return ret;
+  token_result_t ret = (token_result_t) {
+    .token = slice_substring(str, *pos),
+    .delimiter = slice_empty,
+  };
+
+  if (slice_find_str(ret.token, delim, &ret.delimiter)) {
+    ret.token.size = ret.delimiter.begin - ret.token.begin;
+  }
+
+  *pos += ret.token.size + ret.delimiter.size;
+  return ret;
+}
+
+// Get the next slice in the string that terminates with any one of the
+//    characters in the delimiters string, starting at the position of `pos`.
+//
+// \param delims - string of possible characters that appear between tokens.
+//
+// \param pos - pointer to index representing starting position of the token.
+//              Value is updated to the start of the next token.
+token_result_t slice_token_char(slice_t str, slice_t delims, index_t* pos) {
+  SLICE_VALID(str);
+  SLICE_VALID(delims);
+  assert(pos != NULL);
+  assert(delims.size > 0);
+  if (str.size <= *pos) return _token_result_empty;
+
+  token_result_t ret = (token_result_t) {
+    .token = slice_substring(str, *pos),
+    .delimiter = slice_empty,
+  };
+
+  index_t index = slice_index_of_char(ret.token, delims);
+
+  if (index >= ret.token.size) {
+    *pos = str.size;
+    return ret;
+  }
+
+  ret.token.size = index;
+  ret.delimiter.begin = ret.token.begin + index;
+  ret.delimiter.size = 1;
+
+  *pos += index + 1;
+  return ret;
+}
+
+token_result_t slice_token_any(slice_t str, span_slice_t any, index_t* pos) {
+  SLICE_VALID(str);
+  assert(pos);
+  index_t span_size = span_slice_size(any);
+  if (str.size <= *pos) return _token_result_empty;
+
+  token_result_t ret = (token_result_t) {
+    .token = slice_substring(str, *pos),
+    .delimiter = slice_empty,
+  };
+
+  slice_t check = ret.token;
+  while (check.size) {
+    for (index_t d = 0; d < span_size; ++d) {
+      slice_t delim = span_slice_get(any, d);
+      if (delim.size <= 0 || delim.size > check.size) continue;
+
+      // Track the string manually rather than using slice_starts_with so we can
+      //    benefit from the early-out for each delimiter and ensure we match
+      //    the delimiters in the order they were given.
+      for (index_t i = 0; check.begin[i] == delim.begin[i];) {
+        if (++i >= delim.size) {
+          ret.token.size = check.begin - ret.token.begin;
+          ret.delimiter.begin = check.begin;
+          ret.delimiter.size = i;
+          *pos += ret.token.size + i;
+          return ret;
+        }
+      }
     }
+
+    ++check.begin;
+    --check.size;
   }
 
   *pos = str.size;
-  return slice_empty;
+  return ret;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Split
+////////////////////////////////////////////////////////////////////////////////
+
+// Specialization for empty delimiter, return a slice for each char
+Array_slice _slice_split_all_chars(slice_t str) {
+  Array_slice ret = arr_slice_new_reserve(str.size);
+  for (index_t i = 0; i < str.size; ++i) {
+    slice_t* slice = arr_slice_emplace_back(ret);
+    *slice = slice_build(&str.begin[i], 1);
+  }
+  return ret;
+}
+
+// Splits a string slice into an array of slices based on a delimiter.
+Array_slice slice_split_str(slice_t str, slice_t delim) {
+  SLICE_VALID(str);
+  SLICE_VALID(delim);
+  if (delim.size <= 0) return _slice_split_all_chars(str);
+  Array_slice ret = arr_slice_new();
+
+  index_t i = 0;
+  do {
+    slice_t slice = slice_token_str(str, delim, &i).token;
+    arr_slice_push_back(ret, slice);
+  } while (i < str.size);
+
+  arr_slice_truncate(ret, 0);
+  return ret;
+}
+
+// Splits a string slice into an array of slices based on a delimiter.
+Array_slice slice_split_str_with_delim(slice_t str, slice_t delim) {
+  SLICE_VALID(str);
+  SLICE_VALID(delim);
+  if (delim.size <= 0) return _slice_split_all_chars(str);
+  Array_slice ret = arr_slice_new();
+
+  index_t i = 0;
+  loop {
+    token_result_t result = slice_token_str(str, delim, &i);
+    arr_slice_push_back(ret, result.token);
+    until (i >= str.size);
+    arr_slice_push_back(ret, result.delimiter);
+  }
+
+  return ret;
+}
+
+// Splits a string slice into an array of slices based on a delimiter.
+Array_slice slice_split_char(slice_t str, slice_t delims) {
+  SLICE_VALID(str);
+  SLICE_VALID(delims);
+  if (delims.size <= 0) return _slice_split_all_chars(str);
+  Array_slice ret = arr_slice_new();
+
+  index_t i = 0;
+  do {
+    slice_t slice = slice_token_char(str, delims, &i).token;
+    arr_slice_push_back(ret, slice);
+  } while (i < str.size);
+
+  return ret;
+}
+
+// Splits a string slice into an array of slices based on a delimiter.
+Array_slice slice_split_char_with_delim(slice_t str, slice_t delims) {
+  SLICE_VALID(str);
+  SLICE_VALID(delims);
+  if (delims.size <= 0) return _slice_split_all_chars(str);
+  Array_slice ret = arr_slice_new();
+
+  index_t i = 0;
+  loop {
+    token_result_t result = slice_token_char(str, delims, &i);
+    arr_slice_push_back(ret, result.token);
+    until (i >= str.size);
+    arr_slice_push_back(ret, result.delimiter);
+  }
+
+  return ret;
+}
+
+// Splits a string slice into an array of slices based on a delimiter.
+Array_slice slice_split_any(slice_t str, span_slice_t delims) {
+  SLICE_VALID(str);
+  if (span_slice_size(delims) <= 0) return _slice_split_all_chars(str);
+  Array_slice ret = arr_slice_new();
+
+  index_t i = 0;
+  do {
+    slice_t slice = slice_token_any(str, delims, &i).token;
+    arr_slice_push_back(ret, slice);
+  } while (i < str.size);
+
+  return ret;
+}
+
+// Splits a string slice into an array of slices based on a delimiter.
+Array_slice slice_split_any_with_delim(slice_t str, span_slice_t delims) {
+  SLICE_VALID(str);
+  if (span_slice_size(delims) <= 0) return _slice_split_all_chars(str);
+  Array_slice ret = arr_slice_new();
+
+  index_t i = 0;
+  loop {
+    token_result_t result = slice_token_any(str, delims, &i);
+    arr_slice_push_back(ret, result.token);
+    until (i >= str.size);
+    arr_slice_push_back(ret, result.delimiter);
+  }
+
+  return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Substrings
+////////////////////////////////////////////////////////////////////////////////
 
 // Gets a substring within the slice without copying any data.
 //
@@ -375,6 +630,10 @@ slice_t slice_trim_end(slice_t str) {
   };
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Misc.
+////////////////////////////////////////////////////////////////////////////////
+
 // Returns a hash value representing the slice.
 hash_t slice_hash(slice_t str) {
   SLICE_VALID(str);
@@ -391,37 +650,6 @@ int slice_compare_vptr(const void* lhs, const void* rhs) {
 hash_t slice_hash_vptr(const void* str) {
   assert(str);
   return slice_hash(*(slice_t*)str);
-}
-
-#include "array_slice.h"
-
-// Splits a string slice into an array of slices based on a delimiter.
-Array_slice slice_split(slice_t str, slice_t del) {
-  SLICE_VALID(str);
-  SLICE_VALID(del);
-  Array_slice ret = arr_slice_new();
-
-  // specialization for empty delimiter, return a slice for each char
-  if (del.size == 0) {
-    arr_slice_reserve(ret, str.size);
-    for (index_t i = 0; i < str.size; ++i) {
-      slice_t c = slice_build(&str.begin[i], 1);
-      arr_slice_push_back(ret, c);
-    }
-    return ret;
-  }
-
-  index_t i = 0;
-  do {
-    index_t prev = i;
-    i = slice_index_of(str, del, i);
-    slice_t slice = slice_substring(str, prev, i);
-    arr_slice_push_back(ret, slice);
-    i += del.size;
-    if (i == str.size) arr_slice_push_back(ret, slice_empty);
-  } while (i < str.size);
-
-  return ret;
 }
 
 #if defined(__WASM__) || defined(MCLIB_NO_STDIO)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -120,50 +120,58 @@ static inline slice_t slice_from_slice(slice_t s) { return s; }
 static inline index_t slice_size(slice_t s) { return s.size; }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Slice functions
+// Usage
 ////////////////////////////////////////////////////////////////////////////////
 
-int         slice_compare(slice_t lhs, slice_t rhs);
-bool        slice_eq(slice_t lhs, slice_t rhs);
-bool        slice_starts_with(slice_t str, slice_t starts);
-bool        slice_ends_with(slice_t str, slice_t ends);
-bool        slice_contains(slice_t str, slice_t check);
-bool        slice_contains_char(slice_t str, char check);
-bool        slice_is_empty(slice_t str);
-//bool      slice_contains_any(slice_t str, slice_t check_chars);
+typedef struct token_result_t {
+  slice_t token;
+  slice_t delimiter;
+} token_result_t;
 
-bool        slice_to_bool(slice_t str, bool* out_bool);
-bool        slice_to_int(slice_t str, int* out_int);
-bool        slice_to_long(slice_t str, index_t* out_int);
-bool        slice_to_float(slice_t str, float* out_float);
-bool        slice_to_double(slice_t str, double* out_float);
-bool        slice_find(slice_t str, slice_t to_find, slice_t* out_slice);
-index_t     slice_index_of(slice_t str, slice_t to_find, index_t from);
-index_t     slice_index_of_char(slice_t str, char c, index_t from);
-slice_t     slice_token(slice_t str, slice_t del_chrs, index_t* pos);
-//span_byte_t slice_to_span(slice_t str);
-//index_t   slice_index_of_last(slice_t str, slice_t find, index_t from);
-//index_t   slice_find_last(slice_t str, slice_t to_find);
-//Array     slice_match(slice_t str, slice_t regex);
+bool            slice_to_bool(slice_t str, bool* out_bool);
+bool            slice_to_int(slice_t str, int* out_int);
+bool            slice_to_long(slice_t str, index_t* out_int);
+bool            slice_to_float(slice_t str, float* out_float);
+bool            slice_to_double(slice_t str, double* out_float);
 
-slice_t    islice_substring(slice_t str, index_t start, index_t end);
-slice_t     slice_trim(slice_t str);
-slice_t     slice_trim_start(slice_t str);
-slice_t     slice_trim_end(slice_t str);
-//Array_slice slice_split(slice_t str, slice_t del);
-//Array     slice_tokenize(slice_t str, const slice_t[] tokens);
-//Array     slice_parenthetize(slice_t str); // block out segments by parens? ([{}])
+int             slice_compare(slice_t lhs, slice_t rhs);
+bool            slice_eq(slice_t lhs, slice_t rhs);
+bool            slice_starts_with(slice_t str, slice_t beginning);
+bool            slice_ends_with(slice_t str, slice_t ending);
+bool            slice_contains(slice_t str, slice_t target);
+bool            slice_contains_char(slice_t str, slice_t targets);
+bool            slice_is_empty(slice_t str);
 
-hash_t      slice_hash(slice_t str);
+bool            slice_find_str(slice_t str, slice_t target, slice_t* out_found);
+bool            slice_find_last_str(slice_t str, slice_t tgt, slice_t* out_found);
+index_t         slice_index_of_str(slice_t str, slice_t target);
+index_t         slice_index_of_last_str(slice_t str, slice_t target);
+index_t         slice_index_of_char(slice_t str, slice_t targets);
+index_t         slice_index_of_last_char(slice_t str, slice_t targets);
 
-int         slice_compare_vptr(const void* lhs, const void* rhs);
-hash_t      slice_hash_vptr(const void* str);
+token_result_t  slice_token_str(slice_t str, slice_t delim, index_t* pos);
+token_result_t  slice_token_char(slice_t str, slice_t delims, index_t* pos);
+
+slice_t        islice_substring(slice_t str, index_t start, index_t end);
+slice_t         slice_trim(slice_t str);
+slice_t         slice_trim_start(slice_t str);
+slice_t         slice_trim_end(slice_t str);
+
+hash_t          slice_hash(slice_t str);
+
+int             slice_compare_vptr(const void* lhs, const void* rhs);
+hash_t          slice_hash_vptr(const void* str);
 
 // slice_substring argument default
 #define _slice_sub_args(str, start, end, ...) (str), (start), (end)
 #define _slice_sub_v(str, ...) MCOMP(_slice_sub_args, (str, __VA_ARGS__, str.size))
 #define slice_substring(str, ...) islice_substring(_slice_sub_v(str, __VA_ARGS__))
 
+////////////////////////////////////////////////////////////////////////////////
+// Additional functions brought in when other headers are present
+////////////////////////////////////////////////////////////////////////////////
+
+// If byte spans are available, re-include to get slice functions
 #ifdef MCLIB_SPAN_BYTE_
 # include "span_byte.h"
 #endif

@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,13 @@
 
 // Specialty Array_slice functions
 
-Array_slice slice_split(slice_t str, slice_t del);
+Array_slice slice_split_str(slice_t str, slice_t delim);
+Array_slice slice_split_str_with_delim(slice_t str, slice_t delim);
+Array_slice slice_split_char(slice_t str, slice_t delims);
+Array_slice slice_split_char_with_delim(slice_t str, slice_t delims);
+Array_slice slice_split_any(slice_t str, span_slice_t delims);
+Array_slice slice_split_any_with_delim(slice_t str, span_slice_t delims);
+
+//Array_slice slice_match(slice_t str, slice_t regex);
 
 #endif
