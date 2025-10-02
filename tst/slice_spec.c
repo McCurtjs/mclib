@@ -747,11 +747,105 @@ describe(slice_token_any) {
 // Split
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "array_slice.h"
+
 describe(slice_split_str) {
+
+  slice_t slice = S("This == is == a == slice == ");
+  Array_slice result = NULL;
+
+  it("splits the slice using internal-only delimiter (no empty results)") {
+    slice_t expected[] = { S("Th"), S("s == "), S("s == a == sl"), S("ce == ") };
+    result = slice_split_str(slice, S("i"));
+    expect(result != NULL);
+    expect(result->size, == , 4);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("splits the slice with a token that matches the end of the string") {
+    slice_t expected[] = { S("This"), S("is"), S("a"), S("slice"), slice_empty };
+    result = slice_split_str(slice, S(" == "));
+    expect(result != NULL);
+    expect(result->size, == , 5);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("splits the slice using a token that matches the start of the string") {
+    slice_t expected[] = { slice_empty, slice_substring(slice, 4) };
+    result = slice_split_str(slice, S("This"));
+    expect(result != NULL);
+    expect(result->size, == , 2);
+    expect(result->begin[0] to match(expected[0]));
+    expect(result->begin[1] to match(expected[1]));
+  }
+
+  it("splits the slice with a delimiter that appears twice in a row") {
+    slice = S("Left====Right");
+    slice_t expected[] = { S("Left"), slice_empty, S("Right") };
+    result = slice_split_str(slice, S("=="));
+    expect(result != NULL);
+    expect(result->size, == , 3);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("returns an array with the full input slice if no delimiter is found") {
+    result = slice_split_str(slice, slice_true);
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice));
+  }
+
+  it("gives an array with the empty string on an empty input") {
+    result = slice_split_str(slice_empty, S(" == "));
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    slice_t token = arr_slice_get_front(result);
+    expect(token to match(slice_empty));
+  }
+
+  it("returns an array of slices for each character when given an empty delim") {
+    result = slice_split_str(slice, slice_empty);
+    expect(result != NULL);
+    expect(result->size, == , slice.size);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(token->size == 1);
+      expect(token->begin[0], == , slice.begin[i]);
+    }
+  }
+
+  after{
+    arr_slice_delete(&result);
+  }
 
 }
 
 describe(slice_split_str_with_delim) {
+
+  slice_t slice = S("This == is == a == slice == ");
+  slice_t eq = S(" == ");
+  Array_slice result = NULL;
+
+  it("splits the slice into tokens based on the ' == ' delimiter") {
+    slice_t expected[] = {
+      S("This"), eq, S("is"), eq, S("a"), eq, S("slice"), eq, slice_empty
+    };
+    result = slice_split_str_with_delim(slice, eq);
+    expect(result != NULL);
+    expect(result->size, == , 8);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  after{
+    arr_slice_delete(&result);
+  }
 
 }
 

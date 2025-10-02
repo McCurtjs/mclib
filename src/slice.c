@@ -479,12 +479,13 @@ Array_slice slice_split_str(slice_t str, slice_t delim) {
   Array_slice ret = arr_slice_new();
 
   index_t i = 0;
+  token_result_t result;
   do {
-    slice_t slice = slice_token_str(str, delim, &i).token;
-    arr_slice_push_back(ret, slice);
-  } while (i < str.size);
+    result = slice_token_str(str, delim, &i);
+    arr_slice_push_back(ret, result.token);
+  } while (result.delimiter.size);
 
-  arr_slice_truncate(ret, 0);
+  arr_slice_truncate(ret, ret->size);
   return ret;
 }
 
@@ -499,10 +500,11 @@ Array_slice slice_split_str_with_delim(slice_t str, slice_t delim) {
   loop {
     token_result_t result = slice_token_str(str, delim, &i);
     arr_slice_push_back(ret, result.token);
-    until (i >= str.size);
+    until (result.delimiter.size == 0);
     arr_slice_push_back(ret, result.delimiter);
   }
 
+  arr_slice_truncate(ret, ret->size);
   return ret;
 }
 
@@ -519,6 +521,7 @@ Array_slice slice_split_char(slice_t str, slice_t delims) {
     arr_slice_push_back(ret, slice);
   } while (i < str.size);
 
+  arr_slice_truncate(ret, ret->size);
   return ret;
 }
 
@@ -537,6 +540,7 @@ Array_slice slice_split_char_with_delim(slice_t str, slice_t delims) {
     arr_slice_push_back(ret, result.delimiter);
   }
 
+  arr_slice_truncate(ret, ret->size);
   return ret;
 }
 
@@ -552,6 +556,7 @@ Array_slice slice_split_any(slice_t str, span_slice_t delims) {
     arr_slice_push_back(ret, slice);
   } while (i < str.size);
 
+  arr_slice_truncate(ret, ret->size);
   return ret;
 }
 
@@ -569,6 +574,7 @@ Array_slice slice_split_any_with_delim(slice_t str, span_slice_t delims) {
     arr_slice_push_back(ret, result.delimiter);
   }
 
+  arr_slice_truncate(ret, ret->size);
   return ret;
 }
 
