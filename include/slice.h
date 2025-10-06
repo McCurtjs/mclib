@@ -48,6 +48,16 @@ typedef struct slice_t {
   };
 } slice_t;
 
+typedef struct pair_slice_t {
+  union {
+    slice_t begin[2];
+    struct {
+      slice_t left;
+      slice_t right;
+    };
+  };
+} pair_slice_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Constants
 ////////////////////////////////////////////////////////////////////////////////
@@ -120,13 +130,33 @@ static inline slice_t slice_from_slice(slice_t s) { return s; }
 static inline index_t slice_size(slice_t s) { return s.size; }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Usage
+// Return result tuples
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct token_result_t {
-  slice_t token;
+typedef struct res_token_t {
+  union {
+    pair_slice_t pair;
+    struct {
+      slice_t token;
+      slice_t delimiter;
+    };
+  };
+} res_token_t;
+
+typedef struct res_partition_t {
+  union {
+    pair_slice_t pair;
+    struct {
+      slice_t left;
+      slice_t right;
+    };
+  };
   slice_t delimiter;
-} token_result_t;
+} res_partition_t;
+
+////////////////////////////////////////////////////////////////////////////////
+// Usage
+////////////////////////////////////////////////////////////////////////////////
 
 bool            slice_to_bool(slice_t str, bool* out_bool);
 bool            slice_to_int(slice_t str, int* out_int);
@@ -143,16 +173,24 @@ bool            slice_contains_char(slice_t str, slice_t targets);
 bool            slice_is_empty(slice_t str);
 
 bool            slice_find_str(slice_t str, slice_t target, slice_t* out_found);
-bool            slice_find_last_str(slice_t str, slice_t tgt, slice_t* out_found);
+bool            slice_find_char(slice_t str, slice_t tgt, slice_t* out_found);
+bool            slice_find_last_str(slice_t s, slice_t tgt, slice_t* out_found);
+bool            slice_find_last_char(slice_t s, slice_t t, slice_t* out_found);
 index_t         slice_index_of_str(slice_t str, slice_t target);
-index_t         slice_index_of_last_str(slice_t str, slice_t target);
 index_t         slice_index_of_char(slice_t str, slice_t targets);
+index_t         slice_index_of_last_str(slice_t str, slice_t target);
 index_t         slice_index_of_last_char(slice_t str, slice_t targets);
 
-token_result_t  slice_token_str(slice_t str, slice_t delim, index_t* pos);
-token_result_t  slice_token_char(slice_t str, slice_t delims, index_t* pos);
+res_token_t     slice_token_str(slice_t str, slice_t delim, index_t* pos);
+res_token_t     slice_token_char(slice_t str, slice_t delims, index_t* pos);
 
-slice_t        islice_substring(slice_t str, index_t start, index_t end);
+pair_slice_t    slice_split_at(slice_t str, index_t index);
+res_partition_t slice_partition_str(slice_t str, slice_t delim);
+res_partition_t slice_partition_char(slice_t str, slice_t delims);
+
+slice_t         slice_substring(slice_t str, index_t start, index_t end);
+slice_t         slice_drop(slice_t str, index_t count);
+slice_t         slice_take(slice_t str, index_t count);
 slice_t         slice_trim(slice_t str);
 slice_t         slice_trim_start(slice_t str);
 slice_t         slice_trim_end(slice_t str);
@@ -161,11 +199,6 @@ hash_t          slice_hash(slice_t str);
 
 int             slice_compare_vptr(const void* lhs, const void* rhs);
 hash_t          slice_hash_vptr(const void* str);
-
-// slice_substring argument default
-#define _slice_sub_args(str, start, end, ...) (str), (start), (end)
-#define _slice_sub_v(str, ...) MCOMP(_slice_sub_args, (str, __VA_ARGS__, str.size))
-#define slice_substring(str, ...) islice_substring(_slice_sub_v(str, __VA_ARGS__))
 
 ////////////////////////////////////////////////////////////////////////////////
 // Additional functions brought in when other headers are present

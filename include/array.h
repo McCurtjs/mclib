@@ -39,8 +39,8 @@
 //
 // When defined, the following will be created (inline, with no overhead):
 //
-// #define con_type T
-// #define con_prefix t
+// #define con_type V
+// #define con_prefix v
 // #define con_cmp compare_fn // optional, reuqired for sort/search functions
 // #include "span.h" // prerequisite for array type
 // #include "array.h"
@@ -49,48 +49,48 @@
 // #undef con_cmp
 //
 // // Create, Setup, Delete
-// Array_T  arr_t_new();
-// Array_T  arr_t_new_reserve(index_t capacity);
-// void     arr_t_reserve(Array_T, index_t capacity);
-// void     arr_t_truncate(Array_T, index_t capacity);
-// void     arr_t_clear(Array_T);
-// void     arr_t_free(Array_T);
-// void     arr_t_delete(Array_T*);
-// T*       arr_t_release(Array_T*);
+// Array_V  arr_v_new();
+// Array_V  arr_v_new_reserve(index_t capacity);
+// void     arr_v_reserve(Array_V, index_t capacity);
+// void     arr_v_truncate(Array_V, index_t capacity);
+// void     arr_v_clear(Array_V);
+// void     arr_v_free(Array_V);
+// void     arr_v_delete(Array_V*);
+// T*       arr_v_release(Array_V*);
 //
 // // Item Addition
-// index_t  arr_t_insert(Array_T, index_t position, T element);
-// index_t  arr_t_push_back(Array_T, T element);
-// index_t  arr_t_write(Array_T, index_t position, const T* element);
-// index_t  arr_t_write_back(Array_T, const T* element);
-// T[1]     arr_t_emplace(Array_T, index_t position);
-// T[1]     arr_t_emplace_back(Array_T);
-// T[n]     arr_t_emplace_range(Array_T, index_t position, index_t count);
-// T[n]     arr_t_emplace_back_range(Array_T, index_t count);
+// index_t  arr_v_insert(Array_V, index_t position, V element);
+// index_t  arr_v_push_back(Array_V, V element);
+// index_t  arr_v_write(Array_V, index_t position, const V* element);
+// index_t  arr_v_write_back(Array_V, const V* element);
+// V[1]     arr_v_emplace(Array_V, index_t position);
+// V[1]     arr_v_emplace_back(Array_V);
+// V[n]     arr_v_emplace_range(Array_V, index_t position, index_t count);
+// V[n]     arr_v_emplace_back_range(Array_V, index_t count);
 //
 // // Item Removal
-// index_t  arr_t_remove(Array_T, position);
-// index_t  arr_t_remove_range(Array_T, position, count);
-// index_t  arr_t_remove_unstable(Array_T, position);
-// index_t  arr_t_pop_back(Array_T);
+// index_t  arr_v_remove(Array_V, position);
+// index_t  arr_v_remove_range(Array_V, position, count);
+// index_t  arr_v_remove_unstable(Array_V, position);
+// index_t  arr_v_pop_back(Array_V);
 //
 // // Accessors
-// T        arr_t_get(Array_T, index_t index);
-// T        arr_t_get_front(Array_T);
-// T        arr_t_get_back(Array_T);
-// T*       arr_t_ref(Array_T, index_t index);
-// T*       arr_t_ref_front(Array_T);
-// T*       arr_t_ref_back(Array_T);
-// bool     arr_t_read(Array_T, index_t index, T* out);
-// bool     arr_t_read_front(Array_T, T* out);
-// bool     arr_t_read_back(Array_T, T* out);
+// V        arr_v_get(Array_V, index_t index);
+// V        arr_v_get_front(Array_V);
+// V        arr_v_get_back(Array_V);
+// V*       arr_v_ref(Array_V, index_t index);
+// V*       arr_v_ref_front(Array_V);
+// V*       arr_v_ref_back(Array_V);
+// bool     arr_v_read(Array_V, index_t index, V* out);
+// bool     arr_v_read_front(Array_V, V* out);
+// bool     arr_v_read_back(Array_V, V* out);
 //
 // // Algorithm
-// void     arr_t_reverse(Array_T);
-// void     arr_t_filter(Array_T, predicate);
-// void     arr_t_sort(Array_T, compare_fn cmp);
-// T        arr_t_find(Array_T, predicate);
-// T*       arr_t_ref_find(Array_T, predicate);
+// void     arr_v_reverse(Array_V);
+// void     arr_v_filter(Array_V, predicate);
+// void     arr_v_sort(Array_V, compare_fn cmp);
+// V        arr_v_find(Array_V, predicate);
+// V*       arr_v_ref_find(Array_V, predicate);
 //
 
 #include "types.h"
@@ -104,7 +104,6 @@ typedef struct array_t {
       void*   const end;
       index_t const element_size;
     };
-    void*     const arr; // TMP
   };
   index_t     const capacity;
   index_t     const size;
@@ -174,10 +173,10 @@ bool      array_contains(const Array array, const void* to_find);
 // \brief usage example:
 // \brief MyType* array_foreach_index(iter, i, array) { other[i] = *iter; }
 #define array_foreach_index(VAR, INDEX, ARRAY)                                \
-  VAR = (ARRAY)->arr;                                                         \
+  VAR = (ARRAY)->begin;                                                       \
   assert(sizeof(*VAR) == ARRAY->element_size);                                \
   for (index_t INDEX = 0; INDEX < ARRAY->size; ++INDEX,                       \
-    VAR = (void*)((byte*)ARRAY->arr + INDEX * sizeof(*VAR))                   \
+    VAR = (void*)((byte*)ARRAY->begin + INDEX * sizeof(*VAR))                 \
   )                                                                           //
 
 // TODO: would it be better to also track an offset rather than multiply?
@@ -217,9 +216,6 @@ typedef struct _arr_local_type {
     struct {
       union {
         con_type* const begin;
-        con_type* const arr;    // remove
-        con_type* const buf;    // remove
-        con_type* const first;  // remove
       };
       con_type* const end;
       index_t const element_size;

@@ -113,7 +113,7 @@ describe(map_ensure) {
   }
 
   it("adds an element to the map and reads it back") {
-    ensure_t result = map_ensure(map, &(int){ 5 });
+    res_ensure_t result = map_ensure(map, &(int){ 5 });
 
     expect(result.is_new to be_true);
     expect(map->size to equal(1));
@@ -161,7 +161,7 @@ describe(map_ensure) {
     int key = 1337;
     *(int*)map_ensure(map, &key).value = 123;
 
-    ensure_t find = map_ensure(map, &key);
+    res_ensure_t find = map_ensure(map, &key);
     expect(find.is_new to be_false);
     expect(*(int*)find.value to equal(123));
   }
@@ -304,7 +304,7 @@ describe(map_stuff) {
 
   HMap_int ints = map_int_new();
 
-  ensure_int_t result = map_int_ensure(ints, S("Input"));
+  res_ensure_int_t result = map_int_ensure(ints, S("Input"));
   *result.value = 12;
 
   map_int_new();

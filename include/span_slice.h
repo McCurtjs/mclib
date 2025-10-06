@@ -34,10 +34,11 @@
 #undef con_prefix
 
 bool            slice_contains_any(slice_t str, span_slice_t any);
-bool            slice_find_any(slice_t str, span_slice_t any, slice_t* out_slice);
-bool            slice_find_last_any(slice_t str, span_slice_t any, slice_t* out_slice);
+bool            slice_find_any(slice_t str, span_slice_t any, slice_t* out_s);
+bool            slice_find_last_any(slice_t s, span_slice_t a, slice_t* out_s);
 index_t         slice_index_of_any(slice_t str, span_slice_t any);
 index_t         slice_index_of_last_any(slice_t str, span_slice_t any);
-token_result_t  slice_token_any(slice_t str, span_slice_t any, index_t* pos);
+res_token_t     slice_token_any(slice_t str, span_slice_t any, index_t* pos);
+res_partition_t slice_partition_any(slice_t str, span_slice_t delims);
 
 #endif

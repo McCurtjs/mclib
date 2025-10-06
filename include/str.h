@@ -113,7 +113,7 @@ static inline slice_t slice_from_str(String s) { return s->slice; }
 #define str_size(str)               slice_size(_s2r(str))
 
 ////////////////////////////////////////////////////////////////////////////////
-// Usage
+// Parsing and basic type comparisons
 ////////////////////////////////////////////////////////////////////////////////
 
 #define str_to_bool(str, out)       slice_to_bool(_s2r(str), out)
@@ -128,25 +128,29 @@ static inline slice_t slice_from_str(String s) { return s->slice; }
 #define str_ends_with(str, end)     slice_ends_with(_s2r(str), _s2r(end))
 #define str_contains(str, check)    slice_contains(_s2r(str), _s2r(check))
 #define str_contains_char(s, chs)   slice_contains_char(_s2r(s), _s2r(chs))
+#define str_contains_any(s, delims) slice_contains_any(_s2r(s), delims)
 bool    str_is_null_or_empty(const String str);
 
 #define str_find(str, target, out)  slice_find_str(_s2r(str), _s2r(target))
-#define str_find_last(str, t, out)  slice_find_last_str(_s2r(str), _s2r(t), out))
 
-// \brief Gets the start of the next instance of to_find in str, starting
-//    at from_pos.
+#define str_find_last(st, t, out)   slice_find_last_str(_s2r(st), _s2r(t), out))
+#define str_find_last_char(s, t, o) slice_find_last_char(_s2r(s), _s2r(t), o))
+#define str_find_last_any(s, a, o)  slice_find_last_any(_s2r(s), a, o))
+
+// \brief Gets the index of the next instance of the target string.
 //
-// \returns
-//    The index in str of the match, or str.size if none is present.
+// \returns the index of the match, or str.size if it's not present.
 #define str_index_of(str, target)   slice_index_of_str(_s2r(str), _s2r(target))
 
-// \brief Gets the start of the next instance of to_find in str, starting
-//    at from_pos.
+// \brief Gets the start of the next instance of the target string.
 //
-// \returns
-//    The index in str of the match, or str.size if none is present.
-#define str_index_of_char(str, to_find, from_pos) \
-                    slice_index_of_char(_s2r(str), to_find, from_pos)
+// \returns the index of the match, or str.size if it's not present.
+#define str_index_of_char(str, tgt) slice_index_of_char(_s2r(str), tgt)
+
+// \brief Gets the index of the next instance of any of the target strings.
+//
+// \returns the index of the match, or str.size if it's not present.
+#define str_index_of_any(str, tgts) slice_index_of_any(_s2r(str), tgts)
 
 // \brief Gets a token as a substring of str described by the starting position
 //    pos that ends with (not including) any delimeter character in to_find.
@@ -158,16 +162,18 @@ bool    str_is_null_or_empty(const String str);
 //    A slice containing the token
 #define str_token(str, delim, pos)  slice_token_str(_s2r(str), _s2r(delim), pos)
 
-#define str_token_char(str, delims, pos) \
-                    slice_token_char(_s2r(str), _s2r(delims), pos)
+#define str_token_char(s, dels, p)  slice_token_char(_s2r(s), _s2r(dels), p)
+
+#define str_token_any(s, any, pos)  slice_token_any(_s2r(s), any, pos)
 
 ////////////////////////////////////////////////////////////////////////////////
-// Usage
+// Substrings
 ////////////////////////////////////////////////////////////////////////////////
 
-// \brief `slice str_substring(str, start, ?end)`
 // \brief Gets a substring as a slice within the input string or slice.
-// \brief Works like javascript string.slice.
+//
+// \brief Works like javascript string.slice. Negative offsets for either the
+//    start or end of the string represent an offset from the end of the string.
 //
 // \param str The string or slice to get a substring of. The returned
 //    substring's lifetime will be dependent on the lifetime of str.
@@ -183,8 +189,18 @@ bool    str_is_null_or_empty(const String str);
 // \param __VA_ARGS__ - start, ?end
 //
 // \returns a slice as a substring of the input string.
-#define str_substring(str, ...)     slice_substring(_s2r(str), __VA_ARGS__)
-#define str_slice(str, ...)         slice_substring(_s2r(str), __VA_ARGS__)
+#define str_substring(str, st, end) slice_substring(_s2r(str), st, end)
+
+// \brief Alias for `str_substring`.
+#define str_slice(str, st, end)     slice_substring(_s2r(str), st, end)
+
+// \brief Drops `count` characters from the start (if positive) or end (if
+//    negative) of the string.
+#define str_drop(str, count)        slice_drop(_s2r(str), count)
+
+// \brief Gets a substring of the first `count` characters of the start (if
+//    positive) or end (if negative) from the string.
+#define str_take(str, count)        slice_take(_s2r(str), count)
 
 // \brief Returns a slice with leading and trailing whitespace omitted.
 #define str_trim(str)               slice_trim(_s2r(str))
@@ -196,15 +212,16 @@ bool    str_is_null_or_empty(const String str);
 #define str_trim_end(str)           slice_trim_end(_s2r(str))
 
 ////////////////////////////////////////////////////////////////////////////////
-// Usage
+// Splits and joins
 ////////////////////////////////////////////////////////////////////////////////
 
 // \brief Splits the string into an array of substrings based on the delimiter.
 //
 // \param str - The string to split into pieces.
 //
-// \param del - The substring to split the input along. Instances of the
-//    delimiter are removed from the resulting substrings.
+// \param delims - delimiters to split the string against. Allowed params are
+//    string types (String, slice_t, char*) or single chars ('x'). The
+//    delimiters themselves are not included in the output.
 //
 // \returns An array of slices whose lifetimes are bound to str.
 //    The Array must be deleted by the user via arr_str_delete(&arr).
@@ -212,6 +229,48 @@ bool    str_is_null_or_empty(const String str);
   (_str_arg_t[]) { _va_exp(_spa, __VA_ARGS__) },    \
   _va_count(__VA_ARGS__)                            \
 )                                                   //
+
+#define str_split_at(str, index)    slice_split_at(_s2r(str), index)
+#define str_split_str(str, delim)   slice_split_str(_s2r(str), _s2r(delim))
+#define str_split_char(str, delims) slice_split_char(_s2r(str), _s2r(delims))
+#define str_split_any(str, delims)  slice_split_any(_s2r(str), delims)
+
+// \brief Splits the string into an array of substrings based on the delimiter.
+//
+// \param str - The string to tokenize.
+//
+// \param delims - delimiters to tokenize the string with. Can be string types
+//    (String, slice_t, char*), single chars ('x'), or string spans/Arrays.
+//
+// \returns an array of slices in the string, including the delimiters.
+#define str_tokenize(str, ...)                      \
+  istr_tokenize(_s2r(str),                          \
+    (_str_arg_t[]) { _va_exp(_spa, __VA_ARGS__) },  \
+    _va_count(__VA_ARGS__)                          \
+  )                                                 //
+
+#define str_tokenize_str(s, delim)  slice_tokenize_str(_s2r(s), _s2r(delim))
+#define str_tokenize_char(s, dels)  slice_tokenize_char(_s2r(s), _s2r(dels))
+#define str_tokenize_any(s, dels)   slice_tokenize_any(_s2r(s), dels)
+
+// \brief Splits the string into two parts around the first matching delimiter.
+//
+// \param str - The string to partition.
+//
+// \param delims - delimiters to search for. Can be string types (String, char*,
+//    slice_t), single chars ('x'), or slice containers (Array_slice,
+//    span_slice_t).
+//
+// \returns a result type containing the left/right pair and found delimiter.
+#define str_partition(str, ...)                     \
+  istr_partition(_s2r(str),                         \
+    (_str_arg_t[]) { _va_exp(_spa, __VA_ARGS__) },  \
+    _va_count(__VA_ARGS__)                          \
+  )                                                 //
+
+#define str_partition_str(s, del)   slice_partition_str(_s2r(s), _s2r(del))
+#define str_partition_char(s, dels) slice_partition_char(_s2r(s), _s2r(dels))
+#define str_partition_any(s, any)   slice_partition_any(_s2r(s), _s2r(any))
 
 // \brief Joins the provided strings, characters, and slices into one string.
 //
@@ -300,7 +359,7 @@ bool    str_is_null_or_empty(const String str);
 // Internal string functions for slice input
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline index_t istr_size(slice_t s) { return s.size; }
+static inline index_t _str_size(slice_t s) { return s.size; }
 static inline slice_t _str_slice_r(slice_t slice) { return slice; }
 static inline slice_t _str_slice_st(const String str) {
   if (str) return str->slice;
@@ -317,6 +376,7 @@ String      istr_format(slice_t fmt, ...);
 //String    istr_to_lower(slice_t str);
 
 Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count);
+Array_slice istr_tokenize(slice_t st, _str_arg_t args[], index_t count);
 
 //bool      istr_contains_any(slice_t str, slice_t check_chars);
 //index_t   istr_index_of_last(slice_t str, slice_t find, index_t from);
@@ -330,10 +390,6 @@ Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count);
 //String    istr_replace_all(slice_t str, slice_t r, slice_t w);
 void        istr_print(slice_t fmt, ...);
 void        istr_log(slice_t fmt, ...);
-
-#define _str_sub_args(str, start, end, ...) _s2r(str), (index_t)start, (index_t)end
-#define _str_sub_a(str, ...) _str_sub_args(str, __VA_ARGS__, _s2r(str).size)
-#define _str_substring(str, ...) istr_substring(_str_sub_a(str, __VA_ARGS__))
 
 #define _str_format(fmt, ...) istr_format(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
 #define _str_print(fmt, ...) istr_print(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))

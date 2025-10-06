@@ -226,7 +226,7 @@ describe(str_substring) {
   slice_t slice = S("Substring test");
 
   it("resolves the macro correctly") {
-    slice_t subject = str_substring(slice, 3);
+    slice_t subject = str_substring(slice, 3, slice.size);
     expect(subject to match("string test", str_eq));
   }
 }

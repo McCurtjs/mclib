@@ -80,6 +80,8 @@
 #include "types.h"
 #include "span_base.h"
 
+extern const span_t span_empty;
+
 static inline index_t ispan_size_bytes(span_t span) {
   byte* begin = span.begin;
   byte* end = span.end;
@@ -107,6 +109,8 @@ void ispan_sort(span_t span, index_t element_size, compare_fn cmp);
   VAR = SPAN.begin;                                                           \
   for (index_t INDEX = 0; (byte*)VAR < (byte*)SPAN.end; ++VAR, ++INDEX)       //
 
+#define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
+
 #endif
 
 #ifdef con_type
@@ -121,11 +125,14 @@ void ispan_sort(span_t span, index_t element_size, compare_fn cmp);
 #define _prefix(_fn) MACRO_CONCAT3(span_, _con_name, _fn)
 
 typedef struct _span_type {
-  con_type* begin;
-  con_type* end;
+  union {
+    span_t span;
+    struct {
+      con_type* begin;
+      con_type* end;
+    };
+  };
 } _span_type;
-
-#define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
 
 static inline _span_type MACRO_CONCAT(span_, _con_name)
 (con_type* begin, con_type* end) {

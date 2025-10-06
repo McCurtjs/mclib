@@ -36,11 +36,11 @@
 // Specialty Array_slice functions
 
 Array_slice slice_split_str(slice_t str, slice_t delim);
-Array_slice slice_split_str_with_delim(slice_t str, slice_t delim);
 Array_slice slice_split_char(slice_t str, slice_t delims);
-Array_slice slice_split_char_with_delim(slice_t str, slice_t delims);
 Array_slice slice_split_any(slice_t str, span_slice_t delims);
-Array_slice slice_split_any_with_delim(slice_t str, span_slice_t delims);
+Array_slice slice_tokenize_str(slice_t str, slice_t delim);
+Array_slice slice_tokenize_char(slice_t str, slice_t delims);
+Array_slice slice_tokenize_any(slice_t str, span_slice_t delims);
 
 //Array_slice slice_match(slice_t str, slice_t regex);
 

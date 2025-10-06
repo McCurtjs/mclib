@@ -170,18 +170,18 @@ static index_t _istr_args_count(_str_arg_t args[], index_t argc) {
   for (index_t i = 0; i < argc; ++i) {
     switch (args[i].type) {
 
-    case _str_arg_slice:
-    case _str_arg_int:
-      ++count;
-      break;
+      case _str_arg_slice:
+      case _str_arg_int:
+        ++count;
+        break;
 
-    case _str_arg_span:
-      count += span_slice_size(args[i].span);
-      break;
+      case _str_arg_span:
+        count += span_slice_size(args[i].span);
+        break;
 
-    default: {
-      assert(false);
-    } break;
+      default:
+        assert(false);
+        break;
 
     }
   }
@@ -254,7 +254,7 @@ String istr_join(slice_t del, _str_arg_t args[], index_t count) {
         memcpy(dst, del.begin, del.size);
         dst += del.size;
       }
-    } else {
+    } else { // args[i].type == _str_arg_span
       span_slice_t span = args[i].span;
 
       for (index_t j = 0; j < span_slice_size(span); ++j) {
@@ -287,23 +287,28 @@ Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count) {
     slice_t* slice = arr_slice_emplace_back(ret);
 
     for (index_t i = 0; i < count; ++i) {
-      if (args[i].type == _str_arg_int) {
-        slice->begin = (char*)&args[pos++].i;
-        slice->size = 1;
-        index = pos + 1;
-        break;
-      }
 
       index_t check = pos;
       slice_t next;
 
-      if (args[i].type == _str_arg_slice) {
-        next = slice_token_str(str, args[i].slice, &check).token;
-      } else if (args[i].type == _str_arg_span) {
-        next = slice_token_any(str, args[i].span, &check).token;
-      } else {
-        assert(false);
-        next = slice_empty;
+      switch (args[i].type) {
+        case _str_arg_int:
+          slice_t charslice = slice_build((char*)&args[i].i, 1);
+          next = slice_token_char(str, charslice, &check).token;
+          break;
+
+        case _str_arg_slice:
+          next = slice_token_str(str, args[i].slice, &check).token;
+          break;
+
+        case _str_arg_span:
+          next = slice_token_any(str, args[i].span, &check).token;
+          break;
+
+        default:
+          assert(false);
+          next = slice_empty;
+          break;
       }
 
       if (check < index) {
@@ -313,7 +318,7 @@ Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count) {
     }
 
     if (index == str.size) {
-      *slice = slice_substring(str, pos);
+      *slice = slice_drop(str, pos);
     }
 
     pos = index;
@@ -322,11 +327,61 @@ Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count) {
   return ret;
 }
 
-Array_slice istr_split_tokens(slice_t str, _str_arg_t args[], index_t count) {
-  PARAM_UNUSED(str);
-  PARAM_UNUSED(args);
-  PARAM_UNUSED(count);
-  return NULL;
+Array_slice istr_tokenize(
+  slice_t str, _str_arg_t args[], index_t count
+) {
+  Array_slice ret = arr_slice_new_reserve(_istr_args_count(args, count) * 2);
+
+  if (count <= 0) {
+    arr_slice_push_back(ret, str);
+    arr_slice_truncate(ret, ret->size);
+    return ret;
+  }
+
+  index_t pos = 0;
+  while (pos < str.size) {
+    index_t index = str.size;
+    slice_t* slice = arr_slice_emplace_back(ret);
+
+    for (index_t i = 0; i < count; ++i) {
+
+      index_t check = pos;
+      slice_t next;
+
+      switch (args[i].type) {
+        case _str_arg_int:
+          slice_t charslice = slice_build((char*)&args[i].i, 1);
+          next = slice_token_char(str, charslice, &check).token;
+          break;
+
+        case _str_arg_slice:
+          next = slice_token_str(str, args[i].slice, &check).token;
+          break;
+
+        case _str_arg_span:
+          next = slice_token_any(str, args[i].span, &check).token;
+          break;
+
+        default:
+          assert(false);
+          next = slice_empty;
+          break;
+      }
+
+      if (check < index) {
+        *slice = next;
+        index = check;
+      }
+    }
+
+    if (index == str.size) {
+      *slice = slice_drop(str, pos);
+    }
+
+    pos = index;
+  }
+
+  return ret;
 }
 
 String istr_prepend(slice_t str, index_t length, char c) {
@@ -878,7 +933,7 @@ static String format_va(slice_t fmt, va_list args) {
     }
 
     index_t spec_end;
-    slice_t spec_str = islice_substring(fmt, i + 1, fmt.size);
+    slice_t spec_str = slice_drop(fmt, i + 1);
     _Str_FmtSpec spec = format_read_spec(spec_str, arg_index, &spec_end);
 
     // rather than error on invalid spec, just print the characters
@@ -906,7 +961,7 @@ static String format_va(slice_t fmt, va_list args) {
   array_delete(&params);
 
   arr_byte_push_back(output, '\0');
-  String_Internal* header = (String_Internal*)output->arr;
+  String_Internal* header = (String_Internal*)output->begin;
   header->size = output->size - sizeof(struct slice_t) - 1;
   header->begin = &header->head;
   arr_byte_truncate(output, output->size);

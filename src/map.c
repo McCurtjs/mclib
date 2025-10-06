@@ -347,7 +347,7 @@ void map_free(HMap m_in) {
   m->data = NULL;
 }
 
-ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
+res_ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
   HMAP_INTERNAL;
   assert(key);
   assert(hash == _key_hash(m, key)); // redundant, ensure correct hashes in test
@@ -359,7 +359,7 @@ ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
     Map_Cell* cell = _cell_search_bucket(m, slot, key, hash);
 
     if (cell) {
-      return (ensure_t) {
+      return (res_ensure_t) {
         .value = _cell_value(m, cell),
         .is_new = FALSE,
       };
@@ -368,7 +368,7 @@ ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
 
   // TODO: if the map capacity is locked, check if we've reached capacity
   if (/*locked && */ m->size >= m->capacity) {
-    return (ensure_t) { .value = NULL, .is_new = FALSE };
+    return (res_ensure_t) { .value = NULL, .is_new = FALSE };
   }
 
   // if our key is not already in the map, check expansion and update slot
@@ -405,49 +405,49 @@ ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
   slot->hash = hash;
   memcpy(_cell_key(slot), key, m->key_size);
 
-  return (ensure_t) {
+  return (res_ensure_t) {
     .value = _cell_value(m, slot),
     .is_new = TRUE,
   };
 }
 
-ensure_t map_ensure(HMap m_in, const void* key) {
+res_ensure_t map_ensure(HMap m_in, const void* key) {
   HMAP_INTERNAL;
   assert(key);
   return map_ensure_hash(m_in, key, _key_hash(m, key));
 }
 
 void* map_emplace_hash(HMap m_in, const void* key, hash_t hash) {
-  ensure_t result = map_ensure_hash(m_in, key, hash);
+  res_ensure_t result = map_ensure_hash(m_in, key, hash);
   if (!result.is_new) return NULL;
   return result.value;
 }
 
 void* map_emplace(HMap m_in, const void* key) {
-  ensure_t result = map_ensure(m_in, key);
+  res_ensure_t result = map_ensure(m_in, key);
   if (!result.is_new) return NULL;
   return result.value;
 }
 
 void map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
-  ensure_t result = map_ensure_hash(m_in, key, hash);
+  res_ensure_t result = map_ensure_hash(m_in, key, hash);
   memcpy(result.value, val, m_in->element_size);
 }
 
 void map_write(HMap m_in, const void* key, const void* value) {
-  ensure_t result = map_ensure(m_in, key);
+  res_ensure_t result = map_ensure(m_in, key);
   memcpy(result.value, value, m_in->element_size);
 }
 
 bool map_insert_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
-  ensure_t result = map_ensure_hash(m_in, key, hash);
+  res_ensure_t result = map_ensure_hash(m_in, key, hash);
   if (!result.is_new) return FALSE;
   memcpy(result.value, val, m_in->element_size);
   return TRUE;
 }
 
 bool map_insert(HMap m_in, const void* key, const void* value) {
-  ensure_t result = map_ensure(m_in, key);
+  res_ensure_t result = map_ensure(m_in, key);
   if (!result.is_new) return FALSE;
   memcpy(result.value, value, m_in->element_size);
   return TRUE;

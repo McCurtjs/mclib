@@ -139,6 +139,11 @@ typedef struct _opaque_String_base* String;
   c_array_foreach_index(ITER, MACRO_CONCAT(_iter_, __LINE__) , ARR)           //
 #endif
 
+#ifndef pair_deconstruct
+# define pair_deconstruct(LEFT, RIGHT, PAIR)                                  \
+  LEFT = (PAIR).left, RIGHT = (PAIR).right                                    //
+#endif
+
 #ifndef MACRO_CONCAT
 // Macro to concatinate preprocessor symbols
 # define MACRO_CONCAT_RECUR(X, Y) X ## Y

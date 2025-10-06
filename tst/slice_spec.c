@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -335,7 +335,14 @@ describe(slice_eq) {
     slice_t slice2 = S(str_2);
 
     expect(slice1 to not match(slice2, slice_eq));
+  }
 
+  it("tests empty strings") {
+    expect(slice_empty to match(slice_empty));
+  }
+
+  it("checks a valid string against an empty one") {
+    expect(slice_empty to not match(S(" ")));
   }
 
 }
@@ -450,6 +457,10 @@ describe(slice_contains_char) {
 
 }
 
+describe(slice_contains_any) {
+
+}
+
 describe(slice_is_empty) {
 
   it("detects an empty string") {
@@ -516,6 +527,14 @@ describe(slice_find_str) {
 
 }
 
+describe(slice_find_char) {
+
+}
+
+describe(slice_find_any) {
+
+}
+
 describe(slice_find_last_str) {
 
   slice_t subject = S("This string has duplicate strings");
@@ -561,6 +580,14 @@ describe(slice_find_last_str) {
 
 }
 
+describe(slice_find_last_char) {
+
+}
+
+describe(slice_find_last_any) {
+
+}
+
 describe(slice_index_of_str) {
   slice_t str = S("This is a string");
   slice_t is = S("is");
@@ -575,15 +602,23 @@ describe(slice_index_of_str) {
 
 }
 
-describe(slice_index_of_last_str) {
-
-}
-
 describe(slice_index_of_char) {
 
 }
 
+describe(slice_index_of_any) {
+
+}
+
+describe(slice_index_of_last_str) {
+
+}
+
 describe(slice_index_of_last_char) {
+
+}
+
+describe(slice_index_of_last_any) {
 
 }
 
@@ -595,7 +630,7 @@ describe(slice_token_str) {
 
   slice_t slice = S("and one and two and three and one");
   index_t pos = 0;
-  token_result_t result;
+  res_token_t result;
 
   it("returns an empty string when the delimiter is the start of the string") {
     slice_t delim = S("and");
@@ -662,6 +697,18 @@ describe(slice_token_str) {
     expect(pos to match(slice.size));
   }
 
+  it("returns two empty strings when the whole string matches") {
+    slice = S("xyz");
+
+    result = slice_token_str(slice, slice, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice));
+
+    result = slice_token_str(slice, slice, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
   it("finds nothing in an empty string") {
     result = slice_token_str(slice_empty, S("."), &pos);
     expect(result.token to match(slice_empty));
@@ -679,7 +726,7 @@ describe(slice_token_char) {
 
   slice_t slice = S("xyz?w, a?b, a?2jk");
   index_t pos = 0;
-  token_result_t result;
+  res_token_t result;
 
   it("returns an empty string when the delimiter is the start of the string") {
     result = slice_token_char(slice, S("x"), &pos);
@@ -726,6 +773,18 @@ describe(slice_token_char) {
     expect(pos to match(slice.size));
   }
 
+  it("returns two empty strings when the whole string matches") {
+    slice = S("x");
+
+    result = slice_token_char(slice, slice, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice));
+
+    result = slice_token_char(slice, slice, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
   it("finds nothing in an empty string") {
     result = slice_token_char(slice_empty, S("."), &pos);
     expect(result.token to match(slice_empty));
@@ -741,6 +800,95 @@ describe(slice_token_char) {
 
 describe(slice_token_any) {
 
+  slice_t slice = S("ab==cde!==f??gh");
+  index_t pos = 0;
+  slice_t delims_array[] = {
+    S("=="), S("!="), S("??")
+  };
+  span_slice_t delims = SPAN(delims_array);
+  res_token_t result;
+
+  it("returns an empty string when the delimiter is the start of the string") {
+    delims_array[1] = S("ab");
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(S("ab")));
+  }
+
+  it("returns an empty string for the last token when it matches the end") {
+    delims_array[0] = S("gh");
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(S("ab==cde")));
+    expect(result.delimiter to match(S("!=")));
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(S("=f")));
+    expect(result.delimiter to match(S("??")));
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(S("gh")));
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("can read each token in order") {
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(S("ab")));
+    expect(result.delimiter to match(S("==")));
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(S("cde")));
+    expect(result.delimiter to match(S("!=")));
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(S("=f")));
+    expect(result.delimiter to match(S("??")));
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(S("gh")));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("returns the entire string when no match is found") {
+    slice = S("String with no delimiters");
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(slice));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("returns two empty strings when the whole string matches") {
+    delims_array[1] = slice;
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice));
+
+    result = slice_token_any(slice, delims, &pos);
+    expect(result.token to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  context("for cases with invalid delimiters") {
+
+    expect(to_assert);
+
+    it("fails when no search terms are provided") {
+      slice_token_any(slice, span_slice_cast(span_empty), &pos);
+    }
+
+    it("fails when invalid search terms are given") {
+      delims_array[2] = slice_empty;
+      slice_token_any(slice, delims, &pos);
+    }
+
+  }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -748,6 +896,62 @@ describe(slice_token_any) {
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "array_slice.h"
+
+describe(slice_split_at) {
+
+  slice_t slice = S("Test string");
+  pair_slice_t result;
+
+  it("splits the string into two segments at the given index") {
+    result = slice_split_at(slice, 5);
+    expect(result.left to match(S("Test ")));
+    expect(result.right to match(S("string")));
+  }
+
+  it("can take negative inputs relative to the end of the string") {
+    result = slice_split_at(slice, -6);
+    expect(result.left to match(S("Test ")));
+    expect(result.right to match(S("string")));
+  }
+
+  it("uses the pair deconstruction macro to extract the values") {
+    result = slice_split_at(slice, 4);
+    slice_t pair_deconstruct(first, second, result);
+    expect(first to match(S("Test")));
+    expect(second to match(S(" string")));
+  }
+
+  it("returns an empty and the full string given a 0 input") {
+    result = slice_split_at(slice, 0);
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice));
+  }
+
+  it("returns the full string and an empty when given str.size") {
+    result = slice_split_at(slice, slice.size);
+    expect(result.left to match(slice));
+    expect(result.right to match(slice_empty));
+  }
+
+  it("clamps the index if it's too large") {
+    result = slice_split_at(slice, 99);
+    expect(result.left to match(slice));
+    expect(result.right to match(slice_empty));
+  }
+
+  it("clamps negatively if it's too large") {
+    result = slice_split_at(slice, -99);
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice));
+  }
+
+  it("returns two empty strings when splitting an empty string") {
+    result = slice_split_at(slice_empty, 0);
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice_empty));
+  }
+
+}
 
 describe(slice_split_str) {
 
@@ -775,7 +979,7 @@ describe(slice_split_str) {
   }
 
   it("splits the slice using a token that matches the start of the string") {
-    slice_t expected[] = { slice_empty, slice_substring(slice, 4) };
+    slice_t expected[] = { slice_empty, slice_drop(slice, 4) };
     result = slice_split_str(slice, S("This"));
     expect(result != NULL);
     expect(result->size, == , 2);
@@ -794,6 +998,14 @@ describe(slice_split_str) {
     }
   }
 
+  it("returns an array with two empty strings if the whole string matches") {
+    result = slice_split_str(slice, slice);
+    expect(result != NULL);
+    expect(result->size, == , 2);
+    expect(result->begin[0] to match(slice_empty));
+    expect(result->begin[1] to match(slice_empty));
+  }
+
   it("returns an array with the full input slice if no delimiter is found") {
     result = slice_split_str(slice, slice_true);
     expect(result != NULL);
@@ -809,7 +1021,7 @@ describe(slice_split_str) {
     expect(token to match(slice_empty));
   }
 
-  it("returns an array of slices for each character when given an empty delim") {
+  it("returns an array of slices for each char when given an empty delim") {
     result = slice_split_str(slice, slice_empty);
     expect(result != NULL);
     expect(result->size, == , slice.size);
@@ -820,12 +1032,151 @@ describe(slice_split_str) {
   }
 
   after{
+    if (result) expect(result->capacity, == , result->size);
     arr_slice_delete(&result);
   }
 
 }
 
-describe(slice_split_str_with_delim) {
+describe(slice_split_char) {
+
+  slice_t slice = S("xyz?w, a?b, a?2jk");
+  index_t pos = 0;
+  Array_slice result = NULL;
+
+  it("returns an empty string when the delimiter is the start of the string") {
+    slice_t expected[] = { slice_empty, S("yz?w, a?b, a?2jk") };
+    result = slice_split_char(slice, S("x"));
+    expect(result != NULL);
+    expect(result->size, == , 2);
+    expect(result->begin[0] to match(expected[0]));
+    expect(result->begin[1] to match(expected[1]));
+  }
+
+  it("returns the rest of the string when the delimiter is not present") {
+    result = slice_split_char(slice, S("K"));
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice));
+  }
+
+  it("can get all tokens in order") {
+    slice_t expected[] = {
+      S("xyz"), S("w"), S(" a"), S("b"), S(" a"), S("2jk")
+    };
+    result = slice_split_char(slice, S("?,"));
+    expect(result != NULL);
+    expect(result->size, == , 6);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("returns two empty strings when the whole string matches") {
+    slice_t expected[] = { slice_empty, slice_empty };
+    result = slice_split_char(S("x"), S("x"));
+    expect(result != NULL);
+    expect(result->size, == , 2);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("finds nothing in an empty string") {
+    result = slice_split_char(slice_empty, S("."));
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice_empty));
+  }
+
+  it("fails when no valid search term is provided") {
+    expect(to_assert);
+    slice_token_char(slice, slice_empty, NULL);
+  }
+
+  after{
+    if (result) expect(result->capacity, == , result->size);
+    arr_slice_delete(&result);
+  }
+
+}
+
+describe(slice_split_any) {
+
+  slice_t slice = S("ab==cde!==f??gh");
+  index_t pos = 0;
+  slice_t delims_array[] = {
+    S("=="), S("!="), S("??")
+  };
+  span_slice_t delims = SPAN(delims_array);
+  Array_slice result = NULL;
+
+  it("gets all the tokens in order") {
+    slice_t expected[] = { S("ab"), S("cde"), S("=f"), S("gh") };
+    result = slice_split_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 4);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("returns two empty strings when the whole string matches") {
+    delims_array[1] = slice;
+    result = slice_split_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 2);
+    expect(result->begin[0] to match(slice_empty));
+    expect(result->begin[1] to match(slice_empty));
+  }
+
+  it("gets an empty first string when the beginning matches") {
+    slice_t expected[] = { slice_empty, S("==cde"), S("=f"), S("gh") };
+    delims_array[0] = S("ab");
+    result = slice_split_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 4);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("gets an empty last string when the ending matches") {
+    slice_t expected[] = { S("ab==cde"), S("=f"), slice_empty, slice_empty };
+    delims_array[0] = S("gh");
+    result = slice_split_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 4);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("finds nothing in an empty string") {
+    result = slice_split_any(slice_empty, delims);
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice_empty));
+  }
+
+  it("splits the string into characters when an empty delimiter is given") {
+    result = slice_split_any(slice, span_slice_cast(span_empty));
+    expect(result != NULL);
+    expect(result->size, == , slice.size);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(token->size, == , 1);
+      expect(token->begin[0], == , slice.begin[i]);
+    }
+  }
+
+  after{
+    if (result) expect(result->capacity, == , result->size);
+    arr_slice_delete(&result);
+  }
+
+}
+
+describe(slice_tokenize_str) {
 
   slice_t slice = S("This == is == a == slice == ");
   slice_t eq = S(" == ");
@@ -835,33 +1186,385 @@ describe(slice_split_str_with_delim) {
     slice_t expected[] = {
       S("This"), eq, S("is"), eq, S("a"), eq, S("slice"), eq, slice_empty
     };
-    result = slice_split_str_with_delim(slice, eq);
+    result = slice_tokenize_str(slice, eq);
     expect(result != NULL);
-    expect(result->size, == , 8);
+    expect(result->size, == , 9);
     slice_t* array_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
 
+  it("matches the beginning of the string") {
+    result = slice_tokenize_str(slice, S("This"));
+    expect(result != NULL);
+    expect(result->size, == , 3);
+    expect(result->begin[0] to match(slice_empty));
+    expect(result->begin[1] to match(S("This")));
+    expect(result->begin[2] to match(S(" == is == a == slice == ")));
+  }
+
+  it("returns the full string when the delimiter isn't present") {
+    result = slice_tokenize_str(slice, S("??"));
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice));
+  }
+
+  it("gives two empty strings when the slice matches the delimiter") {
+    result = slice_tokenize_str(slice, slice);
+    expect(result != NULL);
+    expect(result->size, == , 3);
+    expect(result->begin[0] to match(slice_empty));
+    expect(result->begin[1] to match(slice));
+    expect(result->begin[2] to match(slice_empty));
+  }
+
+  it("splits each char when given an empty delimiter") {
+    result = slice_tokenize_str(slice, slice_empty);
+    expect(result != NULL);
+    expect(result->size, == , slice.size);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(token->size to be_one);
+      expect(token->begin[0], == , slice.begin[i]);
+    }
+  }
+
+  it("gives an empty string result when splitting an empty string") {
+    result = slice_tokenize_str(slice_empty, S("??"));
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice_empty));
+  }
+
   after{
+    expect(result->capacity, == , result->size);
     arr_slice_delete(&result);
   }
 
 }
 
-describe(slice_split_char) {
+describe(slice_tokenize_char) {
+
+  slice_t slice = S("xyz?w, a?b, a?2jk");
+  index_t pos = 0;
+  Array_slice result = NULL;
+
+  it("can get all tokens in order") {
+    slice_t expected[] = {
+      S("xyz"), S("?"), S("w"), S(","), S(" a"), S("?"),
+      S("b"), S(","), S(" a"), S("?"), S("2jk")
+    };
+    result = slice_tokenize_char(slice, S("?,"));
+    expect(result != NULL);
+    expect(result->size, == , 11);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("returns an empty string when the delimiter is the start of the string") {
+    slice_t expected[] = { slice_empty, S("x"), S("yz?w, a?b, a?2jk") };
+    result = slice_tokenize_char(slice, S("x"));
+    expect(result != NULL);
+    expect(result->size, == , 3);
+    expect(result->begin[0] to match(expected[0]));
+    expect(result->begin[1] to match(expected[1]));
+  }
+
+  it("returns the rest of the string when the delimiter is not present") {
+    result = slice_tokenize_char(slice, S("K"));
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice));
+  }
+
+  it("returns two empty strings when the whole string matches") {
+    slice_t expected[] = { slice_empty, S("x"), slice_empty };
+    result = slice_tokenize_char(S("x"), S("x"));
+    expect(result != NULL);
+    expect(result->size, == , 3);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("finds nothing in an empty string") {
+    result = slice_tokenize_char(slice_empty, S("."));
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice_empty));
+  }
+
+  it("fails when no valid search term is provided") {
+    expect(to_assert);
+    slice_token_char(slice, slice_empty, NULL);
+  }
+
+  after {
+    if (result) expect(result->capacity, == , result->size);
+    arr_slice_delete(&result);
+  }
 
 }
 
-describe(slice_split_char_with_delim) {
+describe(slice_tokenize_any) {
+
+  slice_t slice = S("ab==cde!==f??gh");
+  index_t pos = 0;
+  slice_t delims_array[] = {
+    S("=="), S("!="), S("??")
+  };
+  span_slice_t delims = SPAN(delims_array);
+  Array_slice result = NULL;
+
+  it("gets all the tokens in order") {
+    slice_t expected[] = {
+      S("ab"), S("=="), S("cde"), S("!="), S("=f"), S("??"), S("gh")
+    };
+    result = slice_tokenize_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 7);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("returns two empty strings when the whole string matches") {
+    delims_array[1] = slice;
+    result = slice_tokenize_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 3);
+    expect(result->begin[0] to match(slice_empty));
+    expect(result->begin[1] to match(slice));
+    expect(result->begin[2] to match(slice_empty));
+  }
+
+  it("gets an empty first string when the beginning matches") {
+    slice_t expected[] = {
+      slice_empty, S("ab"), S("==cde"), S("!="), S("=f"), S("??"), S("gh")
+    };
+    delims_array[0] = S("ab");
+    result = slice_tokenize_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 7);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("gets an empty last string when the ending matches") {
+    slice_t expected[] = {
+      S("ab==cde"), S("!="), S("=f"), S("??"), slice_empty, S("gh"), slice_empty
+    };
+    delims_array[0] = S("gh");
+    result = slice_tokenize_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , 7);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
+  it("finds nothing in an empty string") {
+    result = slice_tokenize_any(slice_empty, delims);
+    expect(result != NULL);
+    expect(result->size, == , 1);
+    expect(result->begin[0] to match(slice_empty));
+  }
+
+  it("splits the string into characters when an empty delimiter is given") {
+    result = slice_tokenize_any(slice, span_slice_cast(span_empty));
+    expect(result != NULL);
+    expect(result->size, == , slice.size);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(token->size, == , 1);
+      expect(token->begin[0], == , slice.begin[i]);
+    }
+  }
+
+  it("also splits into each character when a span with empty string is given") {
+    delims_array[2] = slice_empty;
+    result = slice_tokenize_any(slice, delims);
+    expect(result != NULL);
+    expect(result->size, == , slice.size);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(token->size, == , 1);
+      expect(token->begin[0], == , slice.begin[i]);
+    }
+  }
+
+  after {
+    if (result) expect(result->capacity, == , result->size);
+    arr_slice_delete(&result);
+  }
 
 }
 
-describe(slice_split_any) {
+describe(slice_partition_str) {
+
+  slice_t slice = S("This == is == a == slice == ");
+  slice_t eq = S(" == ");
+  res_partition_t result;
+
+  it("splits the string into two at the first instance of the delimiter") {
+    result = slice_partition_str(slice, eq);
+    expect(result.left to match(S("This")));
+    expect(result.right to match(S("is == a == slice == ")));
+    expect(result.delimiter to match(eq));
+  }
+
+  it("gets an empty left string when the start is the delimiter") {
+    result = slice_partition_str(slice, S("This"));
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(S(" == is == a == slice == ")));
+    expect(result.delimiter to match(S("This")));
+  }
+
+  it("gets an empty right string when the delimiter is the ending") {
+    result = slice_partition_str(slice, S("slice == "));
+    expect(result.left to match(S("This == is == a == ")));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(S("slice == ")));
+  }
+
+  it("gets both empty strings when the delimiter is the whole string") {
+    result = slice_partition_str(slice, slice);
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(slice));
+  }
+
+  it("partitions nothing when given an empty string") {
+    result = slice_partition_str(slice_empty, eq);
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("fails when given an empty delimiter") {
+    expect(to_assert);
+    slice_partition_str(slice, slice_empty);
+  }
 
 }
 
-describe(slice_split_any_with_delim) {
+describe(slice_partition_char) {
+
+  slice_t slice = S("xyz?w, a?b, a?2jk");
+  res_partition_t result;
+
+  it("splits the string into two at the first instance of any delimiter") {
+    result = slice_partition_char(slice, S("?,"));
+    expect(result.left to match(S("xyz")));
+    expect(result.right to match(S("w, a?b, a?2jk")));
+    expect(result.delimiter to match(S("?")));
+  }
+
+  it("can match the second delimiter if the first occurs after") {
+    result = slice_partition_char(slice, S("bw"));
+    expect(result.left to match(S("xyz?")));
+    expect(result.right to match(S(", a?b, a?2jk")));
+    expect(result.delimiter to match(S("w")));
+  }
+
+  it("can match the first character in the string") {
+    result = slice_partition_char(slice, S("abcdxyz"));
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(S("yz?w, a?b, a?2jk")));
+    expect(result.delimiter to match(S("x")));
+  }
+
+  it("can match the last character in the string") {
+    result = slice_partition_char(slice, S(".!k&"));
+    expect(result.left to match(S("xyz?w, a?b, a?2j")));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(S("k")));
+  }
+
+  it("partitions the whole string to the left if there is no match") {
+    result = slice_partition_char(slice, S("!"));
+    expect(result.left to match(slice));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("partitions into empty strings when the entire string matches") {
+    result = slice_partition_char(S("y"), S("xyz"));
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(S("y")));
+  }
+
+  it("partitions nothing when given an empty string") {
+    result = slice_partition_char(slice_empty, S("!"));
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("fails when given an empty delimiter set") {
+    expect(to_assert);
+    slice_partition_char(slice, slice_empty);
+  }
+
+}
+
+describe(slice_partition_any) {
+
+  slice_t slice = S("This == is == a == slice");
+  slice_t delim_array[] = { S("is"), S("=="), S("a") };
+  span_slice_t delims = SPAN(delim_array);
+  res_partition_t result;
+
+  it("splits the string into two at the first instance of any delimiter") {
+    result = slice_partition_any(slice, delims);
+    expect(result.left to match(S("Th")));
+    expect(result.right to match(S(" == is == a == slice")));
+    expect(result.delimiter to match(S("is")));
+  }
+
+  it("can match the second delimiter") {
+    delim_array[0] = S("??");
+    result = slice_partition_any(slice, delims);
+    expect(result.left to match(S("This ")));
+    expect(result.right to match(S(" is == a == slice")));
+    expect(result.delimiter to match(S("==")));
+  }
+
+  it("will match a later delimiter if it occurs earlier in the string") {
+    result = slice_partition_any(S("Think about this =="), delims);
+    expect(result.left to match(S("Think ")));
+    expect(result.right to match(S("bout this ==")));
+    expect(result.delimiter to match(S("a")));
+  }
+
+  it("partitions the whole string to left if there is no match") {
+    slice = S("String with no hits");
+    result = slice_partition_any(slice, delims);
+    expect(result.left to match(slice));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("partitions into empty strings when the entire string matches") {
+    delim_array[1] = slice;
+    result = slice_partition_any(slice, delims);
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(slice));
+  }
+
+  it("partitions nothing when given an empty string") {
+    result = slice_partition_any(slice_empty, delims);
+    expect(result.left to match(slice_empty));
+    expect(result.right to match(slice_empty));
+    expect(result.delimiter to match(slice_empty));
+  }
+
+  it("fails when given an empty delimiter span") {
+    expect(to_assert);
+    slice_partition_any(slice, span_slice_cast(span_empty));
+  }
 
 }
 
@@ -896,7 +1599,7 @@ describe(slice_substring) {
   }
 
   it("uses a negative offset for the start of the substring") {
-    subject = slice_substring(base, -6);
+    subject = slice_substring(base, -6, base.size);
     expected = S("string");
   }
 
@@ -926,7 +1629,7 @@ describe(slice_substring) {
   }
 
   it("clamps the beginning of the string for negative values") {
-    subject = slice_substring(base, -30);
+    subject = slice_substring(base, -30, base.size);
     expected = base;
   }
 
@@ -936,8 +1639,54 @@ describe(slice_substring) {
   }
 
   after {
-    expect(subject to match(expected, slice_eq));
+    expect(subject to match(expected));
     expect(malloc_count == 0);
+  }
+
+}
+
+describe(slice_drop) {
+
+  slice_t base = S("This is a string");
+
+  it("gets the same string back when given 0") {
+    expect(slice_drop to match(base) given(base, 0));
+  }
+
+  it("drops the whole string when given a large offset") {
+    expect(slice_drop to match(slice_empty) given(base, 99));
+    expect(slice_drop to match(slice_empty) given(base, -99));
+  }
+
+  it("drops the first n characters when given a positive number") {
+    expect(slice_drop to match(S("is a string")) given(base, 5));
+  }
+
+  it("drops the last n characters when given a negative number") {
+    expect(slice_drop to match(S("This is a")) given(base, -7));
+  }
+
+}
+
+describe(slice_take) {
+
+  slice_t base = S("This is a string");
+
+  it("gets an empty string when given 0") {
+    expect(slice_take to match(slice_empty) given(base, 0));
+  }
+
+  it("keeps the whole string when given a large offset") {
+    expect(slice_take to match(base) given(base, 99));
+    expect(slice_take to match(base) given(base, -99));
+  }
+
+  it("takes the first n characters when given a positive number") {
+    expect(slice_take to match(S("This")) given(base, 4));
+  }
+
+  it("keeps the last n characters when given a negative number") {
+    expect(slice_take to match(S("string")) given(base, -6));
   }
 
 }
@@ -1080,28 +1829,39 @@ test_suite(tests_slice) {
   test_group(slice_ends_with),
   test_group(slice_contains),
   test_group(slice_contains_char),
+  test_group(slice_contains_any),
   test_group(slice_is_empty),
   test_group(slice_find_str),
+  test_group(slice_find_char),
+  test_group(slice_find_any),
   test_group(slice_find_last_str),
+  test_group(slice_find_last_char),
+  test_group(slice_find_last_any),
   test_group(slice_index_of_str),
-  test_group(slice_index_of_last_str),
   test_group(slice_index_of_char),
+  test_group(slice_index_of_any),
+  test_group(slice_index_of_last_str),
   test_group(slice_index_of_last_char),
+  test_group(slice_index_of_last_any),
   test_group(slice_token_str),
   test_group(slice_token_char),
   test_group(slice_token_any),
+  test_group(slice_split_at),
   test_group(slice_split_str),
-  test_group(slice_split_str_with_delim),
   test_group(slice_split_char),
-  test_group(slice_split_char_with_delim),
   test_group(slice_split_any),
-  test_group(slice_split_any_with_delim),
+  test_group(slice_tokenize_str),
+  test_group(slice_tokenize_char),
+  test_group(slice_tokenize_any),
+  test_group(slice_partition_str),
+  test_group(slice_partition_char),
+  test_group(slice_partition_any),
   test_group(slice_substring),
+  test_group(slice_drop),
+  test_group(slice_take),
   test_group(slice_trim),
-  test_group(slice_hash),
   test_group(slice_hash),
   test_group(slice_compare_vptr),
   test_group(slice_conversion),
-  //test_group(slice_split),
   test_suite_end
 };

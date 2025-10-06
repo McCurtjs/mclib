@@ -29,29 +29,29 @@
 // Dynamic Hashmap container
 //
 // // Create, Setup, Delete
-// Map_K_T  map_k_t_new();
-// Map_K_T  map_k_t_new_reserve(index_t capacity);
-// void     map_k_t_reserve(Map_K_T, index_t capacity);
-// void     map_k_t_clear(Map_K_T);
-// void     map_k_t_free(Map_K_T);
-// void     map_k_t_delete(Map_K_T*);
+// Map_K_V      map_k_v_new();
+// Map_K_V      map_k_v_new_reserve(index_t capacity);
+// void         map_k_v_reserve(Map_K_V, index_t capacity);
+// void         map_k_v_clear(Map_K_V);
+// void         map_k_v_free(Map_K_V);
+// void         map_k_v_delete(Map_K_V*);
 //
 // // Item Addition
-// ensure_t map_k_t_ensure(Map_K_T, key); { .value, .is_new }
-// T*       map_k_t_emplace(Map_K_T, key);
-// void     map_k_t_write(Map_K_T, key, T value);
-// bool     map_k_t_insert(Map_K_T, key, T value);
+// res_ensure_t map_k_v_ensure(Map_K_V, key); { .value, .is_new }
+// V*           map_k_v_emplace(Map_K_V, key);
+// void         map_k_v_write(Map_K_V, key, value);
+// bool         map_k_v_insert(Map_K_V, key, value);
 //
 // // Item Removal
-// bool     map_k_t_remove(Map_K_T, key);
+// bool         map_k_v_remove(Map_K_V, key);
 //
 // // Accessors
-// T*       map_k_t_ref(Map_K_T, key);
-// T        map_k_t_get(Map_K_T, key);
-// T        map_k_t_get_or_default(Map_K_T, key, T default);
-// bool     map_k_t_read(Map_K_T, key, T* out);
-// bool     map_k_t_read_or_default(Map_K_T, key, T* out, T default);
-// bool     map_k_t_contains_key(Map_K_T, key);
+// V*           map_k_v_ref(Map_K_V, key);
+// V            map_k_v_get(Map_K_V, key);
+// V            map_k_v_get_or_default(Map_K_V, key, V default);
+// bool         map_k_v_read(Map_K_V, key, V* out);
+// bool         map_k_v_read_or_default(Map_K_V, key, V* out, V default);
+// bool         map_k_v_contains_key(Map_K_V, key);
 //
 
 #include "types.h"
@@ -61,41 +61,42 @@ typedef hash_t (*hash_fn)(const void* key);
 typedef void (*delete_fn)(void** to_delete);
 
 typedef struct _opaque_Map_base {
-  const index_t size;
-  const index_t capacity;
-  const index_t key_size;
-  const index_t element_size;
+  index_t const size;
+  index_t const capacity;
+  index_t const key_size;
+  index_t const element_size;
+  bool          fixed_size;
 }* HMap; // Map_void? Map_base?
 
-typedef struct ensure_t {
+typedef struct res_ensure_t {
   void* value;
   bool is_new;
-} ensure_t;
+} res_ensure_t;
 
 #define map_new(T_KEY, T_VAL, FN_CMP, FN_HASH)  \
           imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_CMP, FN_HASH)
 
 //void*     map_emplace_hash(HMap map, const void* key, hash_t hash);
 
-HMap     imap_new(index_t k_size, index_t v_size, compare_fn cmp, hash_fn hash);
-void      map_callback_dtor(HMap map, delete_fn del_key, delete_fn del_value);
-//void      map_callback_copy(HMap map);
-//void      map_callback_move(HMap map);
-HMap      map_copy(HMap to_copy);
-void      map_reserve(HMap map, index_t capacity);
-void      map_delete(HMap* map);
-void      map_free(HMap map);
-void      map_clear(HMap map);
+HMap         imap_new(index_t ksz, index_t vsz, compare_fn cmp, hash_fn hash);
+void          map_callback_dtor(HMap map, delete_fn key_del, delete_fn val_del);
+//void          map_callback_copy(HMap map);
+//void          map_callback_move(HMap map);
+HMap          map_copy(HMap to_copy);
+void          map_reserve(HMap map, index_t capacity);
+void          map_delete(HMap* map);
+void          map_free(HMap map);
+void          map_clear(HMap map);
 
-ensure_t  map_ensure(HMap map, const void* key);
-void*     map_emplace(HMap map, const void* key);
-void      map_write(HMap map, const void* key, const void* value);
-bool      map_insert(HMap map, const void* key, const void* value);
-void*     map_ref(HMap map, const void* key);
-bool      map_remove(HMap map, const void* key);
-//bool map_read(HMap map, key_t key, void* out_element);
-//bool map_contains_element(HMap map, const void* to_find);
-//bool map_contains_key(HMap map, key_t key);
+res_ensure_t  map_ensure(HMap map, const void* key);
+void*         map_emplace(HMap map, const void* key);
+void          map_write(HMap map, const void* key, const void* value);
+bool          map_insert(HMap map, const void* key, const void* value);
+void*         map_ref(HMap map, const void* key);
+bool          map_remove(HMap map, const void* key);
+//bool          map_read(HMap map, key_t key, void* out_element);
+//bool          map_contains_element(HMap map, const void* to_find);
+//bool          map_contains_key(HMap map, key_t key);
 
 #endif
 
@@ -105,9 +106,9 @@ bool      map_remove(HMap map, const void* key);
 #ifdef con_prefix
 # define _map_type MACRO_CONCAT(HMap_, con_prefix)
 # define _prefix(_FN) MACRO_CONCAT3(map_, con_prefix, _FN)
-# define _ensure_type MACRO_CONCAT3(ensure_, con_prefix, _t)
+# define _ensure_type MACRO_CONCAT3(res_ensure_, con_prefix, _t)
 #else
-# define _ensure_type MACRO_CONCAT3(ensure_, con_type, _t)
+# define _ensure_type MACRO_CONCAT3(res_ensure_, con_type, _t)
 # ifdef key_type
 #   define _map_type MACRO_CONCAT4(HMap_, key_type, _, con_type)
 #   define _prefix(_FN) MACRO_CONCAT5(map_, key_type, _, con_type, _FN)
@@ -158,11 +159,12 @@ typedef struct _ensure_type {
   bool is_new;
 } _ensure_type;
 
-typedef struct {
-  const index_t size;
-  const index_t capacity;
-  const index_t key_size;
-  const index_t element_size;
+typedef struct MACRO_CONCAT3(_opaque_, _map_type, _base) {
+  index_t const size;
+  index_t const capacity;
+  index_t const key_size;
+  index_t const element_size;
+  bool          fixed_size;
 }* _map_type;
 
 // \brief Initializes a hashmap of the given type. Allocates no new space for
@@ -234,18 +236,19 @@ static inline void _prefix(_delete)
 
 // \brief Finds an existing element or adds the space for it if it isn't already
 //    present. The value may or may not contain an already existing value, which
-//    can be determined by the `is_new` value in the resulting ensure_t struct.
+//    can be determined by the `is_new` value in the resulting res_ensure_t
+//    struct.
 //
 // \param key - the key for the location to either find or add to the map
 //
-// \returns an ensure_t struct variant with:
+// \returns an res_ensure_t struct variant with:
 //    - value: a pointer to the location represented by the given key. May be
 //              either a valid value, or newly allocated and uninitialized.
 //    - is_new: a boolean value indicating whether or not the value was newly
 //              added to the map, or if it is already existing valid data.
 static inline _ensure_type _prefix(_ensure)
 (_map_type map, _key_type key) {
-  ensure_t ret = map_ensure((HMap)map, &key);
+  res_ensure_t ret = map_ensure((HMap)map, &key);
   return *((_ensure_type*)&ret);
 }
 
