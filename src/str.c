@@ -46,19 +46,25 @@ typedef struct {
   };
 
   // private
-  char head;
+  char head[];
 } String_Internal;
 
-const String str_empty  = (String)&slice_empty;
-const String str_true   = (String)&slice_true;
-const String str_false  = (String)&slice_false;
+const String str_empty      = (String)&slice_empty;
+const String str_true       = (String)&slice_true;
+const String str_false      = (String)&slice_false;
+const String str_whitespace = (String)&slice_whitespace;
+const String str_space      = (String)&slice_space;
+const String str_newline    = (String)&slice_newline;
+const String str_tab        = (String)&slice_tab;
 
 static String_Internal* _istr_new(index_t length) {
   if (length <= 0) return NULL; // prompt callers to return empty string
   // Include an extra byte for the null terminator
+  // null isn't necessary for the slice_t interface, but it's included for
+  // compatibility just in case.
   String_Internal* ret = malloc(sizeof(slice_t) + length + 1);
   assert(ret);
-  ret->begin = &ret->head;
+  ret->begin = ret->head;
   ret->size = length;
   return ret;
 }
@@ -963,7 +969,7 @@ static String format_va(slice_t fmt, va_list args) {
   arr_byte_push_back(output, '\0');
   String_Internal* header = (String_Internal*)output->begin;
   header->size = output->size - sizeof(struct slice_t) - 1;
-  header->begin = &header->head;
+  header->begin = header->head;
   arr_byte_truncate(output, output->size);
   String ret = (String)arr_byte_release(&output).begin;
   return ret;

@@ -80,8 +80,8 @@ typedef struct res_ensure_t {
 
 HMap         imap_new(index_t ksz, index_t vsz, compare_fn cmp, hash_fn hash);
 void          map_callback_dtor(HMap map, delete_fn key_del, delete_fn val_del);
-//void          map_callback_copy(HMap map);
-//void          map_callback_move(HMap map);
+//void        map_callback_copy(HMap map);
+//void        map_callback_move(HMap map);
 HMap          map_copy(HMap to_copy);
 void          map_reserve(HMap map, index_t capacity);
 void          map_delete(HMap* map);
@@ -94,9 +94,9 @@ void          map_write(HMap map, const void* key, const void* value);
 bool          map_insert(HMap map, const void* key, const void* value);
 void*         map_ref(HMap map, const void* key);
 bool          map_remove(HMap map, const void* key);
-//bool          map_read(HMap map, key_t key, void* out_element);
-//bool          map_contains_element(HMap map, const void* to_find);
-//bool          map_contains_key(HMap map, key_t key);
+//bool        map_read(HMap map, key_t key, void* out_element);
+//bool        map_contains_element(HMap map, const void* to_find);
+//bool        map_contains_key(HMap map, key_t key);
 
 #endif
 

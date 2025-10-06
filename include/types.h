@@ -53,7 +53,7 @@ typedef          long ptrdiff_t;
 #  define __has_builtin(x) 0
 # endif
 #else
-# include <corecrt.h>
+# include <stddef.h>
 #endif
 
 #if defined(__x86_64__) || defined(_WIN64) || defined(__LP_64__)
@@ -72,6 +72,9 @@ typedef ptrdiff_t index_t;
 
 // Common pointer types
 typedef struct _opaque_String_base* String;
+
+// Common function pointer types
+typedef int (*compare_fn)(const void* a, const void* b);
 
 // Shouldn't be necessary with C23?
 #include <stdbool.h>

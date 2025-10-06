@@ -94,22 +94,10 @@ static inline index_t ispan_size(span_t span, index_t element_size) {
   return ispan_size_bytes(span) / element_size;
 }
 
-typedef int (*compare_fn)(const void* a, const void* b);
-
 void ispan_set_bytes(span_t span, byte b);
 bool ispan_eq(span_t a, span_t b);
 bool ispan_eq_deep(span_t lhs, span_t rhs, index_t el_size, compare_fn cmp);
 void ispan_sort(span_t span, index_t element_size, compare_fn cmp);
-
-#define span_foreach(VAR, SPAN)                                               \
-  VAR = SPAN.begin;                                                           \
-  for (; (byte*)VAR < (byte*)SPAN.end; ++VAR)                                 //
-
-#define span_foreach_index(VAR, INDEX, SPAN)                                  \
-  VAR = SPAN.begin;                                                           \
-  for (index_t INDEX = 0; (byte*)VAR < (byte*)SPAN.end; ++VAR, ++INDEX)       //
-
-#define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
 
 #endif
 

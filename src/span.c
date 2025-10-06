@@ -27,9 +27,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-const void* empty = NULL;
-
-const span_t span_empty = { .begin = &empty, .end = &empty };
+const span_t span_empty = { .begin = NULL, .end = NULL };
 
 void ispan_set_bytes(span_t span, byte b) {
   byte* begin = span.begin;

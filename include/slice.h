@@ -71,6 +71,18 @@ extern const slice_t slice_true;
 // \brief slice constant for a "false" string
 extern const slice_t slice_false;
 
+// \brief slice constant for a string representing whitespace characters
+extern const slice_t slice_whitespace;
+
+// \brief slice constant for a " " string
+extern const slice_t slice_space;
+
+// \brief slice constant for a newline character
+extern const slice_t slice_newline;
+
+// \brief slice constant for a tab character
+extern const slice_t slice_tab;
+
 ////////////////////////////////////////////////////////////////////////////////
 // User-provided hook for output
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,12 +177,19 @@ bool            slice_to_float(slice_t str, float* out_float);
 bool            slice_to_double(slice_t str, double* out_float);
 
 int             slice_compare(slice_t lhs, slice_t rhs);
+//int           slice_compare_ci(slice_t lhs, slice_t rhs);
 bool            slice_eq(slice_t lhs, slice_t rhs);
+//bool          slice_eq_ci(slice_t lhs, slice_t rhs);
 bool            slice_starts_with(slice_t str, slice_t beginning);
 bool            slice_ends_with(slice_t str, slice_t ending);
 bool            slice_contains(slice_t str, slice_t target);
 bool            slice_contains_char(slice_t str, slice_t targets);
 bool            slice_is_empty(slice_t str);
+//bool          slice_is_alpha(slice_t str);
+//bool          slice_is_decimal(slice_t str);
+//bool          slice_is_integer(slice_t str);
+//index_t       slice_count_str(slice_t str, slice_t target);
+//index_t       slice_count_char(slice_t str, slice_t targets);
 
 bool            slice_find_str(slice_t str, slice_t target, slice_t* out_found);
 bool            slice_find_char(slice_t str, slice_t tgt, slice_t* out_found);
@@ -188,12 +207,18 @@ pair_slice_t    slice_split_at(slice_t str, index_t index);
 res_partition_t slice_partition_str(slice_t str, slice_t delim);
 res_partition_t slice_partition_char(slice_t str, slice_t delims);
 
+// get next numeric value? number string would go in the delimiter value
+//res_partition slice_partition_number(slice_t str);
+
 slice_t         slice_substring(slice_t str, index_t start, index_t end);
 slice_t         slice_drop(slice_t str, index_t count);
 slice_t         slice_take(slice_t str, index_t count);
 slice_t         slice_trim(slice_t str);
 slice_t         slice_trim_start(slice_t str);
 slice_t         slice_trim_end(slice_t str);
+//slice_t       slice_trim_char(slice_t str, slice_t chars);
+//slice_t       slice_trim_char_start(slice_t str, slice_t chars);
+//slice_t       slice_trim_char_end(slice_t str, slice_t chars);
 
 hash_t          slice_hash(slice_t str);
 

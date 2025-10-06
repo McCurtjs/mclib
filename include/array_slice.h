@@ -42,6 +42,9 @@ Array_slice slice_tokenize_str(slice_t str, slice_t delim);
 Array_slice slice_tokenize_char(slice_t str, slice_t delims);
 Array_slice slice_tokenize_any(slice_t str, span_slice_t delims);
 
+#define slice_split_whitespace(str) slice_split_char(str, slice_whitespace)
+
 //Array_slice slice_match(slice_t str, slice_t regex);
+//index_t     slice_count_any(slice_t str, span_slice_t any);
 
 #endif

@@ -25,11 +25,24 @@
 #ifndef MCLIB_SPAN_BASE_H_
 #define MCLIB_SPAN_BASE_H_
 
-// base span_t (void) struct is defined separately from the 
+#include "types.h"
+
+// base span_t (void) struct is defined separately from the span.h file because
+// it is also independently used by the Array class.
 
 typedef struct span_t {
   void* begin;
   void* end;
 } span_t;
+
+#define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
+
+#define span_foreach(VAR, SPAN)                                               \
+  VAR = SPAN.begin;                                                           \
+  for (; (byte*)VAR < (byte*)SPAN.end; ++VAR)                                 //
+
+#define span_foreach_index(VAR, INDEX, SPAN)                                  \
+  VAR = SPAN.begin;                                                           \
+  for (index_t INDEX = 0; (byte*)VAR < (byte*)SPAN.end; ++VAR, ++INDEX)       //
 
 #endif

@@ -64,6 +64,18 @@ extern const String str_true;
 // \brief String constant for a "false" string
 extern const String str_false;
 
+// \brief slice constant for a string representing whitespace characters
+extern const String str_whitespace;
+
+// \brief slice constant for a " " string
+extern const String str_space;
+
+// \brief slice constant for a newline character
+extern const String str_newline;
+
+// \brief slice constant for a tab character
+extern const String str_tab;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helper tools for type coalescing and variadic formgat arguments
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,13 +135,18 @@ static inline slice_t slice_from_str(String s) { return s->slice; }
 #define str_to_double(str, out)     slice_to_double(_s2r(str), out)
 
 #define str_compare(lhs, rhs)       slice_compare(_s2r(lhs), _s2r(rhs))
+#define str_compare_ci(lhs, rhs)    slice_compare_ci(_s2r(lhs), _s2r(rhs))
 #define str_eq(lhs, rhs)            slice_eq(_s2r(lhs), _s2r(rhs))
+#define str_eq_ci(lhs, rhs)         slice_eq_ci(_s2r(lhs), _s2r(rhs))
 #define str_starts_with(str, start) slice_starts_with(_s2r(str), _s2r(start))
 #define str_ends_with(str, end)     slice_ends_with(_s2r(str), _s2r(end))
 #define str_contains(str, check)    slice_contains(_s2r(str), _s2r(check))
 #define str_contains_char(s, chs)   slice_contains_char(_s2r(s), _s2r(chs))
 #define str_contains_any(s, delims) slice_contains_any(_s2r(s), delims)
 bool    str_is_null_or_empty(const String str);
+#define str_count_str(str, delim)   slice_count_str(_s2r(str), _s2r(delim))
+#define str_count_char(str, delims) slice_count_char(_s2r(str), _s2r(delims))
+#define str_count_any(str, any)     slice_count_any(_s2r(str), any)
 
 #define str_find(str, target, out)  slice_find_str(_s2r(str), _s2r(target))
 
@@ -234,6 +251,8 @@ bool    str_is_null_or_empty(const String str);
 #define str_split_str(str, delim)   slice_split_str(_s2r(str), _s2r(delim))
 #define str_split_char(str, delims) slice_split_char(_s2r(str), _s2r(delims))
 #define str_split_any(str, delims)  slice_split_any(_s2r(str), delims)
+
+#define str_split_whitespace(str)   slice_split_whitespace(_s2r(str))
 
 // \brief Splits the string into an array of substrings based on the delimiter.
 //
@@ -378,11 +397,7 @@ String      istr_format(slice_t fmt, ...);
 Array_slice istr_split(slice_t str, _str_arg_t args[], index_t count);
 Array_slice istr_tokenize(slice_t st, _str_arg_t args[], index_t count);
 
-//bool      istr_contains_any(slice_t str, slice_t check_chars);
-//index_t   istr_index_of_last(slice_t str, slice_t find, index_t from);
-//index_t   istr_find_last(slice_t str, slice_t to_find);
 //Array     istr_match(slice_t str, slice_t regex);
-//Array     istr_tokenize(slice_t str, const slice_t[] tokens);
 //Array     istr_parenthetize(slice_t str); // block out segments by parens? ([{}])
 // for replace, start with basic string replace, maybe later look into adding regex support?
 //    differentiate between regular strings and regex with the regular "a" vs "/a/"

@@ -132,8 +132,12 @@ Array array_copy_span(span_t span, index_t element_size) {
   assert(span.begin <= span.end);
   if (span.begin >= span.end) return iarray_new(element_size);
   index_t element_count = ispan_size(span, element_size);
-  Array_Internal* ret = (Array_Internal*)iarray_new_reserve(element_size, element_count);
-  memcpy(ret->begin, span.begin, ret->capacity);
+  Array_Internal* ret = (Array_Internal*)iarray_new_reserve(
+    element_size, element_count
+  );
+  index_t size_bytes = ispan_size_bytes(span);
+  memcpy(ret->begin, span.begin, size_bytes);
+  ret->size = size_bytes;
   return (Array)ret;
 }
 
@@ -143,7 +147,7 @@ void array_reserve(Array a_in, index_t capacity) {
   byte* new_data = realloc(a->begin, a->element_size * capacity);
   assert(new_data);
   a->begin = new_data;
-  a->end = a->begin + a->size * a->capacity;
+  a->end = a->begin + a->element_size * a->capacity;
   a->capacity = capacity;
 }
 
@@ -158,11 +162,11 @@ void array_truncate(Array a_in, index_t max_size) {
   assert(new_data);
   a->begin = new_data;
   a->capacity = max_size;
-  a->end = new_data + a->size * a->element_size;
   if (a->size > max_size) {
     a->size = max_size;
     a->size_bytes = max_size * a->element_size;
   }
+  a->end = a->begin + a->size * a->element_size;
 }
 
 void array_trim(Array a_in) {

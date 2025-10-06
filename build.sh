@@ -124,6 +124,7 @@ sources_test=" \
   ./lib/cspec/cspec.c \
   ./lib/cspec/tst/cspec_spec.c \
   ./tst/spec_main.c \
+  ./tst/array_spec.c \
   ./tst/span_spec.c \
   ./tst/slice_spec.c \
   ./tst/str_spec.c \

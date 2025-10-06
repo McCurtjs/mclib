@@ -62,6 +62,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   target_sources(McLib_specs PRIVATE
     lib/cspec/tst/cspec_spec.c
     tst/spec_main.c
+    tst/array_spec.c
     tst/span_spec.c
     tst/str_spec.c
     tst/slice_spec.c

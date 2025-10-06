@@ -250,6 +250,8 @@ describe(slice_to_double) {
 // Comparisons
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <string.h>
+
 describe(slice_compare) {
 
   slice_t lhs = S("Asdf");
@@ -261,22 +263,30 @@ describe(slice_compare) {
 
   it("returns negative when given a lower case or shorter string") {
     expect(slice_compare to be_negative given(lhs, S("asdf")));
-    expect(slice_compare to be_negative given(lhs, S("Asd")));
+    expect(strcmp to be_negative given("Asdf", "Asdfg"));
+    expect(slice_compare to be_negative given(lhs, S("Asdfg")));
   }
 
   it("returns positive when given a higher case or longer string") {
     expect(slice_compare to be_positive given(lhs, S("AsdF")));
-    expect(slice_compare to be_positive given(lhs, S("Asdfg")));
+    expect(strcmp to be_positive given("Asdf", "Asd"));
+    expect(slice_compare to be_positive given(lhs, S("Asd")));
   }
 
   it("maintains order for numbers of equal length") {
     lhs = S("4");
+    expect(strcmp to be_negative given("4", "5"));
     expect(slice_compare to be_negative given(lhs, S("6")));
     expect(slice_compare to be_positive given(lhs, S("3")));
-    expect(slice_compare to be_positive given(lhs, S("-2")));
+
     lhs = S("53");
     expect(slice_compare to be_negative given(lhs, S("84")));
     expect(slice_compare to be_positive given(lhs, S("43")));
+  }
+
+  it("does not maintain order for negative numbers") {
+    expect(strcmp to be_positive given("4", "-2"));
+    expect(slice_compare to be_positive given(lhs, S("-2")));
   }
 
   it("maints order for ISO-standard dates of equal length") {
@@ -1094,6 +1104,16 @@ describe(slice_split_char) {
     slice_token_char(slice, slice_empty, NULL);
   }
 
+  it("has a specialization macro for splitting whitespace") {
+    slice_t expected[] = { S("xyz?w,"), S("a?b,"), S("a?2jk") };
+    result = slice_split_whitespace(slice);
+    expect(result != NULL);
+    expect(result->size, == , 3);
+    slice_t* array_foreach_index(token, i, result) {
+      expect(*token to match(expected[i]));
+    }
+  }
+
   after{
     if (result) expect(result->capacity, == , result->size);
     arr_slice_delete(&result);
@@ -1757,64 +1777,6 @@ describe(slice_conversion) {
   }
 
 }
-
-/*
-describe(slice_split) {
-
-  slice_t slice = S("This is, a collection, of strings");
-  Array_slice result = NULL;
-
-  it("performs a basic split on commas") {
-    result = slice_split(slice, S(","));
-    expect(result->size, == , 3u);
-
-    slice_t expected[3] = { S("This is"), S(" a collection"), S(" of strings") };
-    expect(result to all_match(expected[n], slice_eq, array), slice_t);
-    expect(result to all_match(expected[n], array, slice_eq));
-  }
-
-  it("performs a multi-char split") {
-    result = slice_split(slice, S(", "));
-    expect(result->size, == , 3u);
-
-    slice_t expected[3] = { S("This is"), S("a collection"), S("of strings") };
-    expect(result to all(slice_eq, expected[n], slice_t, array));
-  }
-
-  it("splits on an empty string") {
-    result = slice_split(slice, slice_empty);
-    expect(result->size, == , slice.size);
-
-    expect(result to all(1 == slice_size, slice_t, array));
-    expect(result to all_be)
-    expect(result to all(slice_eq, slice_substring(slice, n, n + 1), slice_t, array));
-  }
-
-  it("tries to split on a delimiter that isn't present") {
-    result = slice_split(slice, S("NOT_INCLUDED"));
-    expect(result->size, == , 1u);
-    slice_t blah = slice;
-    expect(result to all_match(blah, array, slice_eq), slice_t);
-  }
-
-  it("tries to split with a delimiter that is too big") {
-    result = slice_split(slice, S("This is, a collection, of strings, but more"));
-    expect(result->size, == , 1u);
-    expect(result to all(slice_eq, slice, slice_t, array));
-  }
-
-  it("splits using the same string as the delimiter") {
-    result = slice_split(slice, slice);
-    expect(result->size, == , 2u);
-    expect(result to all(slice_eq, slice_empty, slice_t, array));
-  }
-
-  if (result) {
-    arr_slice_delete(&result);
-  }
-
-}
-*/
 
 test_suite(tests_slice) {
   test_group(slice_basic),

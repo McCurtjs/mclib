@@ -40,11 +40,15 @@
 # pragma warning ( disable : 28182 )
 #endif
 
-const char slice_constants[] = "\0true\0false";
+const char slice_constants[] = "\0true\0false\0 \r\n\t\v\f";
 
 const slice_t slice_empty = { .begin = &slice_constants[0], .size = 0 };
 const slice_t slice_true = { .begin = &slice_constants[1], .size = 4 };
 const slice_t slice_false = { .begin = &slice_constants[6], .size = 5 };
+const slice_t slice_whitespace = { .begin = &slice_constants[12], .size = 6 };
+const slice_t slice_space = { .begin = &slice_constants[12], .size = 1 };
+const slice_t slice_newline = { .begin = &slice_constants[14], .size = 1 };
+const slice_t slice_tab = { .begin = &slice_constants[15], .size = 1 };
 
 #define SLICE_VALID(str)                                                      \
   assert((str).size >= 0);                                                    \
@@ -55,7 +59,7 @@ slice_t slice_from_c_str(const char* c_str) {
   if (c_str == NULL) return slice_empty;
   return (slice_t) {
     .begin = c_str,
-    .length = strlen(c_str),
+    .size = (index_t)strlen(c_str),
   };
 }
 
@@ -206,8 +210,8 @@ bool slice_to_double(slice_t str, double* out) {
 int slice_compare(slice_t lhs, slice_t rhs) {
   SLICE_VALID(lhs);
   SLICE_VALID(rhs);
-  if (lhs.size != rhs.size) return (int)(rhs.size - lhs.size);
-  return memcmp(lhs.begin, rhs.begin, lhs.size);
+  if (lhs.size != rhs.size) return (lhs.size < rhs.size) ? -1 : 1;
+  return memcmp(lhs.begin, rhs.begin, (size_t)lhs.size);
 }
 
 // True if the slice is lexicographically equivalent to the other string.
@@ -221,7 +225,7 @@ bool slice_starts_with(slice_t str, slice_t starts) {
   SLICE_VALID(str);
   SLICE_VALID(starts);
   if (starts.size > str.size) return FALSE;
-  return memcmp(str.begin, starts.begin, starts.size) == 0;
+  return memcmp(str.begin, starts.begin, (size_t)starts.size) == 0;
 }
 
 // True if the slice ends with the given string, false otherwise.
@@ -229,7 +233,9 @@ bool slice_ends_with(slice_t str, slice_t ends) {
   SLICE_VALID(str);
   SLICE_VALID(ends);
   if (ends.size > str.size) return FALSE;
-  return memcmp(str.begin + str.size - ends.size, ends.begin, ends.size) == 0;
+  return memcmp(
+    str.begin + str.size - ends.size, ends.begin, (size_t)ends.size
+  ) == 0;
 }
 
 // True if the slice contains the given target string, false otherwise.

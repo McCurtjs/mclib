@@ -65,8 +65,9 @@ void printer(const char* str, csUint len, csUint color) {
 
 extern TestSuite tests_cspec;
 extern TestSuite tests_slice;
-extern TestSuite tests_string;
 extern TestSuite tests_span;
+extern TestSuite tests_array;
+extern TestSuite tests_string;
 extern TestSuite tests_map;
 
 // Main
@@ -76,14 +77,15 @@ int main(int argc, char* argv[]) {
 #ifdef CSPEC_MSVC
   /* Test values for Visual Studio without having to modify properties */
   argv = (char* []){ argv[0], "-y", "slice_spec.c" };
-  argc = 3;
+  argc = 2;
 #endif
 
   TestSuite* test_suites[] = {
     &tests_cspec,
     &tests_slice,
-    &tests_string,
     &tests_span,
+    &tests_array,
+    &tests_string,
     &tests_map,
   };
 
