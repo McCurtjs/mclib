@@ -111,57 +111,58 @@ typedef struct array_t {
   //Allocator   const alloc;
 } array_t, *Array;
 
-#define   array_new(TYPE) iarray_new(sizeof(TYPE))
-#define   array_new_reserve(TYPE, capacity) \
-                          iarray_new_reserve(sizeof(TYPE), capacity)
+#define   arr_new(TYPE) iarr_new(sizeof(TYPE))
+#define   arr_new_reserve(TYPE, capacity) \
+                          iarr_new_reserve(sizeof(TYPE), capacity)
 #define   arr_build(TYPE) iarr_build(sizeof(TYPE))
 #define   arr_build_reserve(TYPE, capacity) \
                           iarr_build_reserve(sizeof(TYPE), capacity)
-Array    iarray_new(index_t elemenet_size);
-Array    iarray_new_reserve(index_t element_size, index_t capacity);
+Array    iarr_new(index_t elemenet_size);
+Array    iarr_new_reserve(index_t element_size, index_t capacity);
 array_t  iarr_build(index_t element_size);
 array_t  iarr_build_reserve(index_t element_size, index_t capacity);
-Array     array_copy(Array to_copy);
-Array     array_copy_span(span_t to_copy, index_t element_size);
-//Array   array_copy_span_deep(span_t to_copy, void (*copy_fn)(void* dst, void* src));
-void      array_reserve(Array array, index_t capacity);
-void      array_truncate(Array array, index_t capacity);
-void      array_trim(Array array);
-void      array_clear(Array array);
-void      array_free(Array array);
-void      array_delete(Array* array);
-span_t    array_release(Array* array);
-index_t   array_write(Array array, index_t position, const void* in_element); // no size modify (bool)
-index_t   array_write_back(Array array, const void* in_element); // remove this
-//index_t array_insert(Array array, index_t position, const void* in_element);
-//index_t array_push_back(Array array, const void* in_element);
-void*     array_emplace(Array array, index_t position);
-void*     array_emplace_back(Array array);
-span_t    array_emplace_range(Array array, index_t position, index_t count);
-span_t    array_emplace_back_range(Array array, index_t count);
-index_t   array_remove(Array array, index_t position);
-index_t   array_remove_range(Array array, index_t position, index_t count);
-index_t   array_remove_unstable(Array array, index_t position);
-index_t   array_pop_back(Array array);
-void*     array_ref(Array array, index_t index);
-void*     array_ref_front(Array array);
-void*     array_ref_back(Array array);
-bool      array_read(const Array array, index_t index, void* out_element);
-bool      array_read_front(const Array array, void* out_element);
-bool      array_read_back(const Array array, void* out_element);
-bool      array_contains(const Array array, const void* to_find);
-//void    array_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
-//void    array_ref_search
-//void*   array_ref_find(Array array, bool (*predicate)(const void* el));
-//void    array_filter(Array array, bool (*filter)(const void* el));
+Array     arr_copy(Array to_copy);
+Array     arr_copy_span(span_t to_copy, index_t element_size);
+//Array   arr_copy_span_deep(span_t to_copy, void (*copy_fn)(void* dst, void* src));
+void      arr_reserve(Array array, index_t capacity);
+void      arr_truncate(Array array, index_t capacity);
+void      arr_trim(Array array);
+void      arr_clear(Array array);
+void      arr_free(Array array);
+void      arr_delete(Array* array);
+span_t    arr_release(Array* array);
+index_t   arr_write(Array array, index_t position, const void* in_element); // no size modify (bool)
+index_t   arr_write_back(Array array, const void* in_element); // remove this
+//index_t arr_insert(Array array, index_t position, const void* in_element);
+//index_t arr_push_back(Array array, const void* in_element);
+void*     arr_emplace(Array array, index_t position);
+void*     arr_emplace_back(Array array);
+span_t    arr_emplace_range(Array array, index_t position, index_t count);
+span_t    arr_emplace_back_range(Array array, index_t count);
+index_t   arr_remove(Array array, index_t position);
+index_t   arr_remove_unstable(Array array, index_t position);
+index_t   arr_remove_range(Array array, index_t position, index_t count);
+//index_t arr_remove_range_unstable(Array array, index_t pos, index_t count);
+index_t   arr_pop_back(Array array);
+void*     arr_ref(Array array, index_t index);
+void*     arr_ref_front(Array array);
+void*     arr_ref_back(Array array);
+bool      arr_read(const Array array, index_t index, void* out_element);
+bool      arr_read_front(const Array array, void* out_element);
+bool      arr_read_back(const Array array, void* out_element);
+bool      arr_contains(const Array array, const void* to_find);
+//void    arr_sort(Array array, bool (*cmp)(const void* lhs, const void* rhs));
+//void    arr_ref_search
+//void*   arr_ref_find(Array array, bool (*predicate)(const void* el));
+//void    arr_filter(Array array, bool (*filter)(const void* el));
 
 // \brief A macro shorthand to write foreach loops with any dynamic Array or
 //    Array-based sub-types.
 //
 // \brief usage example:
-// \brief MyType* array_foreach(iterator, array) { use(iterator); }
-#define array_foreach(VAR, ARRAY)                                             \
-  array_foreach_index(VAR, MACRO_CONCAT(_array_iter, __LINE__), ARRAY)        //
+// \brief MyType* arr_foreach(iterator, array) { use(iterator); }
+#define arr_foreach(VAR, ARRAY)                                               \
+  arr_foreach_index(VAR, MACRO_CONCAT(_arrit_, __LINE__), ARRAY)        //
 
 // \brief A macro shorthand to write foreach loops with any dynamic Array or
 //    Array-based sub-types. Includes a tracking index value as well.
@@ -171,8 +172,8 @@ bool      array_contains(const Array array, const void* to_find);
 //    iteration.
 //
 // \brief usage example:
-// \brief MyType* array_foreach_index(iter, i, array) { other[i] = *iter; }
-#define array_foreach_index(VAR, INDEX, ARRAY)                                \
+// \brief MyType* arr_foreach_index(iter, i, array) { other[i] = *iter; }
+#define arr_foreach_index(VAR, INDEX, ARRAY)                                  \
   VAR = (ARRAY)->begin;                                                       \
   assert(sizeof(*VAR) == ARRAY->element_size);                                \
   for (index_t INDEX = 0; INDEX < ARRAY->size; ++INDEX,                       \
@@ -232,7 +233,7 @@ typedef struct _arr_local_type {
 // \returns A new empty dynamic array, ready for use.
 static inline _arr_type _prefix(_new)
 (void) {
-  return (_arr_type) { (_arr_type)array_new(con_type) };
+  return (_arr_type) { (_arr_type)arr_new(con_type) };
 }
 
 // \brief Initialies a new array of the given type. Pre-allocates space for N
@@ -244,7 +245,7 @@ static inline _arr_type _prefix(_new)
 // \returns A new empty dynamic array with the given capacity.
 static inline _arr_type _prefix(_new_reserve)
 (index_t capacity) {
-  return (_arr_type)array_new_reserve(con_type, capacity);
+  return (_arr_type)arr_new_reserve(con_type, capacity);
 }
 
 // \brief Initializes an array of the given type in local storage. The contents
@@ -289,7 +290,7 @@ static inline _arr_local_type _prefix(_build_reserve)
 // \param capacity - the number of elements to reserve space for
 static inline void _prefix(_reserve)
 (_arr_type arr, index_t capacity) {
-  array_reserve((Array)arr, capacity);
+  arr_reserve((Array)arr, capacity);
 }
 
 // \brief Truncates the array, may decrease the size of the array and remove
@@ -303,28 +304,28 @@ static inline void _prefix(_reserve)
 // \param max_size - the maximum resulting capacity of the array
 static inline void _prefix(_truncate)
 (_arr_type arr, index_t capacity) {
-  array_truncate((Array)arr, capacity);
+  arr_truncate((Array)arr, capacity);
 }
 
 // \brief Performs a soft-delete of the array contents without changing
 //    capacity or freeing any allocations.
 static inline void _prefix(_clear)
 (_arr_type arr) {
-  array_clear((Array)arr);
+  arr_clear((Array)arr);
 }
 
 // \brief Frees the contents of the array back to the allocator. The array
 //    object itself will still be stored in memory and can still be used.
 static inline void _prefix(_free)
 (_arr_type arr) {
-  array_free((Array)arr);
+  arr_free((Array)arr);
 }
 
 // \brief Deletes the array object and its contents from memory. Once deleted,
 //    the provided pointer reference will be nulled.
 static inline void _prefix(_delete)
 (_arr_type* p_arr) {
-  array_delete((Array*)p_arr);
+  arr_delete((Array*)p_arr);
 }
 
 // \brief Deletes the array object without erasing the data.
@@ -332,7 +333,7 @@ static inline void _prefix(_delete)
 // \returns The array without freeing it.
 static inline _span_type _prefix(_release)
 (_arr_type* p_arr) {
-  span_t span = array_release((Array*)p_arr);
+  span_t span = arr_release((Array*)p_arr);
   return _span_prefix(_cast)(span);
 }
 
@@ -346,7 +347,7 @@ static inline _span_type _prefix(_release)
 // \returns The size of the array after adding the element.
 static inline index_t _prefix(_insert)
 (_arr_type arr, index_t position, con_type element) {
-  return array_write((Array)arr, position, &element);
+  return arr_write((Array)arr, position, &element);
 }
 
 // \brief Inserts a copy of the given element into the back of the array
@@ -356,7 +357,7 @@ static inline index_t _prefix(_insert)
 // \returns The size of the array after adding the element.
 static inline index_t _prefix(_push_back)
 (_arr_type arr, con_type element) {
-  return array_write_back((Array)arr, &element);
+  return arr_write_back((Array)arr, &element);
 }
 
 // \brief Inserts a copy of the element referenced by the given pointer into the
@@ -369,7 +370,7 @@ static inline index_t _prefix(_push_back)
 // \returns The size of the array after adding the element.
 static inline index_t _prefix(_write)
 (_arr_type arr, index_t position, const con_type* element) {
-  return array_write((Array)arr, position, element);
+  return arr_write((Array)arr, position, element);
 }
 
 // \brief Inserts a copy of the element referenced by the given pointer into the
@@ -380,7 +381,7 @@ static inline index_t _prefix(_write)
 // \returns The size of the array after adding the element.
 static inline index_t _prefix(_write_back)
 (_arr_type arr, const con_type* element) {
-  return array_write_back((Array)arr, element);
+  return arr_write_back((Array)arr, element);
 }
 
 // \brief Inserts space for an element in the array and returns a pointer to it
@@ -391,7 +392,7 @@ static inline index_t _prefix(_write_back)
 // \returns A pointer to the newly added and uninitialized element.
 static inline con_type* _prefix(_emplace)
 (_arr_type arr, index_t position) {
-  return array_emplace((Array)arr, position);
+  return arr_emplace((Array)arr, position);
 }
 
 // \brief Inserts space for an element at the back of the array and returns a
@@ -400,7 +401,7 @@ static inline con_type* _prefix(_emplace)
 // \returns A pointer to the newly added and uninitialized element.
 static inline con_type* _prefix(_emplace_back)
 (_arr_type arr) {
-  return array_emplace_back((Array)arr);
+  return arr_emplace_back((Array)arr);
 }
 
 // \brief Inserts space for count elements in the array and returns a span
@@ -414,7 +415,7 @@ static inline con_type* _prefix(_emplace_back)
 // \returns A range containing new uninitialized space in the array.
 static inline _span_type _prefix(_emplace_range)
 (_arr_type arr, index_t position, index_t count) {
-  span_t ret = array_emplace_range((Array)arr, position, count);
+  span_t ret = arr_emplace_range((Array)arr, position, count);
   return *(_span_type*)&ret;
 }
 
@@ -425,7 +426,7 @@ static inline _span_type _prefix(_emplace_range)
 // \returns A range containing the newly added uninitialized elements.
 static inline _span_type _prefix(_emplace_back_range)
 (_arr_type arr, index_t count) {
-  span_t ret = array_emplace_back_range((Array)arr, count);
+  span_t ret = arr_emplace_back_range((Array)arr, count);
   return *(_span_type*)&ret;
 }
 
@@ -437,14 +438,14 @@ static inline _span_type _prefix(_emplace_back_range)
 // \returns The size of the array after removing the element
 static inline index_t _prefix(_remove)
 (_arr_type arr, index_t position) {
-  return array_remove((Array)arr, position);
+  return arr_remove((Array)arr, position);
 }
 
 // TODO:
 /*
 static inline index_t _prefix(_remove_range)
 (_arr_type arr, index_t position, index_t count) {
-  return array_remove_range((Array)arr, position, count);
+  return arr_remove_range((Array)arr, position, count);
 }
 //*/
 
@@ -459,7 +460,7 @@ static inline index_t _prefix(_remove_range)
 // \returns The size of the array after removing the element.
 static inline index_t _prefix(_remove_unstable)
 (_arr_type arr, index_t position) {
-  return array_remove_unstable((Array)arr, position);
+  return arr_remove_unstable((Array)arr, position);
 }
 
 // \brief Removes the last element from the array.
@@ -470,7 +471,7 @@ static inline index_t _prefix(_remove_unstable)
 // \returns The size of the array after removing the element.
 static inline index_t _prefix(_pop_back)
 (_arr_type arr) {
-  return array_pop_back((Array)arr);
+  return arr_pop_back((Array)arr);
 }
 
 // \brief Returns a copy of the element at the given position.
@@ -598,7 +599,7 @@ static inline void _prefix(_reverse)
 // \returns True if a match was found, false otherwise
 static inline bool _prefix(_contains)
 (const _arr_type arr, con_type to_find) {
-  return array_contains((Array)arr, &to_find);
+  return arr_contains((Array)arr, &to_find);
 }
 
 #ifdef con_cmp
@@ -608,12 +609,12 @@ static inline bool _prefix(_contains)
 //
 static inline void _prefix(_sort)
 (const _arr_type arr) {
-  array_sort((Array)arr, con_cmp);
+  arr_sort((Array)arr, con_cmp);
 }
 
 static inline index_t _prefix(_find)
 (_arr_type arr, con_type to_find) {
-  return array_find((Array)arr, to_find, con_cmp);
+  return arr_find((Array)arr, to_find, con_cmp);
 }
 
 #endif // con_cmp

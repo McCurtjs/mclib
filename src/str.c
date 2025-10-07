@@ -778,7 +778,7 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
     return;
   }
 
-  _str_arg_t* arg = array_ref(params, spec.index);
+  _str_arg_t* arg = arr_ref(params, spec.index);
 
   switch (arg->type) {
 
@@ -884,7 +884,7 @@ static String format_va(slice_t fmt, va_list args) {
   // TODO: Move this to its own section, possibly want to split out a new 
   //    header just for this function, especially if other dependent types
   //    end up being supported (such as vec3).
-  Array params = array_new(_str_arg_t);
+  Array params = arr_new(_str_arg_t);
   index_t reserve_size = sizeof(String_Internal) + fmt.size;
 
   _str_arg_t arg;
@@ -896,7 +896,7 @@ static String format_va(slice_t fmt, va_list args) {
 
     reserve_size += (arg.type == _str_arg_slice) ? arg.slice.size : 3;
 
-    array_write_back(params, &arg);
+    arr_write_back(params, &arg);
   }
 
   va_end(args);
@@ -964,7 +964,7 @@ static String format_va(slice_t fmt, va_list args) {
     memcpy(bytes.begin, fmt.begin + section_start, section_size);
   }
 
-  array_delete(&params);
+  arr_delete(&params);
 
   arr_byte_push_back(output, '\0');
   String_Internal* header = (String_Internal*)output->begin;

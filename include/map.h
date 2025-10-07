@@ -73,8 +73,8 @@ typedef struct res_ensure_t {
   bool is_new;
 } res_ensure_t;
 
-#define map_new(T_KEY, T_VAL, FN_CMP, FN_HASH)  \
-          imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_CMP, FN_HASH)
+#define       map_new(T_KEY, T_VAL, FN_CMP, FN_HASH)  \
+             imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_CMP, FN_HASH)
 
 //void*     map_emplace_hash(HMap map, const void* key, hash_t hash);
 

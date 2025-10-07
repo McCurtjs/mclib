@@ -973,7 +973,7 @@ describe(slice_split_str) {
     result = slice_split_str(slice, S("i"));
     expect(result != NULL);
     expect(result->size, == , 4);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -983,7 +983,7 @@ describe(slice_split_str) {
     result = slice_split_str(slice, S(" == "));
     expect(result != NULL);
     expect(result->size, == , 5);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1003,7 +1003,7 @@ describe(slice_split_str) {
     result = slice_split_str(slice, S("=="));
     expect(result != NULL);
     expect(result->size, == , 3);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1035,7 +1035,7 @@ describe(slice_split_str) {
     result = slice_split_str(slice, slice_empty);
     expect(result != NULL);
     expect(result->size, == , slice.size);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(token->size == 1);
       expect(token->begin[0], == , slice.begin[i]);
     }
@@ -1077,7 +1077,7 @@ describe(slice_split_char) {
     result = slice_split_char(slice, S("?,"));
     expect(result != NULL);
     expect(result->size, == , 6);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1087,7 +1087,7 @@ describe(slice_split_char) {
     result = slice_split_char(S("x"), S("x"));
     expect(result != NULL);
     expect(result->size, == , 2);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1109,7 +1109,7 @@ describe(slice_split_char) {
     result = slice_split_whitespace(slice);
     expect(result != NULL);
     expect(result->size, == , 3);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1136,7 +1136,7 @@ describe(slice_split_any) {
     result = slice_split_any(slice, delims);
     expect(result != NULL);
     expect(result->size, == , 4);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1156,7 +1156,7 @@ describe(slice_split_any) {
     result = slice_split_any(slice, delims);
     expect(result != NULL);
     expect(result->size, == , 4);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1167,7 +1167,7 @@ describe(slice_split_any) {
     result = slice_split_any(slice, delims);
     expect(result != NULL);
     expect(result->size, == , 4);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1183,7 +1183,7 @@ describe(slice_split_any) {
     result = slice_split_any(slice, span_slice_cast(span_empty));
     expect(result != NULL);
     expect(result->size, == , slice.size);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(token->size, == , 1);
       expect(token->begin[0], == , slice.begin[i]);
     }
@@ -1209,7 +1209,7 @@ describe(slice_tokenize_str) {
     result = slice_tokenize_str(slice, eq);
     expect(result != NULL);
     expect(result->size, == , 9);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1243,7 +1243,7 @@ describe(slice_tokenize_str) {
     result = slice_tokenize_str(slice, slice_empty);
     expect(result != NULL);
     expect(result->size, == , slice.size);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(token->size to be_one);
       expect(token->begin[0], == , slice.begin[i]);
     }
@@ -1277,7 +1277,7 @@ describe(slice_tokenize_char) {
     result = slice_tokenize_char(slice, S("?,"));
     expect(result != NULL);
     expect(result->size, == , 11);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1303,7 +1303,7 @@ describe(slice_tokenize_char) {
     result = slice_tokenize_char(S("x"), S("x"));
     expect(result != NULL);
     expect(result->size, == , 3);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1344,7 +1344,7 @@ describe(slice_tokenize_any) {
     result = slice_tokenize_any(slice, delims);
     expect(result != NULL);
     expect(result->size, == , 7);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1367,7 +1367,7 @@ describe(slice_tokenize_any) {
     result = slice_tokenize_any(slice, delims);
     expect(result != NULL);
     expect(result->size, == , 7);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1380,7 +1380,7 @@ describe(slice_tokenize_any) {
     result = slice_tokenize_any(slice, delims);
     expect(result != NULL);
     expect(result->size, == , 7);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(*token to match(expected[i]));
     }
   }
@@ -1396,7 +1396,7 @@ describe(slice_tokenize_any) {
     result = slice_tokenize_any(slice, span_slice_cast(span_empty));
     expect(result != NULL);
     expect(result->size, == , slice.size);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(token->size, == , 1);
       expect(token->begin[0], == , slice.begin[i]);
     }
@@ -1407,7 +1407,7 @@ describe(slice_tokenize_any) {
     result = slice_tokenize_any(slice, delims);
     expect(result != NULL);
     expect(result->size, == , slice.size);
-    slice_t* array_foreach_index(token, i, result) {
+    slice_t* arr_foreach_index(token, i, result) {
       expect(token->size, == , 1);
       expect(token->begin[0], == , slice.begin[i]);
     }

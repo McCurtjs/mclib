@@ -58,14 +58,14 @@ int main(void) {
   span_slice_t splice = SPAN(slices);
   span_byte_t bspan = SPAN(bytes);
 
-  Array arr = array_new_reserve(int, 5);
-  array_write_back(arr, ints);
-  array_write_back(arr, &(int){ 0xFFFFFFFF });
-  array_write_back(arr, &(int){ 0xAAAAAAAA });
+  Array arr = arr_new_reserve(int, 5);
+  arr_write_back(arr, ints);
+  arr_write_back(arr, &(int){ 0xFFFFFFFF });
+  arr_write_back(arr, &(int){ 0xAAAAAAAA });
 
   array_t local_array = arr_build(int);
-  array_write_back(&local_array, &ints[3]);
-  array_free(&local_array);
+  arr_write_back(&local_array, &ints[3]);
+  arr_free(&local_array);
 
   array_byte_t asdf = arr_byte_build_reserve(5);
   arr_byte_write_back(&asdf, (byte*)&(int){ 65 });
@@ -78,9 +78,9 @@ int main(void) {
   arr_slice_write_back(&oisjdg, &slices[2]);
   arr_slice_write_back(&oisjdg, &slices[2]);
 
-  Array arrv2 = array_new(vec2);
-  array_write_back(arrv2, &v2zero);
-  array_write_back(arrv2, &v2ones);
+  Array arrv2 = arr_new(vec2);
+  arr_write_back(arrv2, &v2zero);
+  arr_write_back(arrv2, &v2ones);
 
   Array_byte arrb = arr_byte_new_reserve(8);
   memcpy(arr_byte_emplace_back_range(arrb, sizeof(bytes)).begin, bytes, sizeof(bytes));
