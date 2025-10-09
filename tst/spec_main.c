@@ -69,6 +69,7 @@ extern TestSuite tests_span;
 extern TestSuite tests_array;
 extern TestSuite tests_string;
 extern TestSuite tests_map;
+extern TestSuite tests_vec;
 
 // Main
 
@@ -87,6 +88,7 @@ int main(int argc, char* argv[]) {
     &tests_array,
     &tests_string,
     &tests_map,
+    &tests_vec,
   };
 
   cspec_opt_print_line = printer;

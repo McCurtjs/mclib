@@ -67,6 +67,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     tst/str_spec.c
     tst/slice_spec.c
     tst/map_spec.c
+    tst/vec_spec.c
   )
 
   target_link_libraries(${MCLIB_TARGET} PRIVATE CSpec)

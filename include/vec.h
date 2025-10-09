@@ -22,8 +22,8 @@
 * SOFTWARE.
 */
 
-#ifndef _MCLIB_VECTOR_H_
-#define _MCLIB_VECTOR_H_
+#ifndef MCLIB_VECTOR_H_
+#define MCLIB_VECTOR_H_
 
 #include "types.h"
 
@@ -140,7 +140,7 @@ typedef struct vec4 {
 typedef vec4 quat;
 typedef vec4 color4;
 
-  //     c d e     h       l   n o
+//     c d e     h       l   n o
 
 // Size constants (generally for OpenGL functions)
 #define v2floats  2
@@ -175,6 +175,7 @@ typedef vec4 color4;
 #define sc4white    {.f={ 1, 1, 1, 1 } }
 #define sc4gray     {.f={.5,.5,.5, 1 } }
 
+#define i2zero      ((vec2i){.i={ 0, 0 }})
 #define b3zero      ((vec3b){.i={ 0, 0, 0 }})
 #define i3zero      ((vec3i){.i={ 0, 0, 0 }})
 #define v2ones      ((vec2){.f= { 1, 1 } })
@@ -230,69 +231,71 @@ typedef vec4 color4;
 #define b4white     ((vec4b){.i={ 255, 255, 255, 255 } })
 #define b4gray      ((vec4b){.i={ 128, 128, 128, 255 } })
 
-vec3 qtransform(quat q, vec3 v);
+vec3    qtransform(quat q, vec3 v);
 
-vec3b v3b(byte r, byte g, byte b);
-vec4b v4b(byte r, byte g, byte b, byte a);
+vec3b   v3b(byte r, byte g, byte b);
+vec4b   v4b(byte r, byte g, byte b, byte a);
 
-float i2aspect(vec2i v);
-vec2i v2i(int x, int y);
+float   i2aspect(vec2i v);
+vec2i   i2zcurve(size_t i);
+size_t  i2zindex(vec2i v);
+vec2i   v2i(int x, int y);
 
-vec3i v3i(int x, int y, int z);
+vec3i   v3i(int x, int y, int z);
 
-float v2mag(vec2 v);
-float v2magsq(vec2 v);
-float v2dist(vec2 P, vec2 Q);
-float v2distsq(vec2 P, vec2 Q);
-vec2  v2norm(vec2 v);
-vec2  v2neg(vec2 v);
-vec2  v2add(vec2 a, vec2 b);
-vec2  v2sub(vec2 a, vec2 b);
-vec2  v2scale(vec2 v, float f);
-float v2dot(vec2 a, vec2 b);
-vec2  v2had(vec2 a, vec2 b);
-float v2cross(vec2 a, vec2 b);
-vec2  v2perp(vec2 v);
-vec2  v2reflect(vec2 a, vec2 b);
-float v2angle(vec2 a, vec2 b);
-vec2  v2dir(float theta);
-vec2  v2rot(vec2 v, float theta);
-vec2  v2lerp(vec2 P, vec2 Q, float t);
-float v2line_dist(vec2 P, vec2 v, vec2 Q);
-float v2line_closest(vec2 P, vec2 v, vec2 Q, vec2* R_out);
-bool  v2line_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
-bool  v2ray_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out);
-bool  v2ray_ray(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
-bool  v2ray_seg(vec2 P, vec2 v, vec2 Q1, vec2 Q2, float* t_out);
-bool  v2seg_seg(vec2 P1, vec2 P2, vec2 Q1, vec2 Q2, vec2* out);
-vec2  v2f(float x, float y);
-vec3  v23(vec2 xy);
-vec4  v24(vec2 xy);
-vec4  p24(vec2 xy);
-vec3  v23f(vec2 xy, float z);
-vec4  v24f(vec2 xy, float z, float w);
-vec4  p24f(vec2 xy, float z);
+float   v2mag(vec2 v);
+float   v2magsq(vec2 v);
+float   v2dist(vec2 P, vec2 Q);
+float   v2distsq(vec2 P, vec2 Q);
+vec2    v2norm(vec2 v);
+vec2    v2neg(vec2 v);
+vec2    v2add(vec2 a, vec2 b);
+vec2    v2sub(vec2 a, vec2 b);
+vec2    v2scale(vec2 v, float f);
+float   v2dot(vec2 a, vec2 b);
+vec2    v2had(vec2 a, vec2 b);
+float   v2cross(vec2 a, vec2 b);
+vec2    v2perp(vec2 v);
+vec2    v2reflect(vec2 a, vec2 b);
+float   v2angle(vec2 a, vec2 b);
+vec2    v2dir(float theta);
+vec2    v2rot(vec2 v, float theta);
+vec2    v2lerp(vec2 P, vec2 Q, float t);
+float   v2line_dist(vec2 P, vec2 v, vec2 Q);
+float   v2line_closest(vec2 P, vec2 v, vec2 Q, vec2* R_out);
+bool    v2line_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
+bool    v2ray_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out);
+bool    v2ray_ray(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
+bool    v2ray_seg(vec2 P, vec2 v, vec2 Q1, vec2 Q2, float* t_out);
+bool    v2seg_seg(vec2 P1, vec2 P2, vec2 Q1, vec2 Q2, vec2* out);
+vec2    v2f(float x, float y);
+vec3    v23(vec2 xy);
+vec4    v24(vec2 xy);
+vec4    p24(vec2 xy);
+vec3    v23f(vec2 xy, float z);
+vec4    v24f(vec2 xy, float z, float w);
+vec4    p24f(vec2 xy, float z);
 
-float v3mag(vec3 v);
-float v3magsq(vec3 v);
-vec3  v3norm(vec3 v);
-vec3  v3neg(vec3 v);
-vec3  v3add(vec3 a, vec3 b);
-vec3  v3sub(vec3 a, vec3 b);
-vec3  v3scale(vec3 a, float f);
-float v3dot(vec3 a, vec3 b);
-vec3  v3had(vec3 a, vec3 b);
-vec3  v3cross(vec3 a, vec3 b);
-vec3  v3perp(vec3 v);
-float v3angle(vec3 a, vec3 b);
-bool  v3line_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
-bool  v3ray_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
-vec3  v3f(float x, float y, float z);
-vec4  v34(vec3 xyz);
-vec4  p34(vec3 xyz);
-vec4  v34f(vec3 xyz, float w);
+float   v3mag(vec3 v);
+float   v3magsq(vec3 v);
+vec3    v3norm(vec3 v);
+vec3    v3neg(vec3 v);
+vec3    v3add(vec3 a, vec3 b);
+vec3    v3sub(vec3 a, vec3 b);
+vec3    v3scale(vec3 a, float f);
+float   v3dot(vec3 a, vec3 b);
+vec3    v3had(vec3 a, vec3 b);
+vec3    v3cross(vec3 a, vec3 b);
+vec3    v3perp(vec3 v);
+float   v3angle(vec3 a, vec3 b);
+bool    v3line_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
+bool    v3ray_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
+vec3    v3f(float x, float y, float z);
+vec4    v34(vec3 xyz);
+vec4    p34(vec3 xyz);
+vec4    v34f(vec3 xyz, float w);
 
-vec4  v4f(float x, float y, float z, float w);
+vec4    v4f(float x, float y, float z, float w);
 
 //vec2  v2orbit(vec2 a, vec2 center, float theta);
 //vec3  v3reflect(vec3 v, vec3 axis);

@@ -162,7 +162,7 @@ bool      arr_contains(const Array array, const void* to_find);
 // \brief usage example:
 // \brief MyType* arr_foreach(iterator, array) { use(iterator); }
 #define arr_foreach(VAR, ARRAY)                                               \
-  arr_foreach_index(VAR, MACRO_CONCAT(_arrit_, __LINE__), ARRAY)        //
+  arr_foreach_index(VAR, MACRO_CONCAT(_arrit_, __LINE__), ARRAY)              //
 
 // \brief A macro shorthand to write foreach loops with any dynamic Array or
 //    Array-based sub-types. Includes a tracking index value as well.
