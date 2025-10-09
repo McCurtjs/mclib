@@ -73,8 +73,19 @@ typedef struct res_ensure_t {
   bool is_new;
 } res_ensure_t;
 
+typedef struct pair_kv_t {
+  union {
+    const void* key;
+    const void* left;
+  };
+  union {
+    void* value;
+    void* right;
+  };
+} pair_kv_t;
+
 #define       map_new(T_KEY, T_VAL, FN_CMP, FN_HASH)  \
-             imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_CMP, FN_HASH)
+                imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_CMP, FN_HASH)
 
 //void*     map_emplace_hash(HMap map, const void* key, hash_t hash);
 
@@ -90,13 +101,30 @@ void          map_clear(HMap map);
 
 res_ensure_t  map_ensure(HMap map, const void* key);
 void*         map_emplace(HMap map, const void* key);
-void          map_write(HMap map, const void* key, const void* value);
+bool          map_write(HMap map, const void* key, const void* value);
 bool          map_insert(HMap map, const void* key, const void* value);
 void*         map_ref(HMap map, const void* key);
+pair_kv_t     map_next(HMap map, const void* iterator);
 bool          map_remove(HMap map, const void* key);
 //bool        map_read(HMap map, key_t key, void* out_element);
 //bool        map_contains_element(HMap map, const void* to_find);
 //bool        map_contains_key(HMap map, key_t key);
+
+#define _map_iter MACRO_CONCAT(_kvp_, __LINE__)
+
+#define map_foreach_ktype(VALUE, KTYPE, KEY, MAP)                             \
+  VALUE = NULL; const KTYPE KEY = NULL;                                       \
+  for (                                                                       \
+    pair_kv_t _map_iter = map_next((HMap)(MAP), NULL);                        \
+    (VALUE = _map_iter.value, KEY = _map_iter.key), KEY;                      \
+    _map_iter = map_next((HMap)(MAP), _map_iter.key)                          \
+  )                                                                           //
+
+#define map_foreach_key(VALUE, KEY, MAP)                                      \
+  map_foreach_ktype(VALUE, void*, KEY, MAP)                                    //
+
+#define map_foreach(VALUE, MAP)                                               \
+  map_foreach_key(VALUE, MACRO_CONCAT(_mapkey_, __LINE__), MAP)               //
 
 #endif
 
@@ -107,14 +135,17 @@ bool          map_remove(HMap map, const void* key);
 # define _map_type MACRO_CONCAT(HMap_, con_prefix)
 # define _prefix(_FN) MACRO_CONCAT3(map_, con_prefix, _FN)
 # define _ensure_type MACRO_CONCAT3(res_ensure_, con_prefix, _t)
+# define _pair_type MACRO_CONCAT3(pair_kv_, con_prefix, _t)
 #else
 # define _ensure_type MACRO_CONCAT3(res_ensure_, con_type, _t)
 # ifdef key_type
 #   define _map_type MACRO_CONCAT4(HMap_, key_type, _, con_type)
 #   define _prefix(_FN) MACRO_CONCAT5(map_, key_type, _, con_type, _FN)
+#   define _pair_type MACRO_CONCAT5(pair_kv_, key_type, _, con_type, _t)
 # else
 #   define _map_type MACRO_COMCAT(HMap_, con_type)
 #   define _prefix(_FN) MACRO_CONCAT3(map_, con_type, _FN)
+#   define _pair_type MACRO_CONCAT3(pair_kv_, con_type, _t)
 # endif
 #endif
 
@@ -154,11 +185,6 @@ static hash_t _con_hash(const void* key) {
 # endif
 #endif
 
-typedef struct _ensure_type {
-  con_type* value;
-  bool is_new;
-} _ensure_type;
-
 typedef struct MACRO_CONCAT3(_opaque_, _map_type, _base) {
   index_t const size;
   index_t const capacity;
@@ -167,13 +193,29 @@ typedef struct MACRO_CONCAT3(_opaque_, _map_type, _base) {
   bool          fixed_size;
 }* _map_type;
 
+typedef struct _ensure_type {
+  con_type* value;
+  bool is_new;
+} _ensure_type;
+
+typedef struct _pair_type {
+  union {
+    const _key_type* key;
+    const _key_type* left;
+  };
+  union {
+    con_type* value;
+    con_type* right;
+  };
+} _pair_type;
+
 // \brief Initializes a hashmap of the given type. Allocates no new space for
 //    the array contents until an item is added or space is reserved.
 //
 // \returns A new empty hashmap, ready for use.
 static inline _map_type _prefix(_new)
 (void) {
-  HMap ret = map_new(con_type, _key_type, _con_cmp, _con_hash);
+  HMap ret = map_new(_key_type, con_type, _con_cmp, _con_hash);
 
 #if defined(con_type_dtor) || defined(key_type_dtor)
   delete_fn delete_key = NULL;
@@ -311,10 +353,23 @@ static inline bool _prefix(_remove)
 //
 // \param key - the location in the map to retrieve an element from
 //
-// \returns A pointer to the element at the given key, or NULL if none is found.
+// \returns a pointer to the element at the given key, or NULL if none is found.
 static inline con_type* _prefix(_ref)
 (_map_type map, _key_type key) {
   return map_ref((HMap)map, &key);
+}
+
+// \brief Given a valid pointer to an iterator/key within the map, returns the
+//    next slot in the map in memory order. Used to iterate over all elements.
+//
+// \param iterator - a key value previously returned from this function, or
+//    NULL to get the first element in the map.
+//
+// \returns a pair containing pointers to a key and its value within the map.
+static inline _pair_type _prefix(_next)
+(_map_type map, void* iterator) {
+  pair_kv_t ret = map_next((HMap)map, iterator);
+  return *((_pair_type*)&ret);
 }
 
 // \brief Gets a copy of the element at the given position. If the location of
@@ -402,6 +457,7 @@ static inline bool _prefix(_contains_key)
 #undef _key_type
 #undef _prefix
 #undef _ensure_type
+#undef _pair_type
 #undef _con_cmp
 #undef _con_hash
 

@@ -55,8 +55,6 @@ typedef struct Array_Internal {
   // private
 } Array_Internal;
 
-static const span_t span_empty = { .begin = NULL, .end = NULL };
-
 #define DARRAY_STARTING_SIZE 2
 
 #define GROWTH_FACTOR \

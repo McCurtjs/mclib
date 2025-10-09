@@ -27,6 +27,7 @@
 
 #include <stdlib.h> // malloc/free
 #include <string.h> // memcmp, memcpy
+#include <stddef.h> // offsetof
 
 // Disable annoying warnings in test when assert is replaced with cspec_assert.
 //    these warnings appear because intellisense doesn't recognize that
@@ -92,8 +93,7 @@ static hash_t _key_hash(Map_Internal* m, const void* key) {
 
   if (m->hash_key) {
     ret = m->hash_key(key);
-  }
-  else {
+  } else {
     ret = hash(key, m->key_size);
   }
 
@@ -225,7 +225,7 @@ static Map_Cell* _map_get_slot_init(Map_Internal* m, hash_t hash) {
 }
 
 // predeclare because this was removed from the header
-void map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash);
+bool map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash);
 
 // Helper to copy the contents of an old map into a new map.
 static void _map_clone(Map_Internal* m, void* old_data, index_t old_capacity) {
@@ -429,14 +429,16 @@ void* map_emplace(HMap m_in, const void* key) {
   return result.value;
 }
 
-void map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
+bool map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
   res_ensure_t result = map_ensure_hash(m_in, key, hash);
   memcpy(result.value, val, m_in->element_size);
+  return result.is_new;
 }
 
-void map_write(HMap m_in, const void* key, const void* value) {
+bool map_write(HMap m_in, const void* key, const void* value) {
   res_ensure_t result = map_ensure(m_in, key);
   memcpy(result.value, value, m_in->element_size);
+  return result.is_new;
 }
 
 bool map_insert_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
@@ -469,6 +471,39 @@ void* map_ref(HMap m_in, const void* key) {
   assert(key);
   hash_t hash = _key_hash(m, key);
   return map_ref_hash(m_in, key, hash);
+}
+
+pair_kv_t map_next(HMap m_in, const void* key) {
+  HMAP_INTERNAL;
+  if (!m->size) return (pair_kv_t) { NULL, NULL };
+
+  byte* const data_end = m->data + m->capacity * m->cell_size;
+
+  // get address of next slot in the map
+  byte* bkey = (byte*)key; // the map owns the pointer, const cast is fine
+
+  if (bkey) {
+    assert(bkey >= m->data);
+    bkey += m->cell_size;
+  } else {
+    bkey = &((Map_Cell*)m->data)->key_start;
+  }
+
+  // get cell for that key
+  Map_Cell* cell = (Map_Cell*)(bkey - offsetof(Map_Cell, key_start));
+
+  // find the next occupied cell
+  while ((byte*)cell < data_end) {
+    if (cell->hash) {
+      return (pair_kv_t) {
+        .key = &cell->key_start,
+        .value = _cell_value(m, cell),
+      };
+    }
+    cell = (Map_Cell*)((byte*)cell + m->cell_size);
+  }
+
+  return (pair_kv_t) { NULL, NULL };
 }
 
 bool map_remove_hash(HMap m_in, const void* key, hash_t hash) {

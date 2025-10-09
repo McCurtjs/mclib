@@ -225,6 +225,25 @@ describe(map_ref) {
 
 }
 
+describe(map_next) {
+
+  HMap map = map_new(int, int, NULL, NULL);
+  for (int i = 0; i < 10; ++i) {
+    map_insert(map, &i, &i);
+  }
+
+  it("can iterate the map using map_next") {
+    int acc = 0;
+    int* map_foreach(i, map) acc += *i;
+    expect(acc, == , 45);
+  }
+
+  after {
+    map_delete(&map);
+  }
+
+}
+
 describe(map_remove) {
 
   HMap map = map_new(int, int, NULL, NULL);
@@ -299,6 +318,11 @@ describe(map_remove) {
 #undef con_type
 #undef con_prefix
 
+#ifdef pair_deconstruct
+# undef pair_deconstruct
+#endif
+#define pair_deconstruct(LEFT, RIGHT, PAIR) \
+  typeof(PAIR.left) LEFT = PAIR.left; typeof(PAIR.right) RIGHT = PAIR.right;
 
 describe(map_stuff) {
 
@@ -308,7 +332,10 @@ describe(map_stuff) {
   *result.value = 12;
 
   map_int_new();
-  map_int_ref(ints, S("Test"));
+  int* test = map_int_ref(ints, S("Test"));
+  int xyz = map_int_get(ints, S("Input"));
+  pair_kv_int_t first = map_int_next(ints, NULL);
+  pair_deconstruct(key, value, first);
 
   map_int_delete(&ints);
 
@@ -344,6 +371,7 @@ test_suite(tests_map) {
   test_group(map_ensure),
   test_group(map_emplace),
   test_group(map_ref),
+  test_group(map_next),
   test_group(map_remove),
   test_group(map_stuff),
   test_suite_end
