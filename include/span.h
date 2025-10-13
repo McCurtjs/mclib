@@ -80,8 +80,6 @@
 #include "types.h"
 #include "span_base.h"
 
-extern const span_t span_empty;
-
 static inline index_t ispan_size_bytes(span_t span) {
   byte* begin = span.begin;
   byte* end = span.end;

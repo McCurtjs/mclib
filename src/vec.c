@@ -54,7 +54,7 @@ float i2aspect(vec2i v) {
 
 vec2i i2zcurve(size_t i) {
   int x = 0, y = 0;
-  size_t mask = 0x1, k = 0;
+  size_t mask = 0x1;
   while (i) {
     x |= mask & i;
     i >>= 1;
@@ -65,7 +65,7 @@ vec2i i2zcurve(size_t i) {
 }
 
 size_t i2zindex(vec2i v) {
-  size_t ret = 0, k = 0, mask = 0x1;
+  size_t ret = 0, mask = 0x1;
   size_t x = (size_t)v.x, y = (size_t)v.y;
   while (mask) {
     ret |= mask & x;

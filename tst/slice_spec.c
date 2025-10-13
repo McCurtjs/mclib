@@ -1027,7 +1027,7 @@ describe(slice_split_str) {
     result = slice_split_str(slice_empty, S(" == "));
     expect(result != NULL);
     expect(result->size, == , 1);
-    slice_t token = arr_slice_get_front(result);
+    slice_t token = arr_slice_get(result, 0);
     expect(token to match(slice_empty));
   }
 
@@ -1051,7 +1051,6 @@ describe(slice_split_str) {
 describe(slice_split_char) {
 
   slice_t slice = S("xyz?w, a?b, a?2jk");
-  index_t pos = 0;
   Array_slice result = NULL;
 
   it("returns an empty string when the delimiter is the start of the string") {
@@ -1124,7 +1123,6 @@ describe(slice_split_char) {
 describe(slice_split_any) {
 
   slice_t slice = S("ab==cde!==f??gh");
-  index_t pos = 0;
   slice_t delims_array[] = {
     S("=="), S("!="), S("??")
   };
@@ -1266,7 +1264,6 @@ describe(slice_tokenize_str) {
 describe(slice_tokenize_char) {
 
   slice_t slice = S("xyz?w, a?b, a?2jk");
-  index_t pos = 0;
   Array_slice result = NULL;
 
   it("can get all tokens in order") {
@@ -1330,7 +1327,6 @@ describe(slice_tokenize_char) {
 describe(slice_tokenize_any) {
 
   slice_t slice = S("ab==cde!==f??gh");
-  index_t pos = 0;
   slice_t delims_array[] = {
     S("=="), S("!="), S("??")
   };

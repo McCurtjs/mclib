@@ -29,7 +29,7 @@
 
 #include "cspec.h"
 
-describe(array_construction) {
+describe(arr_construction) {
 
   it("creates an empty array") {
     Array arr = arr_new(int);
@@ -60,7 +60,7 @@ describe(array_construction) {
   //*/
 }
 
-describe(array_push_and_pop) {
+describe(arr_push_and_pop) {
   int test = 42;
 
   Array arr = arr_new(int);
@@ -76,7 +76,8 @@ describe(array_push_and_pop) {
   }
 
   it("writes a value from an argument to the back of the array") {
-    expect(arr_write_back to be_one given(arr, &test));
+    arr_insert_back(arr, &test);
+    expect(arr->size to be_one);
     expect(arr->capacity to not be_zero);
   }
 
@@ -99,14 +100,14 @@ describe(array_push_and_pop) {
 
   after {
     expect(arr->size to be_one);
-    expect(arr_pop_back to be_zero given(arr));
+    expect(arr_pop_back to be_true given(arr));
     expect(arr->size to be_zero);
     arr_delete(&arr);
   }
 
 }
 
-describe(array_deleting) {
+describe(arr_deleting) {
 
   Array arr = arr_new(int);
   expect(arr to not be_null);
@@ -120,19 +121,48 @@ describe(array_deleting) {
     arr_emplace_back(arr);
     expect(arr->size to be_one);
     expect(arr->begin to not be_null);
+    expect(arr->capacity to not be_zero);
 
     arr_free(arr);
+    expect(arr != NULL);
     expect(arr->size to be_zero);
     expect(arr->begin to be_null);
+    expect(arr->capacity to be_zero);
+
+    arr_delete(&arr);
   }
 
-  // arr_clear
+  it("empties the array without freeing the memory") {
+    arr_emplace_back(arr);
+    expect(arr->size to be_one);
+    expect(arr->begin to not be_null);
+    expect(arr->capacity to not be_zero);
 
-  // arr_release
+    arr_clear(arr);
+    expect(arr->size to be_zero);
+    expect(arr->begin to not be_null);
+    expect(arr->capacity to not be_zero);
+
+    arr_delete(&arr);
+  }
+
+  it("deletes the array header, but leaves the memory intact") {
+    arr_emplace_back(arr);
+    int* arr_begin = arr->begin;
+    expect(arr->size to be_one);
+    expect(arr_begin to not be_null);
+    expect(arr->capacity to not be_zero);
+
+    span_t data = arr_release(&arr);
+    expect(arr to be_null);
+    expect(data.begin, == ,arr_begin);
+
+    free(data.begin);
+  }
 
 }
 
-describe(array_capacity) {
+describe(arr_capacity) {
 
   Array arr = NULL;
 
@@ -171,7 +201,7 @@ describe(array_capacity) {
       arr_emplace_back(arr);
       arr_emplace_back(arr);
       expect(arr->begin to not be_null);
-      expect(arr->size, == , 1);
+      expect(arr->size, == , 2);
       expect(arr->capacity, == , 10);
 
       it("trims unused allocated space from the end of the array") {
@@ -264,34 +294,175 @@ describe(array_accessors) {
 
 }
 */
-describe(on_stack_construction_and_use) {
 
-  it("creates an empty array on the stack") {
-    array_t arr = arr_build(int);
-    expect(arr.begin to be_null);
-    expect(arr.size to be_zero);
-    expect(arr.capacity to be_zero);
-    // no need to deallocate, nothing was allocated
+describe(arr_inserts) {
+  Array arr = arr_new(int);
+  for (int i = 0; i < 3; ++i) arr_write_back(arr, &i);
+  expect(arr->size, == , 3);
+  index_t expected_count = 4;
+  int number = 42;
+  int* expected = NULL;
+  int* value = NULL;
+
+  context("when inserting single items") {
+
+    context("using emplace") {
+
+      it("emplaces to the back") {
+        expected = (int[]){ 0, 1, 2, 99 };
+        value = arr_emplace_back(arr);
+      }
+
+      it("emplaces at exactly the end using an index") {
+        expected = (int[]){ 0, 1, 2, 99 };
+        value = arr_emplace(arr, arr->size);
+      }
+
+      it("emplaces at the beginning") {
+        expected = (int[]){ 99, 0, 1, 2 };
+        value = arr_emplace(arr, 0);
+      }
+
+      it("emplaces elements at a specific index") {
+        expected = (int[]){ 0, 99, 1, 2 };
+        value = arr_emplace(arr, 1);
+      }
+
+      it("fails when the value is past the end") {
+        expect(to_assert);
+        arr_emplace(arr, 50);
+      }
+
+      it("fails when the given index is negative") {
+        expect(to_assert);
+        arr_emplace(arr, -1);
+      }
+
+    }
+
+    context("using insert") {
+
+      value = &number;
+
+      it("inserts a value to the end") {
+        expected = (int[]){ 0, 1, 2, 42 };
+        arr_insert_back(arr, &number);
+      }
+
+      it("inserts elements at a specific index") {
+        expected = (int[]){ 0, 1, 42, 2 };
+        arr_insert(arr, 2, &number);
+      }
+
+      it("fails when given a NULL value to copy from") {
+        expect(to_assert);
+        arr_insert(arr, 0, NULL);
+      }
+
+      it("fails to insert when the value is past the end") {
+        expect(to_assert);
+        arr_insert(arr, 50, &number);
+      }
+
+    }
+
+    context("using write") {
+
+      value = &number;
+
+      it("writes a value to the end") {
+        expected = (int[]){ 0, 1, 2, 42 };
+        arr_write_back(arr, &number);
+      }
+
+      it("writes a value to arr->size") {
+        expected = (int[]){ 0, 1, 2, 42 };
+        arr_write(arr, arr->size, &number);
+      }
+
+      it("fails when given a NULL value to copy from") {
+        expect(to_assert);
+        arr_write(arr, 0, NULL);
+      }
+
+      it("fails to write when the value is past the end") {
+        expect(to_assert);
+        arr_write(arr, 50, &number);
+      }
+
+    }
+
+    after {
+      *value = 99;
+    }
+
+  }
+
+  context("when emplacing as a range") {
+
+    expected_count = 6;
+    span_t result = span_empty;
+
+    it("inserts at exactly the end") {
+      expected = (int[]) { 0, 1, 2, 75, 76, 77 };
+      result = arr_emplace_back_range(arr, 3);
+    }
+
+    it("inserts at exactly the end using an index") {
+      expected = (int[]) { 0, 1, 2, 75, 76, 77 };
+      result = arr_emplace_range(arr, arr->size, 3);
+    }
+
+    it("inserts at the beginning") {
+      expected = (int[]) { 75, 76, 77, 0, 1, 2 };
+      result = arr_emplace_range(arr, 0, 3);
+    }
+
+    it("inserts elements at a specific index") {
+      expected = (int[]) { 0, 75, 76, 77, 1, 2 };
+      result = arr_emplace_range(arr, 1, 3);
+    }
+
+    it("inserts elements at a specific index") {
+      expected = (int[]){ 0, 75, 76, 77, 1, 2 };
+      result = arr_emplace_range(arr, 1, 3);
+      //arr_write_range()
+    }
+
+    it("inserts at the end when a large number is given") {
+      expected = (int[]) { 0, 1, 2, 75, 76, 77 };
+      result = arr_emplace_range(arr, arr->size, 3);
+    }
+
+    it("fails when the given index is negative") {
+      expect(to_assert);
+      arr_emplace_range(arr, -1, 3);
+    }
+
+    after {
+      expect(result.end, == , ((int*)result.begin) + 3);
+      span_foreach_index(value, i, result) {
+        *value = (int)(i + 75);
+      }
+    }
+
+  }
+
+  after {
+    expect(arr->size, == , expected_count);
+    arr_foreach_index(value, i, arr) {
+      expect(*value, == , expected[i]);
+    }
+    arr_delete(&arr);
   }
 
 }
 
-describe(array_insert_and_remove) {
-
-  it("inserts elements at a specific index") {
-    Array arr = arr_new(int);
-    int vals[] = {1, 2, 3};
-    for (int i = 0; i < 3; ++i) arr_write_back(arr, &vals[i]);
-    int* value = arr_emplace(arr, 1);
-    *value = 99;
-    expect(((int*)arr->begin)[1], == , 99);
-    expect(arr->size, == , 4);
-    arr_delete(&arr);
-  }
+describe(arr_removal) {
 
   it("removes elements by index range") {
     Array arr = arr_new(int);
-    int vals[] = {1, 2, 3, 4, 5};
+    int vals[] = { 1, 2, 3, 4, 5 };
     for (int i = 0; i < 5; ++i) arr_write_back(arr, &vals[i]);
     arr_remove_range(arr, 1, 2); // remove [2,3]
     expect(arr->size, == , 3);
@@ -301,7 +472,7 @@ describe(array_insert_and_remove) {
 
   it("supports unstable removal") {
     Array arr = arr_new(int);
-    int vals[] = {1, 2, 3, 4};
+    int vals[] = { 1, 2, 3, 4 };
     for (int i = 0; i < 4; ++i) arr_write_back(arr, &vals[i]);
     arr_remove_unstable(arr, 1);
     expect(arr->size, == , 3);
@@ -310,7 +481,7 @@ describe(array_insert_and_remove) {
 
 }
 
-describe(array_resize_and_clear) {
+describe(arr_resize_and_clear) {
 
   it("can resize up or down") {
     Array arr = arr_new(int);
@@ -332,7 +503,7 @@ describe(array_resize_and_clear) {
 
 }
 
-describe(array_iteration) {
+describe(arr_iteration) {
 
   it("iterates using the foreach macro") {
     Array arr = arr_new(int);
@@ -347,7 +518,7 @@ describe(array_iteration) {
 
 }
 
-describe(array_bounds_and_errors) {
+describe(arr_bounds_and_errors) {
 
   it("handles out-of-bounds index gracefully") {
     Array arr = arr_new(int);
@@ -363,12 +534,38 @@ describe(array_bounds_and_errors) {
 
 }
 
+describe(arr_on_stack_construction_and_use) {
+
+  it("creates an empty array on the stack") {
+    array_t arr = arr_build(int);
+    expect(arr.begin to be_null);
+    expect(arr.size to be_zero);
+    expect(arr.capacity to be_zero);
+    // no need to deallocate, nothing was allocated
+  }
+
+  it("can allocate space for the data segment") {
+    array_t arr = arr_build(int);
+    int* value = arr_emplace_back(&arr);
+    *value = 99;
+    int* val_2 = arr_ref_back(&arr);
+    expect(*val_2, == , *value);
+    arr_free(&arr);
+    expect(arr.begin to be_null);
+  }
+
+}
+
 test_suite(tests_array) {
-  test_group(array_construction),
-  test_group(array_push_and_pop),
-  test_group(array_insert_and_remove),
-  test_group(array_resize_and_clear),
-  test_group(array_iteration),
-  test_group(array_bounds_and_errors),
+  test_group(arr_construction),
+  test_group(arr_capacity),
+  test_group(arr_deleting),
+  test_group(arr_push_and_pop),
+  test_group(arr_inserts),
+  test_group(arr_removal),
+  test_group(arr_resize_and_clear),
+  test_group(arr_iteration),
+  test_group(arr_bounds_and_errors),
+  test_group(arr_on_stack_construction_and_use),
   test_suite_end
 };

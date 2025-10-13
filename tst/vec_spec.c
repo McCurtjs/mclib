@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -22,29 +22,26 @@
 * SOFTWARE.
 */
 
-#ifndef MCLIB_SPAN_BASE_H_
-#define MCLIB_SPAN_BASE_H_
+#include "vec.h"
 
-#include "types.h"
+#include "cspec.h"
 
-// base span_t (void) struct is defined separately from the span.h file because
-// it is also independently used by the Array class.
+describe(vector_z_order_curve) {
 
-typedef struct span_t {
-  void* begin;
-  void* end;
-} span_t;
+  it("tests the z-curve") {
+    vec2i test[64];
+    for (size_t i = 0; i < ARRAY_COUNT(test); ++i) {
+      test[i] = i2zcurve(i);
+    }
+    size_t i = 2468;
+    vec2i v = i2zcurve(i);
+    size_t j = i2zindex(v);
+    i = j;
+  }
 
-extern const span_t span_empty;
+}
 
-#define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
-
-#define span_foreach(VAR, SPAN)                                               \
-  VAR = SPAN.begin;                                                           \
-  for (; (byte*)VAR < (byte*)SPAN.end; ++VAR)                                 //
-
-#define span_foreach_index(VAR, INDEX, SPAN)                                  \
-  VAR = SPAN.begin;                                                           \
-  for (index_t INDEX = 0; (byte*)VAR < (byte*)SPAN.end; ++VAR, ++INDEX)       //
-
-#endif
+test_suite(tests_vec) {
+  test_group(vector_z_order_curve),
+  test_suite_end
+};

@@ -129,6 +129,7 @@ sources_test=" \
   ./tst/slice_spec.c \
   ./tst/str_spec.c \
   ./tst/map_spec.c \
+  ./tst/vec_spec.c \
 "
 
 sources=" \
@@ -137,6 +138,7 @@ sources=" \
   ./src/array.c \
   ./src/map.c \
   ./src/str.c \
+  ./src/vec.c \
   ./src/utility.c \
   ./lib/murmur3/murmur3.c \
 "
