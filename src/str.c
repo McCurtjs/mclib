@@ -410,52 +410,36 @@ String istr_append(slice_t str, index_t length, char c) {
 // str_format
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: ? (not so useful when requiring slices. Maybe make something
-//          like this for string builder?)
-// String _str_format(slice_t fmt, const slice_t[] argv, uint argc);
-// #define _str_format_va(fmt, argv, argc, ...) _str_format(fmt, argv, argc)
-// #define str_format(...) _str_fmt2(__VA_ARGS__, NULL, 0)
-// TODO: verify that non-macro va args are actaully not a thing with wasi, lol
-
-#define con_skip_dependencies
 #include "array_byte.h"
 
-const _str_arg_t _str_fmtarg_end = { .type = _str_arg_end, .i = 0 };
-
-enum _fmtSpec_alignment_t {
-  _fmtSpec_Left,
-  _fmtSpec_Center,
-  _fmtSpec_Right
-};
+typedef enum {
+  _fmt_state_index,
+  _fmt_state_style,
+  _fmt_state_flags,
+  _fmt_state_padch,
+  _fmt_state_width,
+  _fmt_state_preci,
+  _fmt_state_final
+} _fmt_state_t;
 
 typedef enum {
-  _str_fmtState_Index,
-  _str_fmtState_Style,
-  _str_fmtState_Flags,
-  _str_fmtState_Padch,
-  _str_fmtState_Width,
-  _str_fmtState_Preci,
-  _str_fmtState_Final
-} _str_fmtState_t;
+  _fmt_align_left,
+  _fmt_align_center,
+  _fmt_align_right,
+  _fmt_align_right_leftsign,
+} _fmt_align_t;
 
 typedef enum {
-  _str_fmtAlign_Left,
-  _str_fmtAlign_Center,
-  _str_fmtAlign_Right,
-  _str_fmtAlign_Right_LeftSign,
-} _str_fmtAlign_t;
-
-typedef enum {
-  _str_fmtRep_Default,
-  _str_fmtRep_Hex,
-  _str_fmtRep_HEX,
-  _str_fmtRep_Binary,
-  _str_fmtRep_Char,
-  _str_fmtRep_Day,
-  _str_fmtRep_DayShort,
-  _str_fmtRep_Month,
-  _str_fmtRep_MonthShort
-} _str_fmtRep_t;
+  _fmt_rep_default,
+  _fmt_rep_hex,
+  _fmt_rep_HEX,
+  _fmt_rep_binary,
+  _fmt_rep_char,
+  _fmt_rep_day,
+  _fmt_rep_day_short,
+  _fmt_rep_month,
+  _fmt_rep_month_short
+} _fmt_rep_t;
 
 const byte _str_fmtarg_invalid_spec = 255;
 
@@ -470,7 +454,7 @@ typedef struct {
   byte sci_notation : 2;    // 0 = no, 1 = e, 2 = E
   byte percentage : 1;      // 0 = no, 1 = display decimals as percent
   ushort width;             // 0 = no padding
-} _Str_FmtSpec;
+} _fmt_spec_t;
 
 // handle format specifier
 // {[index][:(+)(<^>)(width)(.precision[+])]}
@@ -481,15 +465,14 @@ typedef struct {
 // preci: "values: |{0:.5}|{0:^.1}|{0:>10.6+}|",  1.23      -> "values: |1.23|1.2|1.230000  |"
 // types: "values: {0!i} {0!x} {0!c}",            65        -> "values: 65, 41, A"
 // date format specifiers? (ie, {%d} for "Monday" (use standard)
-static _Str_FmtSpec format_read_spec(
+static _fmt_spec_t _format_read_spec(
   slice_t spec_str, byte arg_index, index_t* spec_end
 ) {
-
   // set up the format specifier struct
-  _Str_FmtSpec spec = { 0 };
+  _fmt_spec_t spec = { 0 };
   spec.index = arg_index;
 
-  _str_fmtState_t read_state = _str_fmtState_Index;
+  _fmt_state_t read_state = _fmt_state_index;
 
   for (index_t i = 0; i < spec_str.size; ++i) {
     char c = spec_str.begin[i];
@@ -509,15 +492,15 @@ static _Str_FmtSpec format_read_spec(
     switch (read_state) {
 
       // reading the arg index: "{12}", "{12!b}", "{0:10}"
-      case _str_fmtState_Index: {
+      case _fmt_state_index: {
 
         if (c == '!') {
-          read_state = _str_fmtState_Style;
+          read_state = _fmt_state_style;
           break;
         }
 
         if (c == ':') {
-          read_state = _str_fmtState_Flags;
+          read_state = _fmt_state_flags;
           break;
         }
 
@@ -533,65 +516,65 @@ static _Str_FmtSpec format_read_spec(
       } break;
 
       // reading conversions: "{!x}", "{1!c}", "{!M:10}"
-      case _str_fmtState_Style: {
+      case _fmt_state_style: {
 
         switch (c) {
-          case ':': read_state = _str_fmtState_Flags; break;
-          case 'i': spec.representation = _str_fmtRep_Default; break;
-          case 'f': spec.representation = _str_fmtRep_Default; break;
-          case 'x': spec.representation = _str_fmtRep_Hex; break;
-          case 'X': spec.representation = _str_fmtRep_HEX; break;
-          case 'b': spec.representation = _str_fmtRep_Binary; break;
-          case 'c': spec.representation = _str_fmtRep_Char; break;
-          case 'D': spec.representation = _str_fmtRep_Day; break;
-          case 'd': spec.representation = _str_fmtRep_DayShort; break;
-          case 'M': spec.representation = _str_fmtRep_Month; break;
-          case 'm': spec.representation = _str_fmtRep_MonthShort; break;
+          case ':': read_state = _fmt_state_flags; break;
+          case 'i': spec.representation = _fmt_rep_default; break;
+          case 'f': spec.representation = _fmt_rep_default; break;
+          case 'x': spec.representation = _fmt_rep_hex; break;
+          case 'X': spec.representation = _fmt_rep_HEX; break;
+          case 'b': spec.representation = _fmt_rep_binary; break;
+          case 'c': spec.representation = _fmt_rep_char; break;
+          case 'D': spec.representation = _fmt_rep_day; break;
+          case 'd': spec.representation = _fmt_rep_day_short; break;
+          case 'M': spec.representation = _fmt_rep_month; break;
+          case 'm': spec.representation = _fmt_rep_month_short; break;
           default: goto invalid_spec;
         }
 
       } break;
 
       // reading the pad character in the flags section "{:#X10}"
-      case _str_fmtState_Padch: {
+      case _fmt_state_padch: {
 
         if (spec.padding) {
           goto invalid_spec;
         }
 
         spec.padding = c;
-        read_state = _str_fmtState_Flags;
+        read_state = _fmt_state_flags;
 
       } break;
 
       // reading the prefix flag chars: "{:+<^>#_}"
-      case _str_fmtState_Flags: {
+      case _fmt_state_flags: {
 
         switch (c) {
           case '+': spec.sign = 1; break;
-          case '<': spec.alignment = _str_fmtAlign_Left; break;
-          case '^': spec.alignment = _str_fmtAlign_Center; break;
-          case '>': spec.alignment = _str_fmtAlign_Right; break;
-          case '=': spec.alignment = _str_fmtAlign_Right_LeftSign; break;
-          case '#': read_state = _str_fmtState_Padch; break;
-          case '.': read_state = _str_fmtState_Preci; break;
+          case '<': spec.alignment = _fmt_align_left; break;
+          case '^': spec.alignment = _fmt_align_center; break;
+          case '>': spec.alignment = _fmt_align_right; break;
+          case '=': spec.alignment = _fmt_align_right_leftsign; break;
+          case '#': read_state = _fmt_state_padch; break;
+          case '.': read_state = _fmt_state_preci; break;
           default: {
             if (!isdigit(c)) {
               goto invalid_spec;
             }
-            read_state = _str_fmtState_Width;
+            read_state = _fmt_state_width;
           }
         }
 
-        if (read_state != _str_fmtState_Width) break;
+        if (read_state != _fmt_state_width) break;
 
       } SWITCH_FALLTHROUGH; // fallthrough for digits
 
       // reading width specifier: "{:10}", "{:010}", "{:10.5}"
-      case _str_fmtState_Width: {
+      case _fmt_state_width: {
 
         if (c == '.') {
-          read_state = _str_fmtState_Preci;
+          read_state = _fmt_state_preci;
           break;
         }
 
@@ -601,7 +584,7 @@ static _Str_FmtSpec format_read_spec(
 
         if (c == '0' && spec.width == 0) {
           if (!spec.padding) spec.padding = '0';
-          spec.alignment = _str_fmtAlign_Right_LeftSign;
+          spec.alignment = _fmt_align_right_leftsign;
           break;
         }
 
@@ -611,11 +594,11 @@ static _Str_FmtSpec format_read_spec(
       } break;
 
       // precision for decimals: "{:10.5}", "{:10.5+}", "{:.4e}"
-      case _str_fmtState_Preci: {
+      case _fmt_state_preci: {
 
         if (c == '+') {
           spec.trailing = 1;
-          read_state = _str_fmtState_Final;
+          read_state = _fmt_state_final;
           break;
         }
 
@@ -634,7 +617,7 @@ static _Str_FmtSpec format_read_spec(
       } break;
 
       // in this state, we've read all of the format, it's } or bust.
-      case _str_fmtState_Final: {
+      case _fmt_state_final: {
         goto invalid_spec;
       }
 
@@ -648,21 +631,21 @@ invalid_spec:
   return spec;
 }
 
-static void format_print_arg_align_number(
-  Array_byte out, _Str_FmtSpec spec, index_t excess, index_t start, index_t msd
+static void _format_print_arg_align_number(
+  Array_byte out, _fmt_spec_t spec, index_t excess, index_t start, index_t msd
 ) {
   if (!excess) return;
 
   switch (spec.alignment) {
 
-    case _str_fmtAlign_Left: {
+    case _fmt_align_left: {
       //* pad = arr_byte_emplace_back_slice(out, excess).begin;
       //memset(pad, spec.padding, excess);
       span_byte_t pad = arr_byte_emplace_back_range(out, excess);
       span_byte_set_bytes(pad, spec.padding);
     } break;
 
-    case _str_fmtAlign_Center: {
+    case _fmt_align_center: {
       index_t half = (excess + 1) / 2;
       index_t back_size = excess - half;
       span_byte_t pad = arr_byte_emplace_range(out, start, half);
@@ -671,12 +654,12 @@ static void format_print_arg_align_number(
       span_byte_set_bytes(pad, spec.padding);
     } break;
 
-    case _str_fmtAlign_Right: {
+    case _fmt_align_right: {
       span_byte_t pad = arr_byte_emplace_range(out, start, excess);
       span_byte_set_bytes(pad, spec.padding);
     } break;
 
-    case _str_fmtAlign_Right_LeftSign: {
+    case _fmt_align_right_leftsign: {
       span_byte_t pad = arr_byte_emplace_range(out, msd, excess);
       span_byte_set_bytes(pad, spec.padding);
     } break;
@@ -685,19 +668,19 @@ static void format_print_arg_align_number(
 
 }
 
-static void format_print_arg_int(
-  Array_byte out, _Str_FmtSpec spec, ptrdiff_t i
+static void _format_print_arg_int(
+  Array_byte out, _fmt_spec_t spec, ptrdiff_t i
 ) {
 
   switch (spec.representation) {
 
-    case _str_fmtRep_Char: {
+    case _fmt_rep_char: {
       arr_byte_push_back(out,
         (i <= 0x1F || i == 0x7F || i > 127) ? '.' : (byte)i
       );
     } break;
 
-    case _str_fmtRep_Default: {
+    case _fmt_rep_default: {
       do {
         ptrdiff_t digit = i % 10;
         arr_byte_push_back(out, (byte)(digit + '0'));
@@ -705,18 +688,18 @@ static void format_print_arg_int(
       } while (i);
     } break;
 
-    case _str_fmtRep_Hex:
-    case _str_fmtRep_HEX: {
+    case _fmt_rep_hex:
+    case _fmt_rep_HEX: {
       do {
         ptrdiff_t digit = i % 16;
-        byte c = spec.representation == _str_fmtRep_HEX ? 'A' : 'a';
+        byte c = spec.representation == _fmt_rep_HEX ? 'A' : 'a';
         byte b = (byte)digit + (digit >= 10 ? c-10 : '0');
         arr_byte_push_back(out, b);
         i /= 16;
       } while (i);
     } break;
 
-    case _str_fmtRep_Binary: {
+    case _fmt_rep_binary: {
       do {
         ptrdiff_t digit = i % 2;
         arr_byte_push_back(out, (byte)(digit + '0'));
@@ -728,8 +711,8 @@ static void format_print_arg_int(
 
 }
 
-static void format_print_arg_float(
-  Array_byte out, _Str_FmtSpec spec, double f_val, index_t start
+static void _format_print_arg_float(
+  Array_byte out, _fmt_spec_t spec, double f_val, index_t start
 ) {
 
   double f = f_val;
@@ -765,9 +748,11 @@ static void format_print_arg_float(
 
 }
 
-static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
+static void _format_print_arg(
+  Array_byte out, _fmt_spec_t spec, _str_arg_t args[], index_t arg_count
+) {
 
-  if (spec.index >= params->size) {
+  if (spec.index >= arg_count) {
 
     // special case for padding an out-of-bounds argument
     if (spec.width) {
@@ -778,7 +763,7 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
     return;
   }
 
-  _str_arg_t* arg = arr_ref(params, spec.index);
+  _str_arg_t* arg = args + spec.index;
 
   switch (arg->type) {
 
@@ -794,19 +779,19 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
 
         switch (spec.alignment) {
 
-          case _str_fmtAlign_Left: {
+          case _fmt_align_left: {
             memset(bytes + arg->slice.size, spec.padding, excess);
           } break;
 
-          case _str_fmtAlign_Center: {
+          case _fmt_align_center: {
             pos = (excess + 1) / 2;
             index_t back_size = width - arg->slice.size - pos;
             memset(bytes, spec.padding, pos);
             memset(bytes + pos + arg->slice.size, spec.padding, back_size);
           } break;
 
-          case _str_fmtAlign_Right:
-          case _str_fmtAlign_Right_LeftSign: {
+          case _fmt_align_right:
+          case _fmt_align_right_leftsign: {
             pos = excess;
             memset(bytes, spec.padding, excess);
           } break;
@@ -833,7 +818,7 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
 
       index_t msd = out->size;
 
-      format_print_arg_int(out, spec, i);
+      _format_print_arg_int(out, spec, i);
 
       span_byte_t digits = span_byte(out->begin + msd, out->end);
       span_byte_reverse(digits);
@@ -841,7 +826,7 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
       index_t width = MAX(spec.width, out->size - start);
       index_t excess = width - (out->size - start);
 
-      format_print_arg_align_number(out, spec, excess, start, msd);
+      _format_print_arg_align_number(out, spec, excess, start, msd);
 
     } break;
 
@@ -859,12 +844,12 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
 
       index_t msd = out->size;
 
-      format_print_arg_float(out, spec, f, msd);
+      _format_print_arg_float(out, spec, f, msd);
 
       index_t width = MAX(spec.width, out->size - start);
       index_t excess = width - (out->size - start);
 
-      format_print_arg_align_number(out, spec, excess, start, msd);
+      _format_print_arg_align_number(out, spec, excess, start, msd);
 
     } break;
 
@@ -879,27 +864,12 @@ static void format_print_arg(Array_byte out, Array params, _Str_FmtSpec spec) {
 
 }
 
-static String format_va(slice_t fmt, va_list args) {
-  // TODO: better error handling on memory errors
-  // TODO: Move this to its own section, possibly want to split out a new 
-  //    header just for this function, especially if other dependent types
-  //    end up being supported (such as vec3).
-  Array params = arr_new(_str_arg_t);
+String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
   index_t reserve_size = sizeof(String_Internal) + fmt.size;
 
-  _str_arg_t arg;
-
-  loop{
-    arg = va_arg(args, _str_arg_t);
-
-    until(arg.type == _str_arg_end);
-
-    reserve_size += (arg.type == _str_arg_slice) ? arg.slice.size : 3;
-
-    arr_write_back(params, &arg);
+  for (index_t i = 0; i < arg_count; ++i) {
+    reserve_size += (args[i].type == _str_arg_slice) ? args[i].slice.size : 3;
   }
-
-  va_end(args);
 
   // Set the starting allocation for the new string
   Array_byte output = arr_byte_new_reserve(reserve_size);
@@ -911,60 +881,57 @@ static String format_va(slice_t fmt, va_list args) {
   byte arg_index = 0;
 
   // track position in each section between formatters
-  index_t section_start = 0;
-  index_t section_size = 0;
+  slice_t section = { .begin = fmt.begin, .size = 0 };
 
   for (index_t i = 0; i < fmt.size; ++i) {
-    byte c = fmt.begin[i];
+    byte c = (byte)fmt.begin[i];
 
     // just do a 1:1 copy by character until we hit a format specifier
     if (c != '{') {
-      ++section_size;
+      ++section.size;
       continue;
     }
 
     // at the start of a format section, copy all the bytes up to this point
-    if (section_size) {
-      span_byte_t bytes = arr_byte_emplace_back_range(output, section_size);
-      memcpy(bytes.begin, fmt.begin + section_start, section_size);
+    if (section.size) {
+      span_byte_t bytes = arr_byte_emplace_back_range(output, section.size);
+      memcpy(bytes.begin, section.begin, section.size);
     }
 
-    section_size = 0;
 
     // handle case for "{{" to print escaped left brace
     if (fmt.begin[i + 1] == '{') {
-      section_start = ++i;
-      section_size = 1;
+      section.begin = fmt.begin + ++i;
+      section.size = 1;
       continue;
     }
 
     index_t spec_end;
     slice_t spec_str = slice_drop(fmt, i + 1);
-    _Str_FmtSpec spec = format_read_spec(spec_str, arg_index, &spec_end);
+    _fmt_spec_t spec = _format_read_spec(spec_str, arg_index, &spec_end);
 
     // rather than error on invalid spec, just print the characters
     // this means we don't need to worry about escaping braces most of the time
     if (spec.index == _str_fmtarg_invalid_spec) {
-      section_start = i;
-      section_size = 1;
+      section.begin = fmt.begin + i;
+      section.size = 1;
       continue;
     }
 
     arg_index = spec.index + 1;
 
-    format_print_arg(output, params, spec);
+    _format_print_arg(output, spec, args, arg_count);
 
     i += spec_end;
-    section_start = i + 1;
+    section.begin = fmt.begin + i + 1;
+    section.size = 0;
   }
 
   // if we reach the end and we were reading chars for output, print them here
-  if (section_size) {
-    span_byte_t bytes = arr_byte_emplace_back_range(output, section_size);
-    memcpy(bytes.begin, fmt.begin + section_start, section_size);
+  if (section.size) {
+    span_byte_t bytes = arr_byte_emplace_back_range(output, section.size);
+    memcpy(bytes.begin, section.begin, section.size);
   }
-
-  arr_delete(&params);
 
   arr_byte_push_back(output, '\0');
   String_Internal* header = (String_Internal*)output->begin;
@@ -975,25 +942,15 @@ static String format_va(slice_t fmt, va_list args) {
   return ret;
 }
 
-String istr_format(slice_t fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  return format_va(fmt, args);
-}
-
-void istr_print(slice_t fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  String to_print = format_va(fmt, args);
+void istr_print(slice_t fmt, _str_arg_t args[], index_t arg_count) {
+  String to_print = istr_format(fmt, args, arg_count);
   if (to_print == NULL) return;
   slice_write(to_print->slice);
   str_delete(&to_print);
 }
 
-void istr_log(slice_t fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  String to_print = format_va(fmt, args);
+void istr_log(slice_t fmt, _str_arg_t args[], index_t arg_count) {
+  String to_print = istr_format(fmt, args, arg_count);
   if (to_print == NULL) return;
   slice_write(to_print->slice);
   str_delete(&to_print);

@@ -29,8 +29,6 @@
 
 #include "array_slice.h"
 
-#include <stdarg.h>
-
 // \brief String is a handle type pointing to an immutable string on the heap.
 //
 // \brief Unlike slice_t, a String object has ownership of the data in its
@@ -358,18 +356,27 @@ bool    str_is_null_or_empty(const String str);
 //    - exponent (TODO):    {:.3e}, {:.3E} (should be {!e}?)
 //
 // \returns a new string, which must be deleted later by the caller.
-#define str_format(...)             _str_format(__VA_ARGS__, _str_fmtarg_end)
+#define str_format(fmt, ...) istr_format(_s2r(fmt), \
+  (_str_arg_t[]) { _va_exp(_sfa, __VA_ARGS__) },    \
+  _va_count(__VA_ARGS__)                            \
+)                                                   //
 
 // \brief `void str_print(fmt, ...)`
 // \brief Prints a formatted string as a log.
 // \brief See str_format for details on formatting.
-#define str_print(...)              _str_print(__VA_ARGS__, _str_fmtarg_end)
+#define str_print(...) istr_print(                  \
+  (_str_arg_t[]) { _va_exp(_sfa, __VA_ARGS__) },    \
+  _va_count(__VA_ARGS__)                            \
+)                                                   //
 
 // \brief `void str_log(fmt, ...)`
 // \brief Prints a formatted string as a log. Differes from str_print in that
 //    values are not printed in release mode (TODO).
 // \brief See str_format for details on formatting.
-#define str_log(...)                _str_log(__VA_ARGS__, _str_fmtarg_end)
+#define str_log(...) istr_log(                      \
+  (_str_arg_t[]) { _va_exp(_sfa, __VA_ARGS__) },    \
+  _va_count(__VA_ARGS__)                            \
+)                                                   //
 
 //String str_pad_left(slice_t str, index_t length, char c);
 //String str_pad_right(slice_t str, index_t length, char c);
@@ -390,7 +397,7 @@ String      istr_concat(_str_arg_t args[], index_t count);
 String      istr_join(slice_t delim, _str_arg_t args[], index_t count);
 String      istr_prepend(slice_t str, index_t length, char c);
 String      istr_append(slice_t str, index_t length, char c);
-String      istr_format(slice_t fmt, ...);
+String      istr_format(slice_t fmt, _str_arg_t args[], index_t count);
 //String    istr_to_upper(slice_t str);
 //String    istr_to_lower(slice_t str);
 
@@ -403,18 +410,12 @@ Array_slice istr_tokenize(slice_t st, _str_arg_t args[], index_t count);
 //    differentiate between regular strings and regex with the regular "a" vs "/a/"
 //String    istr_replace(slice_t str, slice_t to_rep, slice_t with);
 //String    istr_replace_all(slice_t str, slice_t r, slice_t w);
-void        istr_print(slice_t fmt, ...);
-void        istr_log(slice_t fmt, ...);
-
-#define _str_format(fmt, ...) istr_format(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
-#define _str_print(fmt, ...) istr_print(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
-#define _str_log(fmt, ...) istr_log(_s2r(fmt), _va_exp(_sfa, __VA_ARGS__))
+void        istr_print(slice_t fmt, _str_arg_t args[], index_t count);
+void        istr_log(slice_t fmt, _str_arg_t args[], index_t count);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Variadic arg implementation for formatting and join
 ////////////////////////////////////////////////////////////////////////////////
-
-extern const _str_arg_t _str_fmtarg_end;
 
 static inline _str_arg_t _sarg_str(const String s) {
   return (_str_arg_t) { .type = _str_arg_slice, .slice = s->slice };
@@ -456,11 +457,6 @@ static inline _str_arg_t _sarg_float(double f) {
   return (_str_arg_t) { .type = _str_arg_float, .f = f };
 }
 
-static inline _str_arg_t _sarg_arg(_str_arg_t e) {
-  PARAM_UNUSED(e); // should some kind of override be allowed?
-  return _str_fmtarg_end;
-}
-
 // \brief str_format argument macro
 #define _sfa(arg) _Generic((arg),       \
   slice_t:            _sarg_slice,      \
@@ -474,8 +470,7 @@ static inline _str_arg_t _sarg_arg(_str_arg_t e) {
   unsigned int:       _sarg_unsigned,   \
   unsigned long:      _sarg_unsigned,   \
   unsigned long long: _sarg_unsigned,   \
-  double:             _sarg_float,      \
-  _str_arg_t:         _sarg_arg         \
+  double:             _sarg_float       \
 )(arg)                                  //
 
 // \brief str_split and str_join argument macro
