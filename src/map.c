@@ -64,50 +64,45 @@ typedef struct Map_Cell {
 // internal opaque structure:
 typedef struct Map_Internal {
   // public (read only)
-  index_t size;
-  index_t capacity;
-  index_t key_size;
-  index_t element_size;
+  index_t     size;
+  index_t     capacity;
+  index_t     key_size;
+  index_t     element_size;
+
+  // user toggleable
+  bool        fixed_size;
 
   // private
-  index_t cell_size;
+  index_t     cell_size;
 
-  compare_fn compare_keys;
-  hash_fn hash_key;
-  delete_fn delete_value;
-  delete_fn delete_key;
+  compare_fn  key_compare;
+  hash_fn     key_hash;
+
+  copy_fn     key_copy;
+  delete_fn   key_delete;
+  copy_fn     element_copy;
+  delete_fn   element_delete;
 
   Map_Cell* free_list;
 
   byte* data;
-  // Array_Internal size space to avoid extra jump?
 } Map_Internal;
 
 #define HMAP_INTERNAL \
   Map_Internal* m = (Map_Internal*)(m_in); \
   assert(m)
 
+////////////////////////////////////////////////////////////////////////////////
+// Static helpers for key and cell manipulation
+////////////////////////////////////////////////////////////////////////////////
+
 // Helper to resolve hash function - use murmur3 by default if none is provided.
 static hash_t _key_hash(Map_Internal* m, const void* key) {
-  hash_t ret;
-
-  if (m->hash_key) {
-    ret = m->hash_key(key);
-  } else {
-    ret = hash(key, m->key_size);
-  }
+  hash_t ret = m->key_hash(key, m->key_size);
 
   // A hash value of 0x00 is used to denote an empty cell, so force to 1 if we
   //    somehow actually hash to that.
   return ret ? ret : 1;
-}
-
-// Helper to resolve key comparison - use memcmp by default is none is provided.
-static bool _key_compare(Map_Internal* m, const void* lhs, const void* rhs) {
-  if (m->compare_keys) {
-    return !m->compare_keys(lhs, rhs);
-  }
-  return !memcmp(lhs, rhs, m->key_size);
 }
 
 // Helper to get key pointer from cell
@@ -128,7 +123,9 @@ static Map_Cell* _cell_search_bucket(
 
   do {
 
-    if (cell->hash == hash && _key_compare(m, key, _cell_key(cell))) {
+    if (cell->hash == hash
+    && !m->key_compare(key, _cell_key(cell), (size_t)m->key_size)
+    ) {
       return cell;
     }
 
@@ -179,6 +176,24 @@ static Map_Cell* _cell_take_from_free_list(Map_Internal* m) {
   return ret;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Static map helpers
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct _ensure_t {
+  void* key;
+  union {
+    res_ensure_t ensured_value;
+    struct {
+      void* value;
+      bool is_new;
+    };
+  };
+} _ensure_t;
+
+static _ensure_t _map_ensure(Map_Internal* m, const void* key, hash_t hash);
+
+// Helper to clear out the contents of the map and reset the free list.
 static void _map_clear(Map_Internal* m) {
   m->free_list = (Map_Cell*)m->data;
 
@@ -224,18 +239,17 @@ static Map_Cell* _map_get_slot_init(Map_Internal* m, hash_t hash) {
   return _map_get_slot(m, hash);
 }
 
-// predeclare because this was removed from the header
-bool map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash);
-
 // Helper to copy the contents of an old map into a new map.
-static void _map_clone(Map_Internal* m, void* old_data, index_t old_capacity) {
+static void _map_move(Map_Internal* m, void* old_data, index_t old_capacity) {
   Map_Cell* cell = old_data;
 
   for (index_t i = 0; i < old_capacity; ++i) {
     if (cell->hash != 0) {
       void* key = _cell_key(cell);
-      void* value = _cell_value(m, cell);
-      map_write_hash((HMap)m, key, value, cell->hash);
+      _ensure_t slot = _map_ensure(m, key, cell->hash);
+      assert(slot.is_new);
+      memcpy(slot.key, key, m->key_size);
+      memcpy(slot.value, _cell_value(m, cell), m->element_size);
     }
 
     cell = (Map_Cell*)((byte*)cell + m->cell_size);
@@ -259,96 +273,38 @@ static bool _map_check_expand(Map_Internal* m, index_t new_size) {
   }
 
   // TODO: If we're set to not expand, don't
+  if (m->fixed_size) return FALSE;
 
   byte* old_data = m->data;
   index_t old_capacity = m->capacity;
   _map_initialize(m, MAX(new_size, m->capacity));
-  _map_clone(m, old_data, old_capacity);
+  _map_move(m, old_data, old_capacity);
   free(old_data);
   return TRUE;
 }
 
-HMap imap_new
-( index_t key_size
-, index_t element_size
-, compare_fn compare
-, hash_fn hash
-) {
-  Map_Internal* ret = malloc(sizeof(Map_Internal));
-  assert(ret);
-
-  // Ensure the key/value pair is large enough to sub for the free_prev pointer.
-  index_t pair_size = key_size + element_size;
-  if ((size_t)pair_size < sizeof(void*)) pair_size = sizeof(void*);
-
-  *ret = (Map_Internal) {
-    .size = 0,
-    .capacity = 0,
-    .key_size = key_size,
-    .element_size = element_size,
-    .cell_size = sizeof(Map_Cell) + pair_size - sizeof(void*),
-    .compare_keys = compare,
-    .hash_key = hash,
-    .free_list = NULL,
-    .data = NULL,
-  };
-  return (HMap)ret;
-}
-
-void map_callback_dtor(HMap m_in, delete_fn del_key, delete_fn del_value) {
-  HMAP_INTERNAL;
-  m->delete_key = del_key;
-  m->delete_value = del_value;
-}
-
-HMap map_copy(HMap m_in) {
-  //HMAP_INTERNAL;
-  (void)m_in;
-  return NULL;
-}
-
-void map_reserve(HMap m_in, index_t capacity) {
-  HMAP_INTERNAL;
-  assert(capacity >= 0);
-  if (capacity <= m->capacity) return;
-
-  if (!m->data) {
-    _map_initialize(m, capacity);
+// Helper to delete the keys and values if a delete function is given.
+void _map_delete_contents(Map_Internal* m) {
+  if (m->key_delete) {
+    byte* bcell = m->data;
+    for (index_t i = 0; i < m->capacity; ++i, bcell += m->cell_size) {
+      Map_Cell* cell = (Map_Cell*)bcell;
+      if (cell->hash) m->key_delete(_cell_key(cell));
+    }
   }
-  else {
-    void* old_data = m->data;
-    index_t old_capacity = m->capacity;
-    _map_initialize(m, capacity);
-    _map_clone(m, old_data, old_capacity);
-    free(old_data);
+
+  if (m->element_delete) {
+    byte* bcell = m->data;
+    for (index_t i = 0; i < m->capacity; ++i, bcell += m->cell_size) {
+      Map_Cell* cell = (Map_Cell*)bcell;
+      if (cell->hash) m->element_delete(_cell_value(m, cell));
+    }
   }
 }
 
-void map_delete(HMap* m_in) {
-  if (!m_in || !*m_in) return;
-  Map_Internal* m = *(Map_Internal**)m_in;
-  free(m->data);
-  free(m);
-  *m_in = NULL;
-}
-
-void map_clear(HMap m_in) {
-  HMAP_INTERNAL;
-  _map_clear(m);
-  m->size = 0;
-}
-
-void map_free(HMap m_in) {
-  HMAP_INTERNAL;
-  free(m->data);
-  m->size = 0;
-  m->capacity = 0;
-  m->free_list = NULL;
-  m->data = NULL;
-}
-
-res_ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
-  HMAP_INTERNAL;
+// Helper to perform the 'ensure' operation to insert a value to the map.
+// The returned cell from this function will not have its key updated if new.
+static _ensure_t _map_ensure(Map_Internal* m, const void* key, hash_t hash) {
   assert(key);
   assert(hash == _key_hash(m, key)); // redundant, ensure correct hashes in test
 
@@ -359,16 +315,16 @@ res_ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
     Map_Cell* cell = _cell_search_bucket(m, slot, key, hash);
 
     if (cell) {
-      return (res_ensure_t) {
+      return (_ensure_t) {
         .value = _cell_value(m, cell),
-        .is_new = FALSE,
+        .is_new = false,
       };
     }
   }
 
-  // TODO: if the map capacity is locked, check if we've reached capacity
-  if (/*locked && */ m->size >= m->capacity) {
-    return (res_ensure_t) { .value = NULL, .is_new = FALSE };
+  // if the map capacity is locked, check if we've reached capacity
+  if (m->fixed_size && m->size >= m->capacity) {
+    return (_ensure_t) { .value = NULL, .is_new = false };
   }
 
   // if our key is not already in the map, check expansion and update slot
@@ -403,12 +359,123 @@ res_ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
   // with the correct slot in hand, update the key and return
   ++m->size;
   slot->hash = hash;
-  memcpy(_cell_key(slot), key, m->key_size);
+  // m->key_copy(_cell_key(slot), key, m->key_size);
 
-  return (res_ensure_t) {
+  return (_ensure_t) {
+    .key = _cell_key(slot),
     .value = _cell_value(m, slot),
     .is_new = TRUE,
   };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Map construction/destruction
+////////////////////////////////////////////////////////////////////////////////
+
+HMap imap_new
+( index_t key_size
+, index_t element_size
+, hash_fn key_hash
+, compare_fn key_compare
+) {
+  Map_Internal* ret = malloc(sizeof(Map_Internal));
+  assert(ret);
+
+  // Ensure the key/value pair is large enough to sub for the free_prev pointer.
+  index_t pair_size = key_size + element_size;
+  if ((size_t)pair_size < sizeof(void*)) pair_size = sizeof(void*);
+
+  *ret = (Map_Internal) {
+    .size = 0,
+    .capacity = 0,
+    .key_size = key_size,
+    .element_size = element_size,
+    .fixed_size = false,
+    .cell_size = sizeof(Map_Cell) + pair_size - sizeof(void*),
+    .key_compare = key_compare ? key_compare : memcmp,
+    .key_hash = key_hash ? key_hash : hash,
+    .key_copy = memcpy,
+    .key_delete = NULL,
+    .element_copy = memcpy,
+    .element_delete = NULL,
+    .free_list = NULL,
+    .data = NULL,
+  };
+  return (HMap)ret;
+}
+
+void map_callbacks_key(HMap m_in, copy_fn key_copy, delete_fn key_delete) {
+  HMAP_INTERNAL;
+  assert(m->size == 0);
+  m->key_copy = key_copy ? key_copy : memcpy;
+  m->key_delete = key_delete;
+}
+
+void map_callbacks_element(HMap m_in, copy_fn el_copy, delete_fn el_delete) {
+  HMAP_INTERNAL;
+  assert(m->size == 0);
+  m->element_copy = el_copy ? el_copy : memcpy;
+  m->element_delete = el_delete;
+}
+
+HMap map_copy(HMap m_in) {
+  //HMAP_INTERNAL;
+  (void)m_in;
+  return NULL;
+}
+
+void map_reserve(HMap m_in, index_t capacity) {
+  HMAP_INTERNAL;
+  assert(capacity >= 0);
+  if (capacity <= m->capacity) return;
+
+  if (!m->data) {
+    _map_initialize(m, capacity);
+  }
+  else {
+    void* old_data = m->data;
+    index_t old_capacity = m->capacity;
+    _map_initialize(m, capacity);
+    _map_move(m, old_data, old_capacity);
+    free(old_data);
+  }
+}
+
+void map_delete(HMap* m_in) {
+  if (!m_in || !*m_in) return;
+  Map_Internal* m = *(Map_Internal**)m_in;
+  _map_delete_contents(m);
+  free(m->data);
+  free(m);
+  *m_in = NULL;
+}
+
+void map_clear(HMap m_in) {
+  HMAP_INTERNAL;
+  _map_delete_contents(m);
+  _map_clear(m);
+  m->size = 0;
+}
+
+void map_free(HMap m_in) {
+  HMAP_INTERNAL;
+  _map_delete_contents(m);
+  free(m->data);
+  m->size = 0;
+  m->capacity = 0;
+  m->free_list = NULL;
+  m->data = NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Inserting elements
+////////////////////////////////////////////////////////////////////////////////
+
+res_ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
+  HMAP_INTERNAL;
+  _ensure_t ret = _map_ensure(m, key, hash);
+  if (ret.is_new) m->key_copy(ret.key, key, m->key_size);
+  return ret.ensured_value;
 }
 
 res_ensure_t map_ensure(HMap m_in, const void* key) {
@@ -430,30 +497,42 @@ void* map_emplace(HMap m_in, const void* key) {
 }
 
 bool map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
+  HMAP_INTERNAL;
   res_ensure_t result = map_ensure_hash(m_in, key, hash);
-  memcpy(result.value, val, m_in->element_size);
+  assert(result.value);
+  if (!result.is_new && m->element_delete) m->element_delete(result.value);
+  m->element_copy(result.value, val, m->element_size);
   return result.is_new;
 }
 
 bool map_write(HMap m_in, const void* key, const void* value) {
+  HMAP_INTERNAL;
   res_ensure_t result = map_ensure(m_in, key);
-  memcpy(result.value, value, m_in->element_size);
+  assert(result.value);
+  if (!result.is_new && m->element_delete) m->element_delete(result.value);
+  m->element_copy(result.value, value, m->element_size);
   return result.is_new;
 }
 
 bool map_insert_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
+  HMAP_INTERNAL;
   res_ensure_t result = map_ensure_hash(m_in, key, hash);
-  if (!result.is_new) return FALSE;
-  memcpy(result.value, val, m_in->element_size);
+  if (!result.is_new || !result.value) return FALSE;
+  m->element_copy(result.value, val, m->element_size);
   return TRUE;
 }
 
 bool map_insert(HMap m_in, const void* key, const void* value) {
+  HMAP_INTERNAL;
   res_ensure_t result = map_ensure(m_in, key);
-  if (!result.is_new) return FALSE;
-  memcpy(result.value, value, m_in->element_size);
+  if (!result.is_new || !result.value) return FALSE;
+  m->element_copy(result.value, value, m->element_size);
   return TRUE;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Indexing and access
+////////////////////////////////////////////////////////////////////////////////
 
 void* map_ref_hash(HMap m_in, const void* key, hash_t hash) {
   HMAP_INTERNAL;
@@ -506,6 +585,14 @@ pair_kv_t map_next(HMap m_in, const void* key) {
   return (pair_kv_t) { NULL, NULL };
 }
 
+void map_process(HMap m_in, map_process_fn processor) {
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Removal
+////////////////////////////////////////////////////////////////////////////////
+
 bool map_remove_hash(HMap m_in, const void* key, hash_t hash) {
   HMAP_INTERNAL;
   assert(key);
@@ -517,12 +604,12 @@ bool map_remove_hash(HMap m_in, const void* key, hash_t hash) {
   Map_Cell* cell = _cell_search_bucket(m, slot, key, hash);
   if (!cell) return FALSE;
 
-  if (m->delete_key) {
-    m->delete_key(&(void*){ _cell_key(cell) });
+  if (m->key_delete) {
+    m->key_delete(_cell_key(cell));
   }
 
-  if (m->delete_value) {
-    m->delete_value(&(void*){ _cell_value(m, cell) });
+  if (m->element_delete) {
+    m->element_delete(_cell_value(m, cell));
   }
 
   // if this is the last item in the bucket, free the slot

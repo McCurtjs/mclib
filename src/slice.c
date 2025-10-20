@@ -860,17 +860,50 @@ hash_t slice_hash(slice_t str) {
   return hash(str.begin, str.size);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Void* variants for generic callbacks
+////////////////////////////////////////////////////////////////////////////////
+
 // Compares two slices passed as void pointers.
-int slice_compare_vptr(const void* lhs, const void* rhs) {
+int slice_compare_vptr(const void* lhs, const void* rhs, size_t unused) {
+  PARAM_UNUSED(unused);
   assert(lhs && rhs);
   return slice_compare(*(slice_t*)lhs, *(slice_t*)rhs);
 }
 
 // Returns a hash value representing the slice passed as a void pointer.
-hash_t slice_hash_vptr(const void* str) {
+hash_t slice_hash_vptr(const void* str, index_t unused) {
+  PARAM_UNUSED(unused);
   assert(str);
   return slice_hash(*(slice_t*)str);
 }
+
+#include <stdlib.h>
+
+// Copies the slice into a new block of memory, functionally the same as string?
+void* slice_copy_vptr(void* _dst, const void* _src, size_t unused) {
+  PARAM_UNUSED(unused);
+  assert(_dst && _src);
+  slice_t* dst = (slice_t*)_dst;
+  const slice_t* src = (const slice_t*)_src;
+  void* copy = malloc(src->size);
+  assert(copy);
+  memcpy(copy, src->begin, src->size);
+  *dst = (slice_t){ .begin = copy, .size = src->size };
+  return _dst;
+}
+
+// Deletes a slice allocated with slice_copy_vptr
+void slice_delete_vptr(void* _str) {
+  assert(_str);
+  slice_t* str = _str;
+  free(str->begin);
+  *str = slice_empty;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Default output methods for slice_write
+////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__WASM__) || defined(MCLIB_NO_STDIO)
 

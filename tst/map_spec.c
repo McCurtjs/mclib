@@ -63,7 +63,7 @@ describe(map_construction) {
 
 describe(map_string_keys) {
 
-  HMap map = map_new(slice_t, int, slice_compare_vptr, slice_hash_vptr);
+  HMap map = map_new(slice_t, int, slice_hash_vptr, slice_compare_vptr);
 
   it("can use slices to index") {
     int* value = map_emplace(map, &S("FIRST"));
@@ -229,12 +229,19 @@ describe(map_next) {
 
   HMap map = map_new(int, int, NULL, NULL);
   for (int i = 0; i < 10; ++i) {
-    map_insert(map, &i, &i);
+    int* value = map_emplace(map, &i);
+    *value = i * 10;
   }
 
-  it("can iterate the map using map_next") {
+  it("can iterate through the map getting each value") {
     int acc = 0;
     int* map_foreach(i, map) acc += *i;
+    expect(acc, == , 450);
+  }
+
+  it("can iterate through the map to get each key-value pair") {
+    int acc = 0;
+    const int* map_foreach_key(key, map) acc += *key;
     expect(acc, == , 45);
   }
 
@@ -301,16 +308,24 @@ describe(map_remove) {
 
 
 
-/*
 // Defining element and key types
+
+#include "str.h"
+
+//*
 #define con_type float
-#define key_type byte
-#define con_cmp cmp_int
+#define con_prefix str_float
+#define key_type slice_t
+#define key_type_hash_compare slice_hash_vptr, slice_compare_vptr
+#define key_type_copy_delete slice_copy_vptr, slice_delete_vptr
 #include "map.h"
 #undef con_type
+#undef con_prefix
 #undef key_type
-#undef con_cmp
-*/
+#undef key_type_hash_compare
+#undef key_type_copy_delete
+//*/
+
 // Define with default key type (span)
 #define con_type int
 #define con_prefix int
@@ -339,6 +354,21 @@ describe(map_stuff) {
 
   map_int_delete(&ints);
 
+  HMap_str_float fmap = map_str_float_new();
+
+  res_ensure_str_float_t e = map_str_float_ensure(fmap, S("Strings key test"));
+  expect(e.is_new);
+  *e.value = 42.5f;
+
+  e = map_str_float_ensure(fmap, S("Washington"));
+  *e.value = 999.9f;
+
+  String ephemeral_key = str_concat("lhs", "_", "rhs");
+  map_str_float_write(fmap, ephemeral_key->slice, 12.1f);
+  str_delete(&ephemeral_key);
+
+  e = map_str_float_ensure(fmap, S("lhs_rhs"));
+  expect(*e.value to be_about(12.1f));
 
   /*
   kv_byte_float_t t;

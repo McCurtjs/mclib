@@ -222,8 +222,10 @@ slice_t         slice_trim_end(slice_t str);
 
 hash_t          slice_hash(slice_t str);
 
-int             slice_compare_vptr(const void* lhs, const void* rhs);
-hash_t          slice_hash_vptr(const void* str);
+int             slice_compare_vptr(const void* lhs, const void* rhs, size_t na);
+hash_t          slice_hash_vptr(const void* slice, index_t unused);
+void*           slice_copy_vptr(void* dst, const void* src, size_t unused);
+void            slice_delete_vptr(void* str);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Additional functions brought in when other headers are present

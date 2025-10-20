@@ -56,10 +56,6 @@
 
 #include "types.h"
 
-typedef int (*compare_fn)(const void* lhs, const void* rhs);
-typedef hash_t (*hash_fn)(const void* key);
-typedef void (*delete_fn)(void** to_delete);
-
 typedef struct _opaque_Map_base {
   index_t const size;
   index_t const capacity;
@@ -84,13 +80,16 @@ typedef struct pair_kv_t {
   };
 } pair_kv_t;
 
+typedef void (*map_process_fn)(pair_kv_t slot);
+
 #define       map_new(T_KEY, T_VAL, FN_CMP, FN_HASH)  \
                 imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_CMP, FN_HASH)
 
 //void*     map_emplace_hash(HMap map, const void* key, hash_t hash);
 
-HMap         imap_new(index_t ksz, index_t vsz, compare_fn cmp, hash_fn hash);
-void          map_callback_dtor(HMap map, delete_fn key_del, delete_fn val_del);
+HMap         imap_new(index_t ksz, index_t vsz, hash_fn hash, compare_fn cmp);
+void          map_callbacks_key(HMap m, copy_fn key_copy, delete_fn key_delete);
+void          map_callbacks_element(HMap m, copy_fn el_copy, delete_fn el_del);
 //void        map_callback_copy(HMap map);
 //void        map_callback_move(HMap map);
 HMap          map_copy(HMap to_copy);
@@ -120,11 +119,19 @@ bool          map_remove(HMap map, const void* key);
     _map_iter = map_next((HMap)(MAP), _map_iter.key)                          \
   )                                                                           //
 
-#define map_foreach_key(VALUE, KEY, MAP)                                      \
-  map_foreach_ktype(VALUE, void*, KEY, MAP)                                    //
+#define map_foreach_key(KEY, MAP)                                             \
+  KEY = NULL;                                                                 \
+  for (                                                                       \
+    pair_kv_t _map_iter = map_next((HMap)(MAP), NULL);                        \
+    (KEY = _map_iter.key);                                                    \
+    _map_iter = map_next((HMap)(MAP), _map_iter.key)                          \
+  )                                                                           //
+
+#define map_foreach_kv(VALUE, KEY, MAP)                                       \
+  map_foreach_ktype(VALUE, void*, KEY, MAP)                                   //
 
 #define map_foreach(VALUE, MAP)                                               \
-  map_foreach_key(VALUE, MACRO_CONCAT(_mapkey_, __LINE__), MAP)               //
+  map_foreach_kv(VALUE, MACRO_CONCAT(_mapkey_, __LINE__), MAP)               //
 
 #endif
 
@@ -159,29 +166,31 @@ bool          map_remove(HMap map, const void* key);
 #else
 # include "slice.h"
 # define _key_type slice_t
-# define _con_cmp slice_compare_vptr
-# define _con_hash slice_hash_vptr
+# define _key_cmp slice_compare_vptr
+# define _key_hash slice_hash_vptr
 #endif
 
-#ifndef _con_cmp
-# ifdef con_cmp
-#   define _con_cmp MACRO_CONCAT3(_cmp_, _map_type, _fn)
-static int _con_cmp(const void* lhs, const void* rhs) {
-  return con_cmp(lhs, rhs);
+#ifndef key_type_hash_compare
+# ifndef _key_cmp
+#   ifdef key_cmp
+#     define _key_cmp MACRO_CONCAT3(_cmp_, _map_type, _fn)
+static int _key_cmp(const void* lhs, const void* rhs, size_t key_size) {
+  return key_cmp(lhs, rhs, key_size);
 }
-# else
-#   define _con_cmp NULL
+#   else
+#     define _key_cmp NULL
+#   endif
 # endif
-#endif
 
-#ifndef _con_hash
-# ifdef con_hash
-#   define _con_hash MACRO_CONCAT3(_hash_, _map_type, _fn)
-static hash_t _con_hash(const void* key) {
-  return con_hash(key);
+# ifndef _key_hash
+#   ifdef key_hash
+#     define _key_hash MACRO_CONCAT3(_hash_, _map_type, _fn)
+static hash_t _key_hash(const void* key, index_t key_size) {
+  return key_hash(key, key_size);
 }
-# else
-#   define _con_hash NULL
+#   else
+#     define _key_hash NULL
+#   endif
 # endif
 #endif
 
@@ -215,23 +224,33 @@ typedef struct _pair_type {
 // \returns A new empty hashmap, ready for use.
 static inline _map_type _prefix(_new)
 (void) {
-  HMap ret = map_new(_key_type, con_type, _con_cmp, _con_hash);
+#ifdef key_type_hash_compare
+  HMap ret = imap_new(
+    sizeof(_key_type), sizeof(con_type), key_type_hash_compare
+  );
+#else
+  HMap ret = map_new(_key_type, con_type, _key_hash, _key_cmp);
+#endif
 
-#if defined(con_type_dtor) || defined(key_type_dtor)
-  delete_fn delete_key = NULL;
-  delete_fn delete_value = NULL;
 
-# ifdef con_type_dtor
-  delete_value = (void*)con_type_dtor;
-# endif
-# ifdef key_type_dtor
-  delete_key = (void*)key_type_dtor;
-# endif
+#ifdef key_type_copy_delete
+  map_callbacks_key(ret, key_type_copy_delete);
+#endif
 
-  if (delete_key || delete_value) map_callback_dtor(delete_key, delete_value);
+#ifdef con_type_copy_delete
+  map_callbacks_element(ret, con_type_copy_delete);
 #endif
 
   return (_map_type)ret;
+}
+
+// \brief Reserves space in the hashmap. The actual reserved space will be a
+//    power of two above the given value.
+//
+// \param capacity - the number of elements to reserve spcae for
+static inline void _prefix(_reserve)
+(_map_type map, index_t capacity) {
+  map_reserve((HMap)map, capacity);
 }
 
 // \brief Initializes a new map of the given type. Pre-allocates space for at
@@ -243,18 +262,9 @@ static inline _map_type _prefix(_new)
 // \returns A new empty hashmap with the given capacity.
 static inline _map_type _prefix(_new_reserve)
 (index_t capacity) {
-  HMap ret = map_new(con_type, _key_type, _con_cmp, _con_hash);
-  map_reserve(ret, capacity);
-  return (_map_type)ret;
-}
-
-// \brief Reserves space in the hashmap. The actual reserved space will be a
-//    power of two above the given value.
-//
-// \param capacity - the number of elements to reserve spcae for
-static inline void _prefix(_reserve)
-(_map_type map, index_t capacity) {
-  map_reserve((HMap)map, capacity);
+  _map_type ret = _prefix(_new)();
+  _prefix(_reserve)(ret, capacity);
+  return ret;
 }
 
 // \brief Performs a soft-delete of the map contents without changing capacity.
@@ -458,7 +468,7 @@ static inline bool _prefix(_contains_key)
 #undef _prefix
 #undef _ensure_type
 #undef _pair_type
-#undef _con_cmp
-#undef _con_hash
+#undef _key_cmp
+#undef _key_hash
 
 #endif

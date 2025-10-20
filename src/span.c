@@ -45,7 +45,9 @@ bool ispan_eq(span_t a, span_t b) {
   return memcmp(a.begin, b.begin, size) == 0;
 }
 
-bool ispan_eq_deep(span_t lhs, span_t rhs, index_t el_size, compare_fn cmp) {
+bool ispan_eq_deep(
+  span_t lhs, span_t rhs, index_t el_size, compare_nosize_fn cmp
+) {
   index_t size = ispan_size(lhs, el_size);
   if (size != ispan_size(rhs, el_size)) {
     return false;
@@ -62,7 +64,7 @@ bool ispan_eq_deep(span_t lhs, span_t rhs, index_t el_size, compare_fn cmp) {
   return true;
 }
 
-void ispan_sort(span_t span, index_t element_size, compare_fn cmp) {
+void ispan_sort(span_t span, index_t element_size, compare_nosize_fn cmp) {
   index_t length = ispan_size(span, element_size);
   qsort(span.begin, length, element_size, cmp);
 }

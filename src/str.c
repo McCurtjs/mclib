@@ -57,6 +57,10 @@ const String str_space      = (String)&slice_space;
 const String str_newline    = (String)&slice_newline;
 const String str_tab        = (String)&slice_tab;
 
+#if defined(MCLIB_TEST_MODE) && defined(_MSC_VER)
+# pragma warning ( disable : 6011 )
+#endif
+
 static String_Internal* _istr_new(index_t length) {
   if (length <= 0) return NULL; // prompt callers to return empty string
   // Include an extra byte for the null terminator

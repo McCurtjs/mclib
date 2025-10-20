@@ -74,7 +74,11 @@ typedef ptrdiff_t index_t;
 typedef struct _opaque_String_base* String;
 
 // Common function pointer types
-typedef int (*compare_fn)(const void* a, const void* b);
+typedef int     (*compare_fn)(const void* lhs, const void* rhs, size_t size);
+typedef int     (*compare_nosize_fn)(const void* lhs, const void* rhs);
+typedef hash_t  (*hash_fn)(const void* key, index_t size);
+typedef void    (*delete_fn)(void* to_delete);
+typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 
 // Shouldn't be necessary with C23?
 #include <stdbool.h>

@@ -81,8 +81,8 @@
 #include "span_base.h"
 
 static inline index_t ispan_size_bytes(span_t span) {
-  byte* begin = span.begin;
-  byte* end = span.end;
+  byte* begin = (byte*)span.begin;
+  byte* end = (byte*)span.end;
   assert(begin <= end);
   return end - begin;
 }
@@ -94,8 +94,8 @@ static inline index_t ispan_size(span_t span, index_t element_size) {
 
 void ispan_set_bytes(span_t span, byte b);
 bool ispan_eq(span_t a, span_t b);
-bool ispan_eq_deep(span_t lhs, span_t rhs, index_t el_size, compare_fn cmp);
-void ispan_sort(span_t span, index_t element_size, compare_fn cmp);
+bool ispan_eq_deep(span_t lh, span_t rh, index_t el_sz, compare_nosize_fn cmp);
+void ispan_sort(span_t span, index_t element_size, compare_nosize_fn cmp);
 
 #endif
 
@@ -303,7 +303,7 @@ static inline bool _prefix(_eq_deep)
 static inline void _prefix(_sort)
 (_span_type span) {
   static int (*cmp)(const con_type* a, const con_type* b) = con_cmp;
-  ispan_sort(*(span_t*)&span, sizeof(con_type), (compare_fn)cmp);
+  ispan_sort(*(span_t*)&span, sizeof(con_type), (compare_nosize_fn)cmp);
 }
 
 #endif
