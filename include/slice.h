@@ -155,7 +155,7 @@ typedef struct res_token_t {
   };
 } res_token_t;
 
-typedef struct res_partition_t {
+typedef struct partition_slice_t {
   union {
     pair_slice_t pair;
     struct {
@@ -164,68 +164,68 @@ typedef struct res_partition_t {
     };
   };
   slice_t delimiter;
-} res_partition_t;
+} partition_slice_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Usage
 ////////////////////////////////////////////////////////////////////////////////
 
-bool            slice_to_bool(slice_t str, bool* out_bool);
-bool            slice_to_int(slice_t str, int* out_int);
-bool            slice_to_long(slice_t str, index_t* out_int);
-bool            slice_to_float(slice_t str, float* out_float);
-bool            slice_to_double(slice_t str, double* out_float);
+bool              slice_to_bool(slice_t str, bool* out_bool);
+bool              slice_to_int(slice_t str, int* out_int);
+bool              slice_to_long(slice_t str, index_t* out_int);
+bool              slice_to_float(slice_t str, float* out_float);
+bool              slice_to_double(slice_t str, double* out_float);
 
-int             slice_compare(slice_t lhs, slice_t rhs);
-//int           slice_compare_ci(slice_t lhs, slice_t rhs);
-bool            slice_eq(slice_t lhs, slice_t rhs);
-//bool          slice_eq_ci(slice_t lhs, slice_t rhs);
-bool            slice_starts_with(slice_t str, slice_t beginning);
-bool            slice_ends_with(slice_t str, slice_t ending);
-bool            slice_contains(slice_t str, slice_t target);
-bool            slice_contains_char(slice_t str, slice_t targets);
-bool            slice_is_empty(slice_t str);
-//bool          slice_is_alpha(slice_t str);
-//bool          slice_is_decimal(slice_t str);
-//bool          slice_is_integer(slice_t str);
-//index_t       slice_count_str(slice_t str, slice_t target);
-//index_t       slice_count_char(slice_t str, slice_t targets);
+int               slice_compare(slice_t lhs, slice_t rhs);
+//int             slice_compare_ci(slice_t lhs, slice_t rhs);
+bool              slice_eq(slice_t lhs, slice_t rhs);
+//bool            slice_eq_ci(slice_t lhs, slice_t rhs);
+bool              slice_starts_with(slice_t str, slice_t beginning);
+bool              slice_ends_with(slice_t str, slice_t ending);
+bool              slice_contains(slice_t str, slice_t target);
+bool              slice_contains_char(slice_t str, slice_t targets);
+bool              slice_is_empty(slice_t str);
+//bool            slice_is_alpha(slice_t str);
+//bool            slice_is_decimal(slice_t str);
+//bool            slice_is_integer(slice_t str);
+//index_t         slice_count_str(slice_t str, slice_t target);
+//index_t         slice_count_char(slice_t str, slice_t targets);
 
-bool            slice_find_str(slice_t str, slice_t target, slice_t* out_found);
-bool            slice_find_char(slice_t str, slice_t tgt, slice_t* out_found);
-bool            slice_find_last_str(slice_t s, slice_t tgt, slice_t* out_found);
-bool            slice_find_last_char(slice_t s, slice_t t, slice_t* out_found);
-index_t         slice_index_of_str(slice_t str, slice_t target);
-index_t         slice_index_of_char(slice_t str, slice_t targets);
-index_t         slice_index_of_last_str(slice_t str, slice_t target);
-index_t         slice_index_of_last_char(slice_t str, slice_t targets);
+bool              slice_find_str(slice_t str, slice_t target, slice_t* o_found);
+bool              slice_find_char(slice_t str, slice_t tgt, slice_t* o_found);
+bool              slice_find_last_str(slice_t s, slice_t tgt, slice_t* o_found);
+bool              slice_find_last_char(slice_t s, slice_t t, slice_t* o_found);
+index_t           slice_index_of_str(slice_t str, slice_t target);
+index_t           slice_index_of_char(slice_t str, slice_t targets);
+index_t           slice_index_of_last_str(slice_t str, slice_t target);
+index_t           slice_index_of_last_char(slice_t str, slice_t targets);
 
-res_token_t     slice_token_str(slice_t str, slice_t delim, index_t* pos);
-res_token_t     slice_token_char(slice_t str, slice_t delims, index_t* pos);
+res_token_t       slice_token_str(slice_t str, slice_t delim, index_t* pos);
+res_token_t       slice_token_char(slice_t str, slice_t delims, index_t* pos);
 
-pair_slice_t    slice_split_at(slice_t str, index_t index);
-res_partition_t slice_partition_str(slice_t str, slice_t delim);
-res_partition_t slice_partition_char(slice_t str, slice_t delims);
+pair_slice_t      slice_split_at(slice_t str, index_t index);
+partition_slice_t slice_partition_str(slice_t str, slice_t delim);
+partition_slice_t slice_partition_char(slice_t str, slice_t delims);
 
 // get next numeric value? number string would go in the delimiter value
 //res_partition slice_partition_number(slice_t str);
 
-slice_t         slice_substring(slice_t str, index_t start, index_t end);
-slice_t         slice_drop(slice_t str, index_t count);
-slice_t         slice_take(slice_t str, index_t count);
-slice_t         slice_trim(slice_t str);
-slice_t         slice_trim_start(slice_t str);
-slice_t         slice_trim_end(slice_t str);
-//slice_t       slice_trim_char(slice_t str, slice_t chars);
-//slice_t       slice_trim_char_start(slice_t str, slice_t chars);
-//slice_t       slice_trim_char_end(slice_t str, slice_t chars);
+slice_t           slice_substring(slice_t str, index_t start, index_t end);
+slice_t           slice_drop(slice_t str, index_t count);
+slice_t           slice_take(slice_t str, index_t count);
+slice_t           slice_trim(slice_t str);
+slice_t           slice_trim_start(slice_t str);
+slice_t           slice_trim_end(slice_t str);
+//slice_t         slice_trim_char(slice_t str, slice_t chars);
+//slice_t         slice_trim_char_start(slice_t str, slice_t chars);
+//slice_t         slice_trim_char_end(slice_t str, slice_t chars);
 
-hash_t          slice_hash(slice_t str);
+hash_t            slice_hash(slice_t str);
 
-int             slice_compare_vptr(const void* lhs, const void* rhs, size_t na);
-hash_t          slice_hash_vptr(const void* slice, index_t unused);
-void*           slice_copy_vptr(void* dst, const void* src, size_t unused);
-void            slice_delete_vptr(void* str);
+int               slice_compare_vptr(const void* lh, const void* rh, size_t na);
+hash_t            slice_hash_vptr(const void* slice, index_t unused);
+void*             slice_copy_vptr(void* dst, const void* src, size_t unused);
+void              slice_delete_vptr(void* str);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Additional functions brought in when other headers are present

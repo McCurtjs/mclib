@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -80,22 +80,168 @@
 #include "types.h"
 #include "span_base.h"
 
-static inline index_t ispan_size_bytes(span_t span) {
-  byte* begin = (byte*)span.begin;
-  byte* end = (byte*)span.end;
+////////////////////////////////////////////////////////////////////////////////
+// Return result tuples
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct pair_view_t {
+  union {
+    view_t begin[2];
+    struct {
+      view_t left;
+      view_t right;
+    };
+  };
+} pair_view_t;
+
+typedef struct partition_view_t {
+  union {
+    pair_view_t pair;
+    struct {
+      view_t left;
+      view_t right;
+    };
+  };
+  const void* delimiter;
+} partition_view_t;
+
+typedef struct pair_span_t {
+  union {
+    span_t begin[2];
+    struct {
+      span_t left;
+      span_t right;
+    };
+  };
+} pair_span_t;
+
+typedef struct partition_span_t {
+  union {
+    pair_span_t pair;
+    struct {
+      span_t left;
+      span_t right;
+    };
+  };
+  void* delimiter;
+} partition_span_t;
+
+#define SPAN_VALID(SPAN) do {                                                 \
+  span_t test_span = (SPAN);                                                  \
+  assert((byte*)test_span.begin <= (byte*)test_span.end);                     \
+} while(false)                                                                //
+
+#define VIEW_VALID(SPAN) do {                                                 \
+  view_t test_span = (SPAN);                                                  \
+  assert((const byte*)test_span.begin <= (const byte*)test_span.end);         \
+} while(false)                                                                //
+
+////////////////////////////////////////////////////////////////////////////////
+// Size and element count
+////////////////////////////////////////////////////////////////////////////////
+
+static inline index_t view_size_bytes(view_t span) {
+  const byte* begin = (const byte*)span.begin;
+  const byte* end = (const byte*)span.end;
   assert(begin <= end);
   return end - begin;
 }
 
-static inline index_t ispan_size(span_t span, index_t element_size) {
+static inline index_t view_size(view_t view, index_t element_size) {
   assert(element_size > 0);
-  return ispan_size_bytes(span) / element_size;
+  return view_size_bytes(view) / element_size;
 }
 
-void ispan_set_bytes(span_t span, byte b);
-bool ispan_eq(span_t a, span_t b);
-bool ispan_eq_deep(span_t lh, span_t rh, index_t el_sz, compare_nosize_fn cmp);
-void ispan_sort(span_t span, index_t element_size, compare_nosize_fn cmp);
+static inline bool view_is_empty(view_t view) {
+  VIEW_VALID(view);
+  return view.begin == view.end;
+}
+
+static inline index_t span_size_bytes(span_t span) {
+  return view_size_bytes(span.view);
+}
+
+static inline index_t span_size(span_t span, index_t element_size) {
+  return view_size(span.view, element_size);
+}
+
+static inline bool span_is_empty(span_t span) {
+  return view_is_empty(span.view);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Element access
+////////////////////////////////////////////////////////////////////////////////
+
+const void* view_ref(view_t view, index_t index, index_t element_size);
+
+static inline const void* view_ref_front(view_t view) {
+  if (view_is_empty(view)) return NULL;
+  return view.begin;
+}
+
+static inline const void* view_ref_back(view_t view, index_t element_size) {
+  if (view_is_empty(view)) return NULL;
+  const byte* ret = (const byte*)view.end - element_size;
+  return ret;
+}
+
+void* span_ref(span_t span, index_t index, index_t element_size);
+
+static inline void* span_ref_front(span_t span) {
+  if (span_is_empty(span)) return NULL;
+  return span.begin;
+}
+
+static inline void* span_ref_back(span_t span, index_t element_size) {
+  if (span_is_empty(span)) return NULL;
+  byte* ret = (byte*)span.end - element_size;
+  return ret;
+}
+
+view_t view_subview(view_t view, index_t start, index_t end, index_t el_size);
+view_t view_drop(view_t view, index_t count, index_t element_size);
+view_t view_take(view_t view, index_t count, index_t element_size);
+pair_view_t view_split(view_t view, index_t pivot, index_t element_size);
+partition_view_t view_partition(
+  view_t view, const void* del, compare_nosize_fn compare, index_t element_size
+);
+
+span_t span_subspan(span_t span, index_t start, index_t end, index_t el_sz);
+span_t span_drop(span_t span, index_t count, index_t element_size);
+span_t span_take(span_t span, index_t count, index_t element_size);
+pair_span_t span_split(span_t span, index_t pivot, index_t element_size);
+partition_span_t span_partition(
+  span_t span, const void* del, compare_nosize_fn compare, index_t element_size
+);
+
+////////////////////////////////////////////////////////////////////////////////
+// Equality testing
+////////////////////////////////////////////////////////////////////////////////
+
+bool view_eq(view_t lhs, view_t rhs);
+bool view_eq_deep(view_t lh, view_t rh, index_t elsz, compare_nosize_fn cmp);
+
+bool span_eq(span_t lhs, span_t rhs);
+bool span_eq_deep(span_t lh, span_t rh, index_t elsz, compare_nosize_fn cmp);
+
+////////////////////////////////////////////////////////////////////////////////
+// Algorithm
+////////////////////////////////////////////////////////////////////////////////
+
+void span_set_bytes(span_t span, byte b);
+void span_reverse_bytes(span_t span);
+void span_sort(span_t span, index_t element_size, compare_nosize_fn cmp);
+void span_reverse(span_t span, index_t element_size);
+void span_rotate(span_t span, index_t count, index_t element_size);
+void span_shuffle(span_t span, index_t element_size);
+void span_swap(span_t span, index_t idx1, index_t idx2, index_t element_size);
+void span_swap_back(span_t span, index_t index, index_t element_size);
+
+#define span_copy_range(span_dst, view_src, index, element_size) \
+  ispan_copy_range(span_dst, _s2v(view_src), index, element_size)
+
+void ispan_copy_range(span_t dst, view_t src, index_t index, index_t el_size);
 
 #endif
 
@@ -108,11 +254,24 @@ void ispan_sort(span_t span, index_t element_size, compare_nosize_fn cmp);
 #endif
 
 #define _span_type MACRO_CONCAT3(span_, _con_name, _t)
+#define _view_type MACRO_CONCAT3(view_, _con_name, _t)
 #define _prefix(_fn) MACRO_CONCAT3(span_, _con_name, _fn)
+#define _prefix_view(_fn) MACRO_CONCAT3(view_, _con_name, _fn)
+
+typedef struct _view_type {
+  union {
+    view_t base;
+    struct {
+      const con_type* begin;
+      const con_type* end;
+    };
+  };
+} _view_type;
 
 typedef struct _span_type {
   union {
-    span_t span;
+    span_t base;
+    _view_type view;
     struct {
       con_type* begin;
       con_type* end;
@@ -120,10 +279,21 @@ typedef struct _span_type {
   };
 } _span_type;
 
+static inline _view_type MACRO_CONCAT(view_, _con_name)
+(const con_type* begin, const con_type* end) {
+  assert(begin <= end);
+  return (_view_type) { begin, end };
+}
+
 static inline _span_type MACRO_CONCAT(span_, _con_name)
 (con_type* begin, con_type* end) {
   assert(begin <= end);
-  return (_span_type) { .begin = begin, .end = end };
+  return (_span_type) { begin, end };
+}
+
+static inline _view_type _prefix_view(_cast)
+(view_t view) {
+  return *(_view_type*)&view;
 }
 
 static inline _span_type _prefix(_cast)
@@ -131,185 +301,219 @@ static inline _span_type _prefix(_cast)
   return *(_span_type*)&span;
 }
 
+static inline index_t _prefix_view(_size)
+(_view_type view) {
+  return view_size(view.base, sizeof(con_type));
+}
+
 static inline index_t _prefix(_size)
 (_span_type span) {
-  assert(span.begin <= span.end);
-  return (span.end - span.begin);
+  return span_size(span.base, sizeof(con_type));
+}
+
+static inline index_t _prefix_view(_size_bytes)
+(_view_type view) {
+  return view_size_bytes(view.base);
 }
 
 static inline index_t _prefix(_size_bytes)
 (_span_type span) {
-  assert(span.begin <= span.end);
-  return (span.end - span.begin) * sizeof(con_type);
+  return span_size_bytes(span.base);
+}
+
+static inline bool _prefix_view(_eq)
+(_view_type lhs, _view_type rhs) {
+  return view_eq(lhs.base, rhs.base);
 }
 
 static inline bool _prefix(_eq)
 (_span_type lhs, _span_type rhs) {
-  return ispan_eq(*(span_t*)&lhs, *(span_t*)&rhs);
+  return span_eq(lhs.base, rhs.base);
+}
+
+static inline bool _prefix_view(_is_empty)
+(_view_type view) {
+  return view_is_empty(view.base);
 }
 
 static inline bool _prefix(_empty)
 (_span_type span) {
-  assert(span.begin <= span.end);
-  return span.begin >= span.end;
+  return span_is_empty(span.base);
+}
+
+static inline const con_type* _prefix_view(_ref)
+(_view_type view, index_t index) {
+  return view_ref(view.base, index, sizeof(con_type));
 }
 
 static inline con_type* _prefix(_ref)
 (_span_type span, index_t index) {
-  if (index < 0) return NULL;
-  assert(span.begin <= span.end);
-  if (!span.begin || span.end <= span.begin) return NULL;
-  con_type* ret = span.begin + index;
-  if (ret >= span.end) return NULL;
-  return ret;
+  return span_ref(span.base, index, sizeof(con_type));
+}
+
+static inline const con_type* _prefix_view(_ref_front)
+(_view_type view) {
+  return view_ref_front(view.base);
 }
 
 static inline con_type* _prefix(_ref_front)
 (_span_type span) {
-  assert(span.begin <= span.end);
-  if (!span.begin || span.end <= span.begin) return NULL;
-  return span.begin;
+  return span_ref_front(span.base);
+}
+
+static inline const con_type* _prefix_view(_ref_back)
+(_view_type view) {
+  return view_ref_back(view.base, sizeof(con_type));
 }
 
 static inline con_type* _prefix(_ref_back)
 (_span_type span) {
-  assert(span.begin <= span.end);
-  if (!span.begin || span.end <= span.begin) return NULL;
-  return span.end - 1;
+  return span_ref_back(span.base, sizeof(con_type));
+}
+
+static inline con_type _prefix_view(_get)
+(_view_type view, index_t index) {
+  const con_type* ret = view_ref(view.base, index, sizeof(con_type));
+  assert(ret);
+  return *ret;
 }
 
 static inline con_type _prefix(_get)
 (_span_type span, index_t index) {
-  con_type* ret = _prefix(_ref)(span, index);
+  con_type* ret = span_ref(span.base, index, sizeof(con_type));
+  assert(ret);
+  return *ret;
+}
+
+static inline con_type _prefix_view(_get_front)
+(_view_type view) {
+  const con_type* ret = view_ref_front(view.base);
   assert(ret);
   return *ret;
 }
 
 static inline con_type _prefix(_get_front)
 (_span_type span) {
-  con_type* ret = _prefix(_ref_front)(span);
+  con_type* ret = span_ref_front(span.base);
+  assert(ret);
+  return *ret;
+}
+
+static inline con_type _prefix_view(_get_back)
+(_view_type view) {
+  const con_type* ret = view_ref_back(view.base, sizeof(con_type));
   assert(ret);
   return *ret;
 }
 
 static inline con_type _prefix(_get_back)
 (_span_type span) {
-  con_type* ret = _prefix(_ref_back)(span);
+  con_type* ret = span_ref_back(span.base, sizeof(con_type));
   assert(ret);
   return *ret;
 }
 
-static inline _span_type _prefix(_drop_front)
-(_span_type span) {
-  assert(span.begin <= span.end);
-  if (span.begin < span.end) ++span.begin;
-  return span;
+static inline _view_type _prefix_view(_drop)
+(_view_type view, index_t count) {
+  view.base = view_drop(view.base, count, sizeof(con_type));
+  return view;
 }
 
-static inline _span_type _prefix(_drop_first)
+static inline _span_type _prefix(_drop)
 (_span_type span, index_t count) {
-  assert(span.begin <= span.end);
-  if (span.begin + count >= span.end) span.begin = span.end;
-  else span.begin += count;
+  span.base = span_drop(span.base, count, sizeof(con_type));
   return span;
 }
 
-static inline _span_type _prefix(_drop_back)
-(_span_type span) {
-  assert(span.begin <= span.end);
-  if (span.begin < span.end) --span.end;
-  return span;
+static inline _view_type _prefix_view(_take)
+(_view_type view, index_t count) {
+  view.base = view_take(view.base, count, sizeof(con_type));
+  return view;
 }
 
-static inline _span_type _prefix(_drop_last)
+static inline _span_type _prefix(_take)
 (_span_type span, index_t count) {
-  assert(span.begin <= span.end);
-  if (span.begin + count >= span.end) span.end = span.begin;
-  else span.end -= count;
+  span.base = span_take(span.base, count, sizeof(con_type));
   return span;
+}
+
+static inline _view_type _prefix_view(_subview)
+(_view_type view, index_t start, index_t end) {
+  view.base = view_subview(view.base, start, end, sizeof(con_type));
+  return view;
 }
 
 static inline _span_type _prefix(_subspan)
 (_span_type span, index_t start, index_t end) {
-  index_t size = _prefix(_size)(span);
-  if (span.begin == span.end) return span;
-  if (start < 0) start = size + start;
-  if (start < 0) start = 0;
-  if (end > size) end = size;
-  if (end < 0) end = size + end;
-  if (end < start) end = start;
-  span.end = span.begin + end;
-  span.begin += start;
-  return span;
-}
-
-static inline _span_type _prefix(_first)
-(_span_type span, index_t count) {
-  assert(span.begin <= span.end);
-  if (span.begin == NULL) return span;
-  con_type* end = span.begin + count;
-  if (end >= span.end) return span;
-  span.end = end;
-  return span;
-}
-
-static inline _span_type _prefix(_last)
-(_span_type span, index_t count) {
-  assert(span.begin <= span.end);
-  if (span.begin == NULL) return span;
-  con_type* begin = span.end - count;
-  if (begin <= span.begin) return span;
-  span.begin = begin;
+  span.base = span_subspan(span.base, start, end, sizeof(con_type));
   return span;
 }
 
 // Algorithm
 
-static inline void _prefix(_reverse)
-(_span_type span) {
-  assert(span.begin <= span.end);
-  if (span.end <= span.begin) return;
-  --span.end;
-  while (span.begin < span.end) {
-    con_type temp = *span.begin;
-    *span.begin++ = *span.end;
-    *span.end-- = temp;
-  }
-}
-
 static inline void _prefix(_set_bytes)
 (_span_type span, byte b) {
-  ispan_set_bytes(*(span_t*)&span, b);
+  span_set_bytes(span.base, b);
+}
+
+static inline void _prefix(_reverse_bytes)
+(_span_type span) {
+  span_reverse_bytes(span.base);
+}
+
+static inline void _prefix(_reverse)
+(_span_type span) {
+  span_reverse(span.base, sizeof(con_type));
+}
+
+static inline void _prefix(_rotate)
+(_span_type span, index_t count) {
+  span_rotate(span.base, count, sizeof(con_type));
+}
+
+static inline void _prefix(_shuffle)
+(_span_type span) {
+  span_shuffle(span.base, sizeof(con_type));
+}
+
+static inline void _prefix(_swap)
+(_span_type span, index_t idx1, index_t idx2) {
+  span_swap(span.base, idx1, idx2, sizeof(con_type));
+}
+
+static inline void _prefix(_swap_back)
+(_span_type span, index_t index) {
+  span_swap_back(span.base, index, sizeof(con_type));
+}
+
+static inline void _prefix(_copy_range)
+(_span_type dst, _view_type src, index_t index) {
+  ispan_copy_range(dst.base, src.base, index, sizeof(con_type));
 }
 
 #ifdef con_cmp
 
+static inline bool _prefix_view(_eq_deep)
+(_view_type lhs, _view_type rhs) {
+  return view_eq_deep(lhs.base, rhs.base, sizeof(con_type), con_cmp);
+}
+
 static inline bool _prefix(_eq_deep)
 (_span_type lhs, _span_type rhs) {
-  static int (*cmp)(const con_type* a, const con_type* b) = con_cmp;
-  if (ispan_size_bytes(*(span_t*)&lhs) != ispan_size_bytes(*(span_t*)&rhs)) {
-    return false;
-  }
-  con_type* right = rhs.begin;
-  con_type* span_foreach(left, lhs) {
-    if (cmp(left, right) == false) {
-      return false;
-    }
-    ++right;
-  }
-  return true;
+  return span_eq_deep(lhs.base, rhs.base, sizeof(con_type), con_cmp);
 }
 
 static inline void _prefix(_sort)
 (_span_type span) {
-  static int (*cmp)(const con_type* a, const con_type* b) = con_cmp;
-  ispan_sort(*(span_t*)&span, sizeof(con_type), (compare_nosize_fn)cmp);
+  span_sort(span.base, sizeof(con_type), con_cmp);
 }
 
 #endif
 
 #undef _con_name
 #undef _span_type
+#undef _view_type
 #undef _prefix
+#undef _prefix_view
 
 #endif

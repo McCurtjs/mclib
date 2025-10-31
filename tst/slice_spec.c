@@ -1420,7 +1420,7 @@ describe(slice_partition_str) {
 
   slice_t slice = S("This == is == a == slice == ");
   slice_t eq = S(" == ");
-  res_partition_t result;
+  partition_slice_t result;
 
   it("splits the string into two at the first instance of the delimiter") {
     result = slice_partition_str(slice, eq);
@@ -1467,7 +1467,7 @@ describe(slice_partition_str) {
 describe(slice_partition_char) {
 
   slice_t slice = S("xyz?w, a?b, a?2jk");
-  res_partition_t result;
+  partition_slice_t result;
 
   it("splits the string into two at the first instance of any delimiter") {
     result = slice_partition_char(slice, S("?,"));
@@ -1530,7 +1530,7 @@ describe(slice_partition_any) {
   slice_t slice = S("This == is == a == slice");
   slice_t delim_array[] = { S("is"), S("=="), S("a") };
   span_slice_t delims = SPAN(delim_array);
-  res_partition_t result;
+  partition_slice_t result;
 
   it("splits the string into two at the first instance of any delimiter") {
     result = slice_partition_any(slice, delims);

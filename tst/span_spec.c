@@ -49,8 +49,8 @@ describe(span_sizes) {
     span_t span = { .begin = data, .end = data + count };
 
     it("creats a span view of a plain c_array") {
-      expect(ispan_size(span, sizeof(*data)), == , count);
-      expect(ispan_size_bytes(span), == , size_bytes);
+      expect(span_size(span, sizeof(*data)), == , count);
+      expect(span_size_bytes(span), == , size_bytes);
     }
 
   }
@@ -78,7 +78,7 @@ describe(span_set_bytes) {
 
     it("replaces an array's data with zeroes") {
       expect(data to all_be( != , 0 , c_array));
-      ispan_set_bytes(span, 0);
+      span_set_bytes(span, 0);
       expect(data to all_be( == , 0 , c_array));
     }
 
@@ -86,7 +86,7 @@ describe(span_set_bytes) {
     it("can use a different type for the generic span") {
       expect(span to not all_be( == , 5 , span));
       expect(data to not all_be( == , 5 , c_array));
-      ispan_set_bytes(span, 5);
+      span_set_bytes(span, 5);
       expect(span to all_be( == , 5 , span));
       expect(data to all_be( == , 5 , c_array));
     }
@@ -131,8 +131,8 @@ describe(span_eq) {
     span_t span3 = SPAN(data3);
 
     it("tests for basic equality between spans") {
-      expect(ispan_eq(span2, span3) to be_true);
-      expect(ispan_eq(span1, span2) to be_false);
+      expect(span_eq(span2, span3) to be_true);
+      expect(span_eq(span1, span2) to be_false);
     }
 
   }
@@ -162,7 +162,7 @@ describe(span_sort) {
     span_t span = { .begin = data, .end = data + ARRAY_COUNT(data) };
 
     it ("sorts the data from lowest to highest using the compare fn") {
-      ispan_sort(span, sizeof(int), cmp_int_void);
+      span_sort(span, sizeof(int), cmp_int_void);
       expect(data to all_be( == , sorted[n]), int);
       expect(data to match(sorted));
     }

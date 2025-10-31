@@ -129,11 +129,11 @@ Array arr_copy(Array a_in) {
 Array arr_copy_span(span_t span, index_t element_size) {
   assert(span.begin <= span.end);
   if (span.begin >= span.end) return iarr_new(element_size);
-  index_t element_count = ispan_size(span, element_size);
+  index_t element_count = span_size(span, element_size);
   Array_Internal* ret = (Array_Internal*)iarr_new_reserve(
     element_size, element_count
   );
-  index_t size_bytes = ispan_size_bytes(span);
+  index_t size_bytes = span_size_bytes(span);
   memcpy(ret->begin, span.begin, size_bytes);
   ret->size = size_bytes;
   return (Array)ret;
@@ -293,7 +293,7 @@ void arr_insert_back(Array a, const void* element) {
 
 void arr_insert_range(Array a, index_t position, span_t range) {
   assert(a->begin > range.end || a->end <= range.begin);
-  index_t element_count = ispan_size_bytes(range) / a->element_size;
+  index_t element_count = span_size_bytes(range) / a->element_size;
   assert(element_count > 0);
   span_t data = arr_emplace_range(a, position, element_count);
   memcpy(data.begin, range.begin, element_count * a->element_size);
@@ -301,7 +301,7 @@ void arr_insert_range(Array a, index_t position, span_t range) {
 
 void arr_insert_back_range(Array a, span_t range) {
   assert(a->begin > range.end || a->end <= range.begin);
-  index_t element_count = ispan_size_bytes(range) / a->element_size;
+  index_t element_count = span_size_bytes(range) / a->element_size;
   assert(element_count > 0);
   span_t data = arr_emplace_back_range(a, element_count);
   memcpy(data.begin, range.begin, element_count * a->element_size);

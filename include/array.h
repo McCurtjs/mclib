@@ -101,6 +101,7 @@
 typedef struct array_t {
   union {
     span_t    const span;
+    view_t    const view;
     struct {
       void*   const begin;
       void*   const end;
@@ -356,7 +357,16 @@ static inline void _prefix(_add)
   arr_insert((Array)arr, position, &element);
 }
 
-// \brief Inserts a copy of the given element into the back of the array
+// \brief Inserts a copy of the given element into the back of the array.
+//
+// \param element - the element to insert into the array
+static inline void _prefix(_add_back)
+(_arr_type arr, con_type element) {
+  arr_insert_back((Array)arr, &element);
+}
+
+// \brief Inserts a copy of the given element into the back of the array.
+// \brief An extra alias for arr_X_add_back.
 //
 // \param element - the element to insert into the array
 static inline void _prefix(_push_back)
@@ -422,12 +432,12 @@ static inline void _prefix(_insert_back)
 
 static inline void _prefix(_insert_range)
 (_arr_type arr, index_t position, _span_type range) {
-  arr_insert_range((Array)arr, position, range.span);
+  arr_insert_range((Array)arr, position, range.base);
 }
 
 static inline void _prefix(_insert_back_range)
 (_arr_type arr, _span_type range) {
-  arr_insert_back_range((Array)arr, range.span);
+  arr_insert_back_range((Array)arr, range.base);
 }
 
 // \brief Inserts a copy of the element referenced by the given pointer into the

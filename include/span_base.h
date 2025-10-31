@@ -30,21 +30,52 @@
 // base span_t (void) struct is defined separately from the span.h file because
 // it is also independently used by the Array class.
 
+// \brief A view is a constant window into a contiguous array of data. The view
+//    is non-owning and its contents can't be modified through the view itself.
+//
+// \brief see also: span_t
+typedef struct view_t {
+  const void* begin;
+  const void* end;
+} view_t;
+
+// \brief A span is a window into a contiguous array of data. The span is non-
+//    owning, but has permission to modify the contents of the underlying data.
+//
+// \brief While the values in a span can be modified, the span itself is unaware
+//    of the source and can't allocate additional space or perform item
+//    insertions or removals.
 typedef struct span_t {
-  void* begin;
-  void* end;
+  union {
+    view_t view;
+    struct {
+      void* begin;
+      void* end;
+    };
+  };
 } span_t;
 
 extern const span_t span_empty;
+extern const view_t span_view_empty;
 
 #define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
 
 #define span_foreach(VAR, SPAN)                                               \
   VAR = SPAN.begin;                                                           \
-  for (; (byte*)VAR < (byte*)SPAN.end; ++VAR)                                 //
+  for (; (const byte*)VAR < (const byte*)SPAN.end; ++VAR)                     //
 
-#define span_foreach_index(VAR, INDEX, SPAN)                                  \
-  VAR = SPAN.begin;                                                           \
-  for (index_t INDEX = 0; (byte*)VAR < (byte*)SPAN.end; ++VAR, ++INDEX)       //
+#define span_foreach_index(V, IDX, SPAN)                                      \
+  V = SPAN.begin;                                                             \
+  for (index_t IDX = 0; (const byte*)V < (const byte*)SPAN.end; ++V, ++IDX)   //
+
+#define view_foreach span_foreach
+#define view_foreach_index span_foreach_index
+
+static inline view_t span_to_view(span_t span) { return span.view; }
+static inline view_t view_to_view(view_t view) { return view; }
+
+#define _s2v(VAL) _Generic((VAL),                                             \
+  span_t: span_to_view, view_t: view_to_view                                  \
+)(VAL)                                                                        //
 
 #endif

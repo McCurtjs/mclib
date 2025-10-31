@@ -39,6 +39,6 @@ bool            slice_find_last_any(slice_t s, span_slice_t a, slice_t* out_s);
 index_t         slice_index_of_any(slice_t str, span_slice_t any);
 index_t         slice_index_of_last_any(slice_t str, span_slice_t any);
 res_token_t     slice_token_any(slice_t str, span_slice_t any, index_t* pos);
-res_partition_t slice_partition_any(slice_t str, span_slice_t delims);
+partition_slice_t slice_partition_any(slice_t str, span_slice_t delims);
 
 #endif

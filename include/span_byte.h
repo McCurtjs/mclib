@@ -37,6 +37,8 @@
 
 // \brief Converts a byte span to a string slice.
 slice_t span_byte_to_slice(span_byte_t span);
+slice_t view_byte_to_slice(view_byte_t view);
+view_byte_t span_to_view_byte(slice_t slice);
 
 // unsupported because span_byte_t is mutable but slice is immutable.
 // span_byte_t slice_to_span(slice_t slice);

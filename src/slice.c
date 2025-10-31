@@ -720,11 +720,11 @@ Array_slice slice_tokenize_any(slice_t str, span_slice_t delims) {
 }
 
 // Partitions into a left and right based on the first match of the delimiter
-res_partition_t slice_partition_str(slice_t str, slice_t delim) {
+partition_slice_t slice_partition_str(slice_t str, slice_t delim) {
   // string validity is checked in slice_token_str
   index_t pos = 0;
   res_token_t result = slice_token_str(str, delim, &pos);
-  return (res_partition_t) {
+  return (partition_slice_t) {
     .left = result.token,
     .right = slice_drop(str, pos),
     .delimiter = result.delimiter
@@ -732,11 +732,11 @@ res_partition_t slice_partition_str(slice_t str, slice_t delim) {
 }
 
 // Partitions into a left and right based on the first match of the delimiters
-res_partition_t slice_partition_char(slice_t str, slice_t delims) {
+partition_slice_t slice_partition_char(slice_t str, slice_t delims) {
   // string validity is checked in slice_token_str
   index_t pos = 0;
   res_token_t result = slice_token_char(str, delims, &pos);
-  return (res_partition_t) {
+  return (partition_slice_t) {
     .left = result.token,
     .right = slice_drop(str, pos),
     .delimiter = result.delimiter
@@ -744,11 +744,11 @@ res_partition_t slice_partition_char(slice_t str, slice_t delims) {
 }
 
 // Partitions into a left and right based on the first match of the delimiters
-res_partition_t slice_partition_any(slice_t str, span_slice_t delims) {
+partition_slice_t slice_partition_any(slice_t str, span_slice_t delims) {
   // string and span validity is checked in slice_token_str
   index_t pos = 0;
   res_token_t result = slice_token_any(str, delims, &pos);
-  return (res_partition_t) {
+  return (partition_slice_t) {
     .left = result.token,
     .right = slice_drop(str, pos),
     .delimiter = result.delimiter
@@ -897,7 +897,7 @@ void* slice_copy_vptr(void* _dst, const void* _src, size_t unused) {
 void slice_delete_vptr(void* _str) {
   assert(_str);
   slice_t* str = _str;
-  free(str->begin);
+  free((void*)str->begin);
   *str = slice_empty;
 }
 
