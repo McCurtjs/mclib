@@ -22,21 +22,13 @@
 * SOFTWARE.
 */
 
+#include "view.h"
 #include "span.h"
 
-#include <stdlib.h>
-#include <memory.h>
+#include <stdlib.h> // qsort, rand
+#include <memory.h> // memcpy
 
 const span_t span_empty = { .begin = NULL, .end = NULL };
-const view_t view_empty = { .begin = NULL, .end = NULL };
-
-const void* view_ref(view_t view, index_t index, index_t element_size) {
-  if (view_is_empty(view)) return NULL;
-  index_t size = view_size(view, element_size);
-  if (index < 0) index = size + index;
-  if (index < 0 || index >= size) return NULL;
-  return (const byte*)view.begin + index * element_size;
-}
 
 void* span_ref(span_t span, index_t index, index_t element_size) {
   if (span_is_empty(span)) return NULL;
@@ -48,37 +40,9 @@ void* span_ref(span_t span, index_t index, index_t element_size) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-view_t view_subview(view_t view, index_t start, index_t end, index_t el_size) {
-  if (view_is_empty(view)) return view;
-  index_t size = view_size(view, el_size);
-  if (start < 0) start = size + start;
-  if (start < 0) start = 0;
-  if (end > size) end = size;
-  if (end < 0) end = size + end;
-  if (end < start) end = start;
-  view.end = (const byte*)view.begin + end * el_size;
-  view.begin = (const byte*)view.begin + start * el_size;
-  return view;
-}
-
 span_t span_subspan(span_t span, index_t start, index_t end, index_t el_size) {
   view_t ret = view_subview(span.view, start, end, el_size);
   return *((span_t*)&ret);
-}
-
-view_t view_drop(view_t view, index_t count, index_t element_size) {
-  if (view_is_empty(view)) return view;
-  index_t size = view_size(view, element_size);
-  const byte* begin = view.begin;
-  const byte* end = view.end;
-  if (count >= 0) {
-    if (count >= size) begin = end;
-    else begin += count * element_size;
-  } else {
-    if (-count >= size) end = begin;
-    else end += count * element_size;
-  }
-  return (view_t) { .begin = begin, .end = end };
 }
 
 span_t span_drop(span_t span, index_t count, index_t element_size) {
@@ -86,60 +50,14 @@ span_t span_drop(span_t span, index_t count, index_t element_size) {
   return *((span_t*)&ret);
 }
 
-view_t view_take(view_t view, index_t count, index_t element_size) {
-  if (view_is_empty(view)) return view;
-  index_t size = view_size(view, element_size);
-  const byte* begin = view.begin;
-  const byte* end = view.end;
-  if (count >= 0) {
-    if (count >= size) return view;
-    end = begin + count * element_size;
-  } else {
-    if (-count >= size) return view;
-    begin = end + count * element_size;
-  }
-  return (view_t) { .begin = begin, .end = end };
-}
-
 span_t span_take(span_t span, index_t count, index_t element_size) {
   view_t ret = view_take(span.view, count, element_size);
   return *((span_t*)&ret);
 }
 
-pair_view_t view_split(view_t view, index_t pivot, index_t element_size) {
-  if (view_is_empty(view)) return (pair_view_t) { view, view };
-  index_t size = view_size(view, element_size);
-  if (pivot >= size) return (pair_view_t) { view, view_empty };
-  if (pivot < 0) pivot += size;
-  if (pivot <= 0) return (pair_view_t) { view_empty, view };
-  const byte* middle = (const byte*)view.begin + pivot * element_size;
-  return (pair_view_t) {
-    .left = (view_t){ view.begin, middle },
-      .right = (view_t){ middle, view.end }
-  };
-}
-
 pair_span_t span_split(span_t span, index_t pivot, index_t element_size) {
   pair_view_t ret = view_split(span.view, pivot, element_size);
   return *((pair_span_t*)&ret);
-}
-
-partition_view_t view_partition(
-  view_t view, const void* del, compare_nosize_fn compare, index_t element_size
-) {
-  if (view_is_empty(view)) return (partition_view_t) { view, view, NULL };
-  const byte* item = view.begin;
-  while (item < (const byte*)view.end) {
-    if (!compare(item, del)) {
-      return (partition_view_t) {
-        .left = (view_t) { view.begin, item },
-        .right = (view_t) { item + element_size, view.end },
-        .delimiter = item
-      };
-    }
-    item += element_size;
-  }
-  return (partition_view_t) { view, view_empty, NULL };
 }
 
 partition_span_t span_partition(
@@ -151,31 +69,8 @@ partition_span_t span_partition(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool view_eq(view_t lhs, view_t rhs) {
-  index_t size = view_size_bytes(lhs);
-  if (size != view_size_bytes(rhs)) return false;
-  return memcmp(lhs.begin, rhs.begin, size) == 0;
-}
-
 bool span_eq(span_t lhs, span_t rhs) {
   return view_eq(lhs.view, rhs.view);
-}
-
-bool view_eq_deep(
-  view_t lhs, view_t rhs, index_t element_size, compare_nosize_fn compare
-) {
-  index_t size = view_size(lhs, element_size);
-  if (size != view_size(rhs, element_size)) return false;
-  const byte* p_lhs = lhs.begin;
-  const byte* p_rhs = rhs.begin;
-  for (index_t i = 0; i < size; ++i) {
-    if (compare(p_lhs, p_rhs) != 0) {
-      return false;
-    }
-    p_lhs += element_size;
-    p_rhs += element_size;
-  }
-  return true;
 }
 
 bool span_eq_deep(
@@ -222,7 +117,17 @@ void span_reverse(span_t span, index_t element_size) {
     begin += element_size;
     end -= element_size;
   }
-  
+}
+
+void span_reverse_bytes(span_t span) {
+  byte* begin = span.begin;
+  byte* end = span.end;
+  byte tmp;
+  while (begin < end) {
+    tmp = *begin;
+    *begin++ = *end;
+    *end-- = tmp;
+  }
 }
 
 void span_rotate(span_t span, index_t count, index_t element_size) {
@@ -233,10 +138,10 @@ void span_rotate(span_t span, index_t count, index_t element_size) {
     if (count < 0) count = -count;
   }
   count %= size;
-  span_reverse(span, element_size); // replace with memrev?
+  span_reverse_bytes(span); // replace with memrev?
   pair_span_t split = span_split(span, count, element_size);
-  span_reverse(split.left, element_size);
-  span_reverse(split.right, element_size);
+  span_reverse_bytes(split.left);
+  span_reverse_bytes(split.right);
 }
 
 void span_shuffle(span_t span, index_t element_size) {
@@ -264,6 +169,44 @@ void span_swap_back(span_t span, index_t index, index_t element_size) {
   byte* value = span_ref(span, index, element_size);
   byte* last = (byte*)span.end - element_size;
   if (value != last) mem_swap(value, last, element_size);
+}
+
+void ispan_copy_range(span_t dst, view_t src, index_t index, index_t el_size) {
+  SPAN_VALID(dst);
+  VIEW_VALID(src);
+  index_t dst_size = view_size(dst.view, el_size);
+  index_t src_size = view_size(src, el_size);
+  if (index >= dst_size) return;
+  index_t to_copy = dst_size - index;
+  if (to_copy > src_size) to_copy = src_size;
+  char* dst_begin = dst.begin;
+  memcpy(dst_begin + index * el_size, src.begin, to_copy * el_size);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+index_t span_index_of(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return view_index_of(span.view, item, element_size, cmp);
+}
+
+void* span_find(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return (void*)view_find(span.view, item, element_size, cmp);
+}
+
+index_t span_index_of_ordered(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return view_index_of_ordered(span.view, item, element_size, cmp);
+}
+
+void* span_search(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return (void*)view_search(span.view, item, element_size, cmp);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

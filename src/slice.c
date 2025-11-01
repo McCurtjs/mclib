@@ -52,7 +52,7 @@ const slice_t slice_tab = { .begin = &slice_constants[15], .size = 1 };
 
 #define SLICE_VALID(str)                                                      \
   assert((str).size >= 0);                                                    \
-  assert((str).size > 0 ? (str).begin != NULL : true)                         //
+  assert((str).begin != NULL || (str).size == 0)                              //
 
 // Builds a slice from a null-terminated c-style string.
 slice_t slice_from_c_str(const char* c_str) {
@@ -858,6 +858,17 @@ slice_t slice_trim_end(slice_t str) {
 hash_t slice_hash(slice_t str) {
   SLICE_VALID(str);
   return hash(str.begin, str.size);
+}
+
+#include "span_byte.h"
+
+view_byte_t slice_to_view(slice_t slice) {
+  assert(slice.size >= 0);
+  assert(slice.begin != NULL || slice.size == 0);
+  return (view_byte_t) {
+    .begin = slice.begin,
+      .end = slice.begin + slice.size
+  };
 }
 
 ////////////////////////////////////////////////////////////////////////////////

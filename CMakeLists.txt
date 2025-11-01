@@ -13,6 +13,7 @@ target_sources(McLib PRIVATE
   src/str.c
   src/utility.c
   src/vec.c
+  src/view.c
   include/types.h
   include/array.h
   include/array_byte.h
@@ -27,6 +28,7 @@ target_sources(McLib PRIVATE
   include/str.h
   include/utility.h
   include/vec.h
+  include/view.h
 )
 
 # Include Murmur3 library for default hashing solution

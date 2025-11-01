@@ -62,6 +62,9 @@ typedef          long ptrdiff_t;
 # define MCLIB_32
 #endif
 
+// Shouldn't be necessary with C23?
+#include <stdbool.h>
+
 typedef unsigned int uint;
 typedef unsigned short ushort;
 typedef unsigned short u16;
@@ -76,12 +79,10 @@ typedef struct _opaque_String_base* String;
 // Common function pointer types
 typedef int     (*compare_fn)(const void* lhs, const void* rhs, size_t size);
 typedef int     (*compare_nosize_fn)(const void* lhs, const void* rhs);
+typedef bool    (*predicate_fn)(const void* item);
 typedef hash_t  (*hash_fn)(const void* key, index_t size);
 typedef void    (*delete_fn)(void* to_delete);
 typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
-
-// Shouldn't be necessary with C23?
-#include <stdbool.h>
 
 #ifndef NULL
 # define NULL nullptr

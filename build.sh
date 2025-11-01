@@ -133,6 +133,7 @@ sources_test=" \
 "
 
 sources=" \
+  ./src/view.c \
   ./src/span.c \
   ./src/slice.c \
   ./src/array.c \

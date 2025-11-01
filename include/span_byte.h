@@ -25,8 +25,11 @@
 #ifndef MCLIB_SPAN_BYTE_
 #define MCLIB_SPAN_BYTE_
 #define con_type byte
+#define con_view_type view_byte_t
+#include "view.h"
 #include "span.h"
 #undef con_type
+#undef con_view_type
 #endif
 
 // Specialty span_byte_t functions
@@ -36,12 +39,10 @@
 # define MCLIB_SPAN_BYTE_SLICE_FNS_
 
 // \brief Converts a byte span to a string slice.
-slice_t span_byte_to_slice(span_byte_t span);
+slice_t view_to_slice(view_t view);
 slice_t view_byte_to_slice(view_byte_t view);
-view_byte_t span_to_view_byte(slice_t slice);
-
-// unsupported because span_byte_t is mutable but slice is immutable.
-// span_byte_t slice_to_span(slice_t slice);
+slice_t span_byte_to_slice(span_byte_t span);
+view_byte_t slice_to_view(slice_t slice);
 
 # endif
 #endif
