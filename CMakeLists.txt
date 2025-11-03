@@ -20,6 +20,8 @@ target_sources(McLib PRIVATE
   include/array_slice.h
   include/map.h
   include/mat.h
+  include/pair.h
+  include/partition.h
   include/slice.h
   include/span.h
   include/span_base.h

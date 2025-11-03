@@ -48,15 +48,10 @@ typedef struct slice_t {
   };
 } slice_t;
 
-typedef struct pair_slice_t {
-  union {
-    slice_t begin[2];
-    struct {
-      slice_t left;
-      slice_t right;
-    };
-  };
-} pair_slice_t;
+// Create pair_slice_t
+#define tuple_type slice_t
+#include "pair.h"
+#undef tuple_type
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -155,16 +150,12 @@ typedef struct res_token_t {
   };
 } res_token_t;
 
-typedef struct partition_slice_t {
-  union {
-    pair_slice_t pair;
-    struct {
-      slice_t left;
-      slice_t right;
-    };
-  };
-  slice_t delimiter;
-} partition_slice_t;
+// Create partition_slice_t
+#define tuple_type slice_t
+#define tuple_pair_type pair_slice_t
+#include "partition.h"
+#undef tuple_pair_type
+#undef tuple_type
 
 ////////////////////////////////////////////////////////////////////////////////
 // Usage

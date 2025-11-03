@@ -147,11 +147,6 @@ typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
   c_array_foreach_index(ITER, MACRO_CONCAT(_iter_, __LINE__) , ARR)           //
 #endif
 
-#ifndef pair_deconstruct
-# define pair_deconstruct(LEFT, RIGHT, PAIR)                                  \
-  LEFT = (PAIR).left, RIGHT = (PAIR).right                                    //
-#endif
-
 #ifndef MACRO_CONCAT
 // Macro to concatinate preprocessor symbols
 # define MACRO_CONCAT_RECUR(X, Y) X ## Y
@@ -222,7 +217,7 @@ typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 //    function declaration, but there's no equivalent for MSVC that would work
 //    there. C++ supports omitting the name, but C does not. Casting the param
 //    to void in the function body works on all three with max level warnings.
-#define PARAM_UNUSED(PARAM) (void)PARAM;
+#define UNUSED(PARAM) (void)PARAM;
 
 #ifdef _MSC_VER
 #

@@ -105,9 +105,9 @@ typedef struct array_t {
     struct {
       void*   const begin;
       void*   const end;
-      index_t const element_size;
     };
   };
+  index_t     const element_size;
   index_t     const capacity;
   index_t     const size;
   index_t     const size_bytes;

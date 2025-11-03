@@ -22,16 +22,12 @@
 * SOFTWARE.
 */
 
-static int cmp_int_void(const void* a, const void* b) {
+static int cmp_int_vptr(const void* a, const void* b) {
   return *(int*)a - *(int*)b;
 }
 
-static int cmp_int(const int* a, const int* b) {
-  return *a - *b;
-}
-
 #define con_type int
-#define con_cmp cmp_int
+#define con_cmp cmp_int_vptr
 #include "span.h"
 #undef con_type
 #undef con_cmp
@@ -162,7 +158,7 @@ describe(span_sort) {
     span_t span = { .begin = data, .end = data + ARRAY_COUNT(data) };
 
     it ("sorts the data from lowest to highest using the compare fn") {
-      span_sort(span, sizeof(int), cmp_int_void);
+      span_sort(span, sizeof(int), cmp_int_vptr);
       expect(data to all_be( == , sorted[n]), int);
       expect(data to match(sorted));
     }

@@ -43,6 +43,11 @@ while [ "$1" != "" ]; do
     -r | --release)
       build_type="Release"
       ;;
+    -E | --preprocessed)
+      build_type="Preprocess"
+      args="$2"
+      shift 1
+      ;;
     -s | --skip-cmake)
       skip_cmake=true
       ;;
@@ -183,11 +188,17 @@ elif [ "$build_target" = "gcc" ]; then
 
   mkdir -p build/gcc/$build_type
 
-  gcc -std=c2x -o build/gcc/$build_type/test.exe \
-    $flags_memtest $includes $sources $sources_test -pedantic
+  if [ "$build_type" == "Preprocess" ]; then
 
-  if [ "$?" == "0" ]; then
-    ./build/gcc/$build_type/test.exe $args
+    gcc -std=c2x -E -C src/$args.c -o build/gcc/$build_type/$args.i $includes -pedantic
+
+  else
+    gcc -std=c2x -o build/gcc/$build_type/test.exe \
+      $flags_memtest $includes $sources $sources_test -pedantic
+
+    if [ "$?" == "0" ]; then
+      ./build/gcc/$build_type/test.exe $args
+    fi
   fi
 
 # CMake MinGW on Windows with GCC

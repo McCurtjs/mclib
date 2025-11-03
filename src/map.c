@@ -586,7 +586,8 @@ pair_kv_t map_next(HMap m_in, const void* key) {
 }
 
 void map_process(HMap m_in, map_process_fn processor) {
-
+  UNUSED(m_in);
+  UNUSED(processor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

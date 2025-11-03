@@ -26,7 +26,7 @@
 #include "span.h"
 
 #include <stdlib.h> // qsort, rand
-#include <memory.h> // memcpy
+#include <memory.h> // memcpy, memset
 
 const span_t span_empty = { .begin = NULL, .end = NULL };
 
@@ -36,6 +36,18 @@ void* span_ref(span_t span, index_t index, index_t element_size) {
   if (index < 0) index = size + index;
   if (index < 0 || index >= size) return NULL;
   return (byte*)span.begin + index * element_size;
+}
+
+bool span_read(span_t span, index_t index, void* out, index_t element_size) {
+  return view_read(span.view, index, out, element_size);
+}
+
+bool span_read_front(span_t span, void* out, index_t element_size) {
+  return view_read_front(span.view, out, element_size);
+}
+
+bool span_read_back(span_t span, void* out, index_t element_size) {
+  return view_read_back(span.view, out, element_size);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,15 +67,27 @@ span_t span_take(span_t span, index_t count, index_t element_size) {
   return *((span_t*)&ret);
 }
 
-pair_span_t span_split(span_t span, index_t pivot, index_t element_size) {
-  pair_view_t ret = view_split(span.view, pivot, element_size);
+pair_span_t span_split_at(span_t span, index_t pivot, index_t element_size) {
+  pair_view_t ret = view_split_at(span.view, pivot, element_size);
   return *((pair_span_t*)&ret);
 }
 
 partition_span_t span_partition(
-  span_t span, const void* del, compare_nosize_fn compare, index_t element_size
+  span_t span, const void* del, index_t element_size, compare_nosize_fn compare
 ) {
-  partition_view_t ret = view_partition(span.view, del, compare, element_size);
+  partition_view_t ret = view_partition(span.view, del, element_size, compare);
+  return *((partition_span_t*)&ret);
+}
+
+partition_span_t span_partition_at(span_t span, index_t index, index_t elsize) {
+  partition_view_t ret = view_partition_at(span.view, index, elsize);
+  return *((partition_span_t*)&ret);
+}
+
+partition_span_t span_partition_match(
+  span_t span, predicate_fn matcher, index_t element_size
+) {
+  partition_view_t ret = view_partition_match(span.view, matcher, element_size);
   return *((partition_span_t*)&ret);
 }
 
@@ -81,18 +105,19 @@ bool span_eq_deep(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <malloc.h>
 #ifdef _MSC_VER
-# include <malloc.h>
 # define alloca _alloca
-#else
-# include <alloca.h>
 #endif
 
-static inline void mem_swap(byte* lhs, byte* rhs, index_t size) {
-  byte* tmp = alloca(size);
-  memcpy(tmp, lhs, (size_t)size);
-  memcpy(lhs, rhs, (size_t)size);
-  memcpy(rhs, tmp, (size_t)size);
+static inline void mem_swap(byte* lhs, byte* rhs, index_t element_size) {
+  assert(element_size > 0);
+  assert(lhs);
+  assert(rhs);
+  byte* tmp = alloca(element_size);
+  memcpy(tmp, lhs, (size_t)element_size);
+  memcpy(lhs, rhs, (size_t)element_size);
+  memcpy(rhs, tmp, (size_t)element_size);
 }
 
 void span_set_bytes(span_t span, byte b) {
@@ -101,6 +126,16 @@ void span_set_bytes(span_t span, byte b) {
   assert(begin <= end);
   size_t size = end - begin;
   memset(begin, b, size);
+}
+
+void span_fill(span_t span, const void* value, index_t element_size) {
+  byte* begin = span.begin;
+  byte* end = span.end;
+  assert(value);
+  assert(begin <= end);
+  while (begin < end) {
+    memcpy(begin, value, element_size);
+  }
 }
 
 void span_sort(span_t span, index_t element_size, compare_nosize_fn cmp) {
@@ -139,7 +174,7 @@ void span_rotate(span_t span, index_t count, index_t element_size) {
   }
   count %= size;
   span_reverse_bytes(span); // replace with memrev?
-  pair_span_t split = span_split(span, count, element_size);
+  pair_span_t split = span_split_at(span, count, element_size);
   span_reverse_bytes(split.left);
   span_reverse_bytes(split.right);
 }
@@ -183,30 +218,96 @@ void ispan_copy_range(span_t dst, view_t src, index_t index, index_t el_size) {
   memcpy(dst_begin + index * el_size, src.begin, to_copy * el_size);
 }
 
+span_t span_filter_inplace(
+  span_t span, predicate_fn filter, index_t element_size
+) {
+  if (span_is_empty(span)) return span;
+  byte* test = span.begin;
+  byte* last = span.begin;
+  while (test < (byte*)span.end) {
+    if (filter(test)) {
+      mem_swap(last, test, element_size);
+      last += element_size;
+    }
+    test += element_size;
+  }
+  return (span_t) { .begin = span.begin, .end = last };
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
-index_t span_index_of(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+index_t span_match_index(
+  span_t span, predicate_fn matcher, index_t element_size
 ) {
-  return view_index_of(span.view, item, element_size, cmp);
+  return view_match_index(span.view, matcher, element_size);
 }
 
-void* span_find(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+void* span_match_ref(
+  span_t span, predicate_fn matcher, index_t element_size
 ) {
-  return (void*)view_find(span.view, item, element_size, cmp);
+  return (void*)view_match_ref(span.view, matcher, element_size);
 }
 
-index_t span_index_of_ordered(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+bool span_match(
+  span_t span, predicate_fn matcher, void* out_value, index_t element_size
 ) {
-  return view_index_of_ordered(span.view, item, element_size, cmp);
+  return view_match(span.view, matcher, out_value, element_size);
 }
 
-void* span_search(
+bool span_match_contains(
+  span_t span, predicate_fn matcher, index_t element_size
+) {
+  return view_match_ref(span.view, matcher, element_size) != NULL;
+}
+
+index_t span_find_index(
   span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
 ) {
-  return (void*)view_search(span.view, item, element_size, cmp);
+  return view_find_index(span.view, item, element_size, cmp);
+}
+
+void* span_find_ref(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return (void*)view_find_ref(span.view, item, element_size, cmp);
+}
+
+bool span_find(
+  span_t span, const void* item, void* out_value,
+  index_t element_size, compare_nosize_fn cmp
+) {
+  return view_find(span.view, item, out_value, element_size, cmp);
+}
+
+bool span_contains(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return view_find_ref(span.view, item, element_size, cmp) != NULL;
+}
+
+index_t span_search_index(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return view_search_index(span.view, item, element_size, cmp);
+}
+
+void* span_search_ref(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return (void*)view_search_ref(span.view, item, element_size, cmp);
+}
+
+bool span_search(
+  span_t span, const void* item, void* out_found,
+  index_t element_size, compare_nosize_fn cmp
+) {
+  return view_search(span.view, item, out_found, element_size, cmp);
+}
+
+bool span_search_contains(
+  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return view_search_ref(span.view, item, element_size, cmp) != NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -866,8 +866,8 @@ view_byte_t slice_to_view(slice_t slice) {
   assert(slice.size >= 0);
   assert(slice.begin != NULL || slice.size == 0);
   return (view_byte_t) {
-    .begin = slice.begin,
-      .end = slice.begin + slice.size
+    .begin = (const byte*)slice.begin,
+    .end = (const byte*)slice.begin + slice.size
   };
 }
 
@@ -877,14 +877,14 @@ view_byte_t slice_to_view(slice_t slice) {
 
 // Compares two slices passed as void pointers.
 int slice_compare_vptr(const void* lhs, const void* rhs, size_t unused) {
-  PARAM_UNUSED(unused);
+  UNUSED(unused);
   assert(lhs && rhs);
   return slice_compare(*(slice_t*)lhs, *(slice_t*)rhs);
 }
 
 // Returns a hash value representing the slice passed as a void pointer.
 hash_t slice_hash_vptr(const void* str, index_t unused) {
-  PARAM_UNUSED(unused);
+  UNUSED(unused);
   assert(str);
   return slice_hash(*(slice_t*)str);
 }
@@ -893,7 +893,7 @@ hash_t slice_hash_vptr(const void* str, index_t unused) {
 
 // Copies the slice into a new block of memory, functionally the same as string?
 void* slice_copy_vptr(void* _dst, const void* _src, size_t unused) {
-  PARAM_UNUSED(unused);
+  UNUSED(unused);
   assert(_dst && _src);
   slice_t* dst = (slice_t*)_dst;
   const slice_t* src = (const slice_t*)_src;
@@ -920,7 +920,7 @@ void slice_delete_vptr(void* _str) {
 
 // No default printer for WASM or when requested to be disabled.
 static void _slice_write_default(slice_t str) {
-  PARAM_UNUSED(str);
+  UNUSED(str);
 }
 
 #else

@@ -352,6 +352,11 @@ describe(map_stuff) {
   pair_kv_int_t first = map_int_next(ints, NULL);
   pair_deconstruct(key, value, first);
 
+  UNUSED(test);
+  UNUSED(xyz);
+  UNUSED(key);
+  UNUSED(value);
+
   map_int_delete(&ints);
 
   HMap_str_float fmap = map_str_float_new();

@@ -39,9 +39,10 @@
 # define MCLIB_SPAN_BYTE_SLICE_FNS_
 
 // \brief Converts a byte span to a string slice.
+slice_t span_byte_to_slice(span_byte_t span);
+
 slice_t view_to_slice(view_t view);
 slice_t view_byte_to_slice(view_byte_t view);
-slice_t span_byte_to_slice(span_byte_t span);
 view_byte_t slice_to_view(slice_t slice);
 
 # endif

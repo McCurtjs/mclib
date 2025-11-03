@@ -27,8 +27,8 @@
 bool cspec_match_slice(
   const slice_t* lhs, const slice_t* rhs, size_t L, size_t R
 ) {
-  PARAM_UNUSED(L);
-  PARAM_UNUSED(R);
+  UNUSED(L);
+  UNUSED(R);
   if (!lhs || !rhs) return false;
   return slice_eq(*lhs, *rhs);
 }

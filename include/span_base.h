@@ -150,4 +150,14 @@ static inline void* span_ref_back(span_t span, index_t element_size) {
   return ret;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Equality testing
+////////////////////////////////////////////////////////////////////////////////
+
+bool view_eq(view_t lhs, view_t rhs);
+bool view_eq_deep(view_t lh, view_t rh, index_t elsz, compare_nosize_fn cmp);
+
+bool span_eq(span_t lhs, span_t rhs);
+bool span_eq_deep(span_t lh, span_t rh, index_t elsz, compare_nosize_fn cmp);
+
 #endif

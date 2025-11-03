@@ -28,12 +28,43 @@
 
 const view_t view_empty = { .begin = NULL, .end = NULL };
 
+// creates a pair with the left side containing the full view, and the right
+//    side containing an empty view defined by the view's terminal to maintain
+//    correct ordering.
+#define _left_pair(VIEW) (pair_view_t) { VIEW, (view_t){ VIEW.end, VIEW.end } }
+
+#define _right_pair(V) (pair_view_t) { (view_t){ V.begin, V.begin }, V }
+
 const void* view_ref(view_t view, index_t index, index_t element_size) {
   if (view_is_empty(view)) return NULL;
   index_t size = view_size(view, element_size);
   if (index < 0) index = size + index;
   if (index < 0 || index >= size) return NULL;
   return (const byte*)view.begin + index * element_size;
+}
+
+bool view_read(view_t view, index_t index, void* out, index_t element_size) {
+  assert(out);
+  const void* ref = view_ref(view, index, element_size);
+  if (!ref) return false;
+  memcpy(out, ref, element_size);
+  return true;
+}
+
+bool view_read_front(view_t view, void* out, index_t element_size) {
+  assert(out);
+  const void* ref = view_ref_front(view);
+  if (!ref) return false;
+  memcpy(out, ref, element_size);
+  return true;
+}
+
+bool view_read_back(view_t view, void* out, index_t element_size) {
+  assert(out);
+  const void* ref = view_ref_back(view, element_size);
+  if (!ref) return false;
+  memcpy(out, ref, element_size);
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,12 +114,23 @@ view_t view_take(view_t view, index_t count, index_t element_size) {
   return (view_t) { .begin = begin, .end = end };
 }
 
-pair_view_t view_split(view_t view, index_t pivot, index_t element_size) {
+pair_view_t view_split(view_t view, index_t element_size) {
   if (view_is_empty(view)) return (pair_view_t) { view, view };
   index_t size = view_size(view, element_size);
-  if (pivot >= size) return (pair_view_t) { view, view_empty };
+  index_t pivot = size / 2;
+  const byte* middle = (const byte*)view.begin + pivot * element_size;
+  return (pair_view_t) {
+    .left = (view_t){ view.begin, middle },
+    .right = (view_t){ middle, view.end }
+  };
+}
+
+pair_view_t view_split_at(view_t view, index_t pivot, index_t element_size) {
+  if (view_is_empty(view)) return (pair_view_t) { view, view };
+  index_t size = view_size(view, element_size);
+  if (pivot >= size) return _left_pair(view);
   if (pivot < 0) pivot += size;
-  if (pivot <= 0) return (pair_view_t) { view_empty, view };
+  if (pivot <= 0) return _right_pair(view);
   const byte* middle = (const byte*)view.begin + pivot * element_size;
   return (pair_view_t) {
     .left = (view_t){ view.begin, middle },
@@ -97,7 +139,7 @@ pair_view_t view_split(view_t view, index_t pivot, index_t element_size) {
 }
 
 partition_view_t view_partition(
-  view_t view, const void* del, compare_nosize_fn compare, index_t element_size
+  view_t view, const void* del, index_t element_size, compare_nosize_fn compare
 ) {
   if (view_is_empty(view)) return (partition_view_t) { view, view, NULL };
   const byte* item = view.begin;
@@ -111,7 +153,38 @@ partition_view_t view_partition(
     }
     item += element_size;
   }
-  return (partition_view_t) { view, view_empty, NULL };
+  return (partition_view_t) { .pair = _left_pair(view), .delimiter = NULL };
+}
+
+partition_view_t view_partition_at(view_t view, index_t index, index_t elsize) {
+  if (view_is_empty(view)) return (partition_view_t) { view, view, NULL };
+  index_t size = view_size(view, elsize);
+  if (index >= size) return (partition_view_t) { _left_pair(view), NULL };
+  if (index < 0) index += size;
+  if (index < 0) return (partition_view_t) { _right_pair(view), NULL };
+  const byte* pivot = (const byte*)view.begin + index * elsize;
+  return (partition_view_t) {
+    .left = (view_t){ view.begin, pivot },
+    .right = (view_t){ pivot + elsize, view.end },
+    .delimiter = pivot
+  };
+}
+
+partition_view_t view_partition_match(
+  view_t view, predicate_fn matcher, index_t element_size
+) {
+  if (view_is_empty(view)) return (partition_view_t) { view, view, NULL };
+  const byte* item = view.begin;
+  while (item < (const byte*)view.end) {
+    if (matcher(item)) {
+      return (partition_view_t) {
+        .left = (view_t){ view.begin, item },
+        .right = (view_t){ item + element_size, view.end },
+        .delimiter = item
+      };
+    }
+  }
+  return (partition_view_t) { .pair = _left_pair(view), .delimiter = NULL };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,55 +214,126 @@ bool view_eq_deep(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const void* view_select(view_t view, predicate_fn matcher, index_t elem_size) {
+index_t view_match_index(
+  view_t view, predicate_fn matcher, index_t element_size
+) {
   VIEW_VALID(view);
   assert(matcher);
+  assert(element_size > 0);
   const byte* seeker = view.begin;
-  for (index_t i = 0; seeker < (const byte*)view.end; ++i) {
-    if (matcher(seeker)) return seeker;
-    seeker += elem_size;
+  index_t i;
+  for (i = 0; seeker < (const byte*)view.end; ++i) {
+    if (matcher(seeker)) return i;
+    seeker += element_size;
+  }
+  return i;
+}
+
+const void* view_match_ref(
+  view_t view, predicate_fn matcher, index_t element_size
+) {
+  VIEW_VALID(view);
+  assert(matcher);
+  assert(element_size > 0);
+  const byte* seeker = view.begin;
+  for (; seeker < (const byte*)view.end; seeker += element_size) {
+    if (matcher(seeker)) {
+      return seeker;
+    }
   }
   return NULL;
 }
 
-index_t view_index_of(
+bool view_match(
+  view_t view, predicate_fn matcher, void* out_value, index_t element_size
+) {
+  const void* ref = view_match_ref(view, matcher, element_size);
+  if (!ref) return false;
+  memcpy(out_value, ref, element_size);
+  return true;
+}
+
+bool view_match_contains(
+  view_t view, predicate_fn matcher, index_t element_size
+) {
+  return view_match_ref(view, matcher, element_size) != NULL;
+}
+
+index_t view_find_index(
   view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
 ) {
-  const byte* found = view_find(view, item, element_size, cmp);
+  const byte* found = view_find_ref(view, item, element_size, cmp);
   if (!found) return view_size(view, element_size);
   return (found - (const byte*)view.begin) / element_size;
 }
 
-const void* view_find(
+const void* view_find_ref(
   view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
 ) {
   VIEW_VALID(view);
   assert(cmp);
+  assert(element_size > 0);
   const byte* seeker = view.begin;
-  for (index_t i = 0; seeker < (const byte*)view.end; ++i) {
-    if (!cmp(seeker, item)) return seeker;
-    seeker += element_size;
+  for (; seeker < (const byte*)view.end; seeker += element_size) {
+    if (!cmp(seeker, item)) {
+      return seeker;
+    }
   }
   return NULL;
+}
+
+bool view_find(
+  view_t view, const void* item, void* out_value,
+  index_t element_size, compare_nosize_fn cmp
+) {
+  assert(out_value);
+  const void* ref = view_find_ref(view, item, element_size, cmp);
+  if (!ref) return false;
+  memcpy(out_value, ref, element_size);
+  return true;
+}
+
+bool view_contains(
+  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return view_find_ref(view, item, element_size, cmp) != NULL;
 }
 
 #include <stdlib.h>
 
-index_t view_index_of_ordered(
+index_t view_search_index(
   view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
 ) {
-  const byte* found = view_search(view, item, element_size, cmp);
+  const byte* found = view_search_ref(view, item, element_size, cmp);
   if (!found) return view_size(view, element_size);
   return (found - (const byte*)view.begin) / element_size;
 }
 
-const void* view_search(
+const void* view_search_ref(
   view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
 ) {
   VIEW_VALID(view);
   assert(cmp);
+  assert(element_size > 0);
   size_t size = (size_t)view_size(view, element_size);
   return bsearch(item, view.begin, size, element_size, cmp);
+}
+
+bool view_search(
+  view_t view, const void* item, void* out_found,
+  index_t element_size, compare_nosize_fn cmp
+) {
+  assert(out_found);
+  const void* ref = view_search_ref(view, item, element_size, cmp);
+  if (!ref) return false;
+  memcpy(out_found, ref, element_size);
+  return true;
+}
+
+bool view_search_contains(
+  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+) {
+  return view_search_ref(view, item, element_size, cmp) != NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -43,6 +43,9 @@ int main(void) {
 
   mat4 id = m4identity;
 
+  UNUSED(i2); UNUSED(i3); UNUSED(b3); UNUSED(b4);
+  UNUSED(f2); UNUSED(f3); UNUSED(f4); UNUSED(id);
+
   slice_t slice = S("This is a slice");
   slice_t chop = slice_substring(slice, 0, 4);
   slice_empty;

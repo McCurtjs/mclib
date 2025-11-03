@@ -534,6 +534,11 @@ describe(arr_bounds_and_errors) {
 
 }
 
+#define con_type int
+#include "view.h"
+#undef con_type
+
+
 describe(arr_on_stack_construction_and_use) {
 
   it("creates an empty array on the stack") {
@@ -542,6 +547,12 @@ describe(arr_on_stack_construction_and_use) {
     expect(arr.size to be_zero);
     expect(arr.capacity to be_zero);
     // no need to deallocate, nothing was allocated
+    pair_view_t views = view_split_at((view_t) { 0 }, 0, 1);
+    pair_view_int_t ints = view_int_split_at((view_int_t) { 0 }, 0);
+    partition_view_int_t asdf = view_int_partition((view_int_t) { 0 }, NULL);
+    UNUSED(views);
+    UNUSED(ints);
+    UNUSED(asdf);
   }
 
   it("can allocate space for the data segment") {
