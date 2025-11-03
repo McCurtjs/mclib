@@ -334,8 +334,8 @@ describe(arr_inserts) {
       }
 
       it("fails when the given index is negative") {
-        expect(to_assert);
-        arr_emplace(arr, -1);
+        expected = (int[]){ 0, 1, 99, 2 };
+        value = arr_emplace(arr, -1);
       }
 
     }
@@ -537,7 +537,6 @@ describe(arr_bounds_and_errors) {
 #define con_type int
 #include "view.h"
 #undef con_type
-
 
 describe(arr_on_stack_construction_and_use) {
 

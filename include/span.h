@@ -57,6 +57,7 @@
 // bool     span_a_is_empty(span_a_t);
 // bool     span_a_eq(span_a_t lhs, span_a_t rhs);
 // bool     span_a_eq_deep(span_a_t lhs, span_a_t rhs);
+// bool     span_a_is_ordered(span_a_t);
 //
 // // Accessors
 // A*       span_a_ref(span_a_t, index_t index);
@@ -66,6 +67,8 @@
 // bool     span_a_read(span_a_t, index_t, A* out);
 // bool     span_a_read_front(span_a_t,  A* out);
 // bool     span_a_read_back(span_a_t, A* out);
+// 
+// void     span_a_write(span_a_t, index_t index, const A* item);
 //
 // A        span_a_get(span_a_t, index_t index);
 // A        span_a_get_front(span_a_t, index_t index);
@@ -119,15 +122,12 @@
 #undef tuple_type
 
 ////////////////////////////////////////////////////////////////////////////////
-// From span_view_base
+// Accessors
 ////////////////////////////////////////////////////////////////////////////////
 
 index_t span_size_bytes(span_t span);
 index_t span_size(span_t span, index_t element_size);
 bool    span_is_empty(span_t span);
-
-bool    span_eq(span_t lhs, span_t rhs);
-bool    span_eq_deep(span_t lh, span_t rh, index_t elsz, compare_nosize_fn cmp);
 
 void*   span_ref(span_t span, index_t index, index_t element_size);
 void*   span_ref_front(span_t span);
@@ -136,6 +136,12 @@ void*   span_ref_back(span_t span, index_t element_size);
 bool    span_read(span_t span, index_t index, void* out, index_t element_size);
 bool    span_read_front(span_t span, void* out, index_t element_size);
 bool    span_read_back(span_t span, void* out, index_t element_size);
+
+void    span_write(span_t span, index_t index, const void* item, index_t el_sz);
+
+bool    span_eq(span_t lhs, span_t rhs);
+bool    span_eq_deep(span_t lh, span_t rh, index_t elsz, compare_nosize_fn);
+bool    span_is_ordered(span_t span, compare_nosize_fn, index_t element_size);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sub-ranges
@@ -226,10 +232,10 @@ bool span_search_contains(
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Templatized specialization
+// Templatized type specialization
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef con_type
+#if defined(con_type) && !defined(_con_void_only) && !defined(con_void_only)
 
 #ifdef con_prefix
 # define _con_name con_prefix
@@ -277,6 +283,8 @@ static int _con_cmp(const void* lhs, const void* rhs) {
   return memcmp(lhs, rhs, sizeof(con_type));
 }
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
 
 static inline _span_type MACRO_CONCAT(span_, _con_name)
 (con_type* begin, con_type* end) {
@@ -461,6 +469,11 @@ static inline bool _prefix(_match)
 static inline bool _prefix(_eq_deep)
 (_span_type lhs, _span_type rhs) {
   return span_eq_deep(lhs.base, rhs.base, sizeof(con_type), _con_cmp);
+}
+
+static inline bool _prefix(_is_ordered)
+(_span_type span) {
+  return span_is_ordered(span.base, _con_cmp, sizeof(con_type));
 }
 
 static inline _partition_type _prefix(_partition)

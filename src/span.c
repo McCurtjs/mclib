@@ -30,14 +30,6 @@
 
 const span_t span_empty = { .begin = NULL, .end = NULL };
 
-void* span_ref(span_t span, index_t index, index_t element_size) {
-  if (span_is_empty(span)) return NULL;
-  index_t size = span_size(span, element_size);
-  if (index < 0) index = size + index;
-  if (index < 0 || index >= size) return NULL;
-  return (byte*)span.begin + index * element_size;
-}
-
 bool span_read(span_t span, index_t index, void* out, index_t element_size) {
   return view_read(span.view, index, out, element_size);
 }
@@ -48,6 +40,22 @@ bool span_read_front(span_t span, void* out, index_t element_size) {
 
 bool span_read_back(span_t span, void* out, index_t element_size) {
   return view_read_back(span.view, out, element_size);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool span_eq(span_t lhs, span_t rhs) {
+  return view_eq(lhs.view, rhs.view);
+}
+
+bool span_eq_deep(
+  span_t lhs, span_t rhs, index_t element_size, compare_nosize_fn compare
+) {
+  return view_eq_deep(lhs.view, rhs.view, element_size, compare);
+}
+
+bool span_is_ordered(span_t span, compare_nosize_fn cmp, index_t el_size) {
+  return view_is_ordered(span.view, cmp, el_size);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,6 +73,11 @@ span_t span_drop(span_t span, index_t count, index_t element_size) {
 span_t span_take(span_t span, index_t count, index_t element_size) {
   view_t ret = view_take(span.view, count, element_size);
   return *((span_t*)&ret);
+}
+
+pair_span_t span_split(span_t span, index_t element_size) {
+  pair_view_t ret = view_split(span.view, element_size);
+  return *((pair_span_t*)&ret);
 }
 
 pair_span_t span_split_at(span_t span, index_t pivot, index_t element_size) {
@@ -89,18 +102,6 @@ partition_span_t span_partition_match(
 ) {
   partition_view_t ret = view_partition_match(span.view, matcher, element_size);
   return *((partition_span_t*)&ret);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-bool span_eq(span_t lhs, span_t rhs) {
-  return view_eq(lhs.view, rhs.view);
-}
-
-bool span_eq_deep(
-  span_t lhs, span_t rhs, index_t element_size, compare_nosize_fn compare
-) {
-  return view_eq_deep(lhs.view, rhs.view, element_size, compare);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

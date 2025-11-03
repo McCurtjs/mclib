@@ -1753,6 +1753,7 @@ describe(slice_compare_vptr) {
 }
 
 #include "span_byte.h"
+#include "array_byte.h"
 
 describe(slice_conversion) {
   byte message[] = "This will be a slice!";

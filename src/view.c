@@ -35,14 +35,6 @@ const view_t view_empty = { .begin = NULL, .end = NULL };
 
 #define _right_pair(V) (pair_view_t) { (view_t){ V.begin, V.begin }, V }
 
-const void* view_ref(view_t view, index_t index, index_t element_size) {
-  if (view_is_empty(view)) return NULL;
-  index_t size = view_size(view, element_size);
-  if (index < 0) index = size + index;
-  if (index < 0 || index >= size) return NULL;
-  return (const byte*)view.begin + index * element_size;
-}
-
 bool view_read(view_t view, index_t index, void* out, index_t element_size) {
   assert(out);
   const void* ref = view_ref(view, index, element_size);
@@ -64,6 +56,44 @@ bool view_read_back(view_t view, void* out, index_t element_size) {
   const void* ref = view_ref_back(view, element_size);
   if (!ref) return false;
   memcpy(out, ref, element_size);
+  return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool view_eq(view_t lhs, view_t rhs) {
+  index_t size = view_size_bytes(lhs);
+  if (size != view_size_bytes(rhs)) return false;
+  return memcmp(lhs.begin, rhs.begin, size) == 0;
+}
+
+bool view_eq_deep(
+  view_t lhs, view_t rhs, index_t element_size, compare_nosize_fn compare
+) {
+  index_t size = view_size(lhs, element_size);
+  if (size != view_size(rhs, element_size)) return false;
+  const byte* p_lhs = lhs.begin;
+  const byte* p_rhs = rhs.begin;
+  for (index_t i = 0; i < size; ++i) {
+    if (compare(p_lhs, p_rhs) != 0) {
+      return false;
+    }
+    p_lhs += element_size;
+    p_rhs += element_size;
+  }
+  return true;
+}
+
+bool view_is_ordered(view_t view, compare_nosize_fn cmp, index_t el_size) {
+  index_t size = view_size(view, el_size);
+  if (size < 2) return true;
+  const byte* lhs = view.begin;
+  const byte* rhs = (const byte*)view.end + el_size;
+  while (rhs < (const byte*)view.end) {
+    if (!cmp(lhs, rhs)) return false;
+    lhs += el_size;
+    rhs += el_size;
+  }
   return true;
 }
 
@@ -185,31 +215,6 @@ partition_view_t view_partition_match(
     }
   }
   return (partition_view_t) { .pair = _left_pair(view), .delimiter = NULL };
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-bool view_eq(view_t lhs, view_t rhs) {
-  index_t size = view_size_bytes(lhs);
-  if (size != view_size_bytes(rhs)) return false;
-  return memcmp(lhs.begin, rhs.begin, size) == 0;
-}
-
-bool view_eq_deep(
-  view_t lhs, view_t rhs, index_t element_size, compare_nosize_fn compare
-) {
-  index_t size = view_size(lhs, element_size);
-  if (size != view_size(rhs, element_size)) return false;
-  const byte* p_lhs = lhs.begin;
-  const byte* p_rhs = rhs.begin;
-  for (index_t i = 0; i < size; ++i) {
-    if (compare(p_lhs, p_rhs) != 0) {
-      return false;
-    }
-    p_lhs += element_size;
-    p_rhs += element_size;
-  }
-  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -28,7 +28,23 @@
 #include "span_byte.h"
 
 #define con_type byte
+#define con_span_type span_byte_t
+#define con_view_type view_byte_t
 #include "array.h"
+#undef con_span_type
+#undef con_view_type
 #undef con_type
 
+#endif
+
+#ifdef MCLIB_SLICE_H_
+# ifndef MCLIB_ARR_BYTE_SLICE_FNS_
+# define MCLIB_ARR_BYTE_SLICE_FNS_
+
+static inline void arr_byte_append(Array_byte arr, slice_t slice) {
+  span_byte_t bytes = arr_byte_emplace_back_range(arr, slice.size);
+  span_byte_copy_range(bytes, slice_to_view(slice), slice.size);
+}
+
+# endif
 #endif

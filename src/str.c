@@ -898,6 +898,7 @@ String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
 
     // at the start of a format section, copy all the bytes up to this point
     if (section.size) {
+
       span_byte_t bytes = arr_byte_emplace_back_range(output, section.size);
       memcpy(bytes.begin, section.begin, section.size);
     }

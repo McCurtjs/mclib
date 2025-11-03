@@ -61,6 +61,7 @@
 // bool     view_a_is_empty(view_a_t);
 // bool     view_a_eq(view_a_t lhs, view_a_t rhs);
 // bool     view_a_eq_deep(view_a_t lhs, view_a_t rhs);
+// bool     view_a_is_ordered(view_a_t);
 //
 // // Accessors
 // const A* view_a_ref(view_a_t, index_t);
@@ -113,15 +114,12 @@
 #undef tuple_type
 
 ////////////////////////////////////////////////////////////////////////////////
-// From span_view_base
+// Accessors
 ////////////////////////////////////////////////////////////////////////////////
 
 index_t view_size_bytes(view_t view);
 index_t view_size(view_t view, index_t element_size);
 bool    view_is_empty(view_t view);
-
-bool view_eq(view_t lhs, view_t rhs);
-bool view_eq_deep(view_t lhs, view_t rhs, index_t elsz, compare_nosize_fn cmp);
 
 const void* view_ref(view_t view, index_t index, index_t element_size);
 const void* view_ref_front(view_t view);
@@ -130,6 +128,10 @@ const void* view_ref_back(view_t view, index_t element_size);
 bool view_read(view_t view, index_t index, void* out, index_t element_size);
 bool view_read_front(view_t view, void* out, index_t element_size);
 bool view_read_back(view_t view, void* out, index_t element_size);
+
+bool view_eq(view_t lhs, view_t rhs);
+bool view_eq_deep(view_t lhs, view_t rhs, index_t elsz, compare_nosize_fn cmp);
+bool view_is_ordered(view_t view, compare_nosize_fn cmp, index_t element_size);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sub-ranges
@@ -199,7 +201,7 @@ bool view_search_contains(
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Templatized specialization
+// Templatized type specialization
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef con_type
@@ -291,7 +293,8 @@ static inline const con_type* _prefix(_ref_front)
 
 static inline const con_type* _prefix(_ref_back)
 (_view_type view) {
-  return view_ref_back(view.base, sizeof(con_type));
+  if (view_is_empty(view.base)) return NULL;
+  return view.end - 1;
 }
 
 static inline con_type _prefix(_get)
@@ -384,6 +387,11 @@ static inline bool _prefix(_match_contains)
 static inline bool _prefix(_eq_deep)
 (_view_type lhs, _view_type rhs) {
   return view_eq_deep(lhs.base, rhs.base, sizeof(con_type), _con_cmp);
+}
+
+static inline bool _prefix(_is_ordered)
+(_view_type view) {
+  return view_is_ordered(view.base, _con_cmp, sizeof(con_type));
 }
 
 static inline _partition_type _prefix(_partition)

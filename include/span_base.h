@@ -79,23 +79,25 @@ static inline view_t view_to_view(view_t view) { return view; }
 )(VAL)                                                                        //
 
 #define SPAN_VALID(SPAN) do {                                                 \
-  span_t test_span = (SPAN);                                                  \
-  assert((byte*)test_span.begin <= (byte*)test_span.end);                     \
+  span_t _span = (SPAN);                                                      \
+  assert((_span.begin && _span.end) || !(_span.begin || _span.end));          \
+  assert((byte*)_span.begin <= (byte*)_span.end);                             \
 } while(false)                                                                //
 
-#define VIEW_VALID(SPAN) do {                                                 \
-  view_t test_span = (SPAN);                                                  \
-  assert((const byte*)test_span.begin <= (const byte*)test_span.end);         \
+#define VIEW_VALID(VIEW) do {                                                 \
+  view_t _view = (VIEW);                                                      \
+  assert((_view.begin && _view.end) || !(_view.begin || _view.end));          \
+  assert((const byte*)_view.begin <= (const byte*)_view.end);                 \
 } while(false)                                                                //
 
 ////////////////////////////////////////////////////////////////////////////////
 // Size and element count
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline index_t view_size_bytes(view_t span) {
-  const byte* begin = (const byte*)span.begin;
-  const byte* end = (const byte*)span.end;
-  assert(begin <= end);
+static inline index_t view_size_bytes(view_t view) {
+  VIEW_VALID(view);
+  const byte* begin = (const byte*)view.begin;
+  const byte* end = (const byte*)view.end;
   return end - begin;
 }
 
@@ -125,8 +127,13 @@ static inline bool span_is_empty(span_t span) {
 // Basic element access
 ////////////////////////////////////////////////////////////////////////////////
 
-const void* view_ref(view_t view, index_t index, index_t element_size);
-void* span_ref(span_t span, index_t index, index_t element_size);
+static inline const void* view_ref(view_t view, index_t i, index_t el_size) {
+  if (view_is_empty(view)) return NULL;
+  index_t size = view_size(view, el_size);
+  if (i < 0) i = size + i;
+  if (i < 0 || i >= size) return NULL;
+  return (const byte*)view.begin + i * el_size;
+}
 
 static inline const void* view_ref_front(view_t view) {
   if (view_is_empty(view)) return NULL;
@@ -137,6 +144,14 @@ static inline const void* view_ref_back(view_t view, index_t element_size) {
   if (view_is_empty(view)) return NULL;
   const byte* ret = (const byte*)view.end - element_size;
   return ret;
+}
+
+static inline void* span_ref(span_t span, index_t index, index_t element_size) {
+  if (span_is_empty(span)) return NULL;
+  index_t size = span_size(span, element_size);
+  if (index < 0) index = size + index;
+  if (index < 0 || index >= size) return NULL;
+  return (byte*)span.begin + index * element_size;
 }
 
 static inline void* span_ref_front(span_t span) {

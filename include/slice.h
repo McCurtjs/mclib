@@ -227,4 +227,8 @@ void              slice_delete_vptr(void* str);
 # include "span_byte.h"
 #endif
 
+#ifdef MCLIB_ARRAY_BYTE_
+# include "array_byte.h"
+#endif
+
 #endif
