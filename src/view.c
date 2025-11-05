@@ -267,7 +267,7 @@ bool view_match_contains(
 index_t view_find_index(
   view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  const byte* found = view_find_ref(view, item, element_size, cmp);
+  const byte* found = view_find_ref(view, item, cmp, element_size);
   if (!found) return view_size(view, element_size);
   return (found - (const byte*)view.begin) / element_size;
 }
@@ -292,7 +292,7 @@ bool view_find(
   compare_nosize_fn cmp, index_t element_size
 ) {
   assert(out_value);
-  const void* ref = view_find_ref(view, item, element_size, cmp);
+  const void* ref = view_find_ref(view, item, cmp, element_size);
   if (!ref) return false;
   memcpy(out_value, ref, element_size);
   return true;
@@ -301,7 +301,7 @@ bool view_find(
 bool view_contains(
   view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_find_ref(view, item, element_size, cmp) != NULL;
+  return view_find_ref(view, item, cmp, element_size) != NULL;
 }
 
 #include <stdlib.h>
@@ -309,7 +309,7 @@ bool view_contains(
 index_t view_search_index(
   view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  const byte* found = view_search_ref(view, item, element_size, cmp);
+  const byte* found = view_search_ref(view, item, cmp, element_size);
   if (!found) return view_size(view, element_size);
   return (found - (const byte*)view.begin) / element_size;
 }
@@ -329,7 +329,7 @@ bool view_search(
   compare_nosize_fn cmp, index_t element_size
 ) {
   assert(out_found);
-  const void* ref = view_search_ref(view, item, element_size, cmp);
+  const void* ref = view_search_ref(view, item, cmp, element_size);
   if (!ref) return false;
   memcpy(out_found, ref, element_size);
   return true;
@@ -338,7 +338,7 @@ bool view_search(
 bool view_search_contains(
   view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_search_ref(view, item, element_size, cmp) != NULL;
+  return view_search_ref(view, item, cmp, element_size) != NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

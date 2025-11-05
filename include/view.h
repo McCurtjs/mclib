@@ -329,6 +329,21 @@ static inline const con_type* _prefix(_ref_back)
   return view.end - 1;
 }
 
+static inline bool _prefix(_read)
+(_view_type view, index_t index, con_type* out) {
+  return view_read(view.base, index, out, sizeof(con_type));
+}
+
+static inline bool _prefix(_read_front)
+(_view_type view, con_type* out) {
+  return view_read_front(view.base, out, sizeof(con_type));
+}
+
+static inline bool _prefix(_read_back)
+(_view_type view, con_type* out) {
+  return view_read_back(view.base, out, sizeof(con_type));
+}
+
 static inline con_type _prefix(_get)
 (_view_type view, index_t index) {
   const con_type* ret = view_ref(view.base, index, sizeof(con_type));

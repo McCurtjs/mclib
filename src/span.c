@@ -42,6 +42,14 @@ bool span_read_back(span_t span, void* out, index_t element_size) {
   return view_read_back(span.view, out, element_size);
 }
 
+void span_write(span_t span, index_t index, const void* item, index_t el_size) {
+  assert(item);
+  index_t size = span_size(span, el_size);
+  if (index < 0) index += size;
+  assert(index >= 0 && index < size);
+  memcpy((byte*)span.begin + index * el_size, item, el_size);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 bool span_eq(span_t lhs, span_t rhs) {

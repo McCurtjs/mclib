@@ -70,11 +70,12 @@
 // bool     span_a_read_front(span_a_t,  A* out);
 // bool     span_a_read_back(span_a_t, A* out);
 // 
-// void     span_a_write(span_a_t, index_t index, const A* item);
+// A        span_a_get(span_a_t, index_t);
+// A        span_a_get_front(span_a_t);
+// A        span_a_get_back(span_a_t);
 //
-// A        span_a_get(span_a_t, index_t index);
-// A        span_a_get_front(span_a_t, index_t index);
-// A        span_a_get_back(span_a_t, index_t index);
+// void     span_a_write(span_a_t, index_t index, const A* item);
+// void     span_a_set(span_a_t, index_t index, A item);
 //
 // // Subsets
 // span_a_t span_a_subspan(span_a_t, index_t start, index_t end);
@@ -362,6 +363,21 @@ static inline con_type* _prefix(_ref_back)
   return span_ref_back(span.base, sizeof(con_type));
 }
 
+static inline bool _prefix(_read)
+(_span_type span, index_t index, con_type* out) {
+  return span_read(span.base, index, out, sizeof(con_type));
+}
+
+static inline bool _prefix(_read_front)
+(_span_type span, con_type* out) {
+  return span_read_front(span.base, out, sizeof(con_type));
+}
+
+static inline bool _prefix(_read_back)
+(_span_type span, con_type* out) {
+  return span_read_back(span.base, out, sizeof(con_type));
+}
+
 static inline con_type _prefix(_get)
 (_span_type span, index_t index) {
   con_type* ret = span_ref(span.base, index, sizeof(con_type));
@@ -381,6 +397,16 @@ static inline con_type _prefix(_get_back)
   con_type* ret = span_ref_back(span.base, sizeof(con_type));
   assert(ret);
   return *ret;
+}
+
+static inline void _prefix(_write)
+(_span_type span, index_t index, const con_type* item) {
+  span_write(span.base, index, item, sizeof(con_type));
+}
+
+static inline void _prefix(_set)
+(_span_type span, index_t index, con_type item) {
+  span_write(span.base, index, &item, sizeof(con_type));
 }
 
 static inline _span_type _prefix(_subspan)
