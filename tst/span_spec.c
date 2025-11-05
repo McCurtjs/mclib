@@ -159,7 +159,7 @@ describe(span_sort) {
     span_t span = { .begin = data, .end = data + ARRAY_COUNT(data) };
 
     it ("sorts the data from lowest to highest using the compare fn") {
-      span_sort(span, sizeof(int), cmp_int_vptr);
+      span_sort(span, cmp_int_vptr, sizeof(int));
       expect(data to all_be( == , sorted[n]), int);
       expect(data to match(sorted));
     }

@@ -158,7 +158,7 @@ bool    span_read_back(span_t span, void* out, index_t element_size);
 void    span_write(span_t span, index_t index, const void* item, index_t el_sz);
 
 bool    span_eq(span_t lhs, span_t rhs);
-bool    span_eq_deep(span_t lh, span_t rh, index_t elsz, compare_nosize_fn);
+bool    span_eq_deep(span_t lh, span_t rh, compare_nosize_fn, index_t elsz);
 bool    span_is_ordered(span_t span, compare_nosize_fn, index_t element_size);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -171,7 +171,7 @@ span_t span_take(span_t span, index_t count, index_t element_size);
 pair_span_t span_split(span_t span, index_t element_size);
 pair_span_t span_split_at(span_t span, index_t pivot, index_t element_size);
 partition_span_t span_partition(
-  span_t span, const void* del, index_t element_size, compare_nosize_fn compare
+  span_t span, const void* del, compare_nosize_fn compare, index_t element_size
 );
 partition_span_t span_partition_at(span_t span, index_t index, index_t el_size);
 partition_span_t span_partition_match(
@@ -186,7 +186,7 @@ void span_set_bytes(span_t span, byte b);
 void span_fill(span_t span, const void* value, index_t element_size);
 void span_reverse_bytes(span_t span);
 void span_reverse(span_t span, index_t element_size);
-void span_sort(span_t span, index_t element_size, compare_nosize_fn cmp);
+void span_sort(span_t span, compare_nosize_fn cmp, index_t element_size);
 void span_rotate(span_t span, index_t count, index_t element_size);
 void span_shuffle(span_t span, index_t element_size);
 void span_swap(span_t span, index_t idx1, index_t idx2, index_t element_size);
@@ -219,32 +219,32 @@ bool span_match_contains(
 
 // linear search
 index_t span_find_index(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 void* span_find_ref(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 bool span_find(
   span_t span, const void* item, void* out_value,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 );
 bool span_contains(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 
 // binary search
 index_t span_search_index(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 void* span_search_ref(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 bool span_search(
   span_t span, const void* item, void* out_value,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 );
 bool span_search_contains(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 
 #endif
@@ -498,7 +498,7 @@ static inline bool _prefix(_match)
 
 static inline bool _prefix(_eq_deep)
 (_span_type lhs, _span_type rhs) {
-  return span_eq_deep(lhs.base, rhs.base, sizeof(con_type), _con_cmp);
+  return span_eq_deep(lhs.base, rhs.base, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_is_ordered)
@@ -509,55 +509,54 @@ static inline bool _prefix(_is_ordered)
 static inline _partition_type _prefix(_partition)
 (_span_type span, const con_type* del) {
   partition_span_t part = span_partition(
-    span.base, del, sizeof(con_type), _con_cmp
+    span.base, del, _con_cmp, sizeof(con_type)
   );
   return *(_partition_type*)&part;
 }
 
 static inline void _prefix(_sort)
 (_span_type span) {
-  span_sort(span.base, sizeof(con_type), _con_cmp);
+  span_sort(span.base, _con_cmp, sizeof(con_type));
 }
 
 static inline index_t _prefix(_find_index)
 (_span_type span, const con_type* item) {
-  return span_find_index(span.base, item, sizeof(con_type), _con_cmp);
+  return span_find_index(span.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline con_type* _prefix(_find_ref)
 (_span_type span, const con_type* item) {
-  return span_find_ref(span.base, item, sizeof(con_type), _con_cmp);
+  return span_find_ref(span.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_find)
 (_span_type span, const con_type* item, con_type* out_found) {
-  return span_find(span.base, item, out_found, sizeof(con_type), _con_cmp);
+  return span_find(span.base, item, out_found, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_contains)
 (_span_type span, const con_type* item) {
-  return span_contains(span.base, item, sizeof(con_type), _con_cmp);
+  return span_contains(span.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline index_t _prefix(_search_index)
 (_span_type span, const con_type* item) {
-  return span_search_index(span.base, item, sizeof(con_type), _con_cmp);
+  return span_search_index(span.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline con_type* _prefix(_search_ref)
 (_span_type span, const con_type* item) {
-  return span_search_ref(span.base, item, sizeof(con_type), _con_cmp);
+  return span_search_ref(span.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_search)
 (_span_type span, const con_type* item, con_type* out_found) {
-  size_t item_size = sizeof(con_type);
-  return span_search(span.base, item, out_found, item_size, _con_cmp);
+  return span_search(span.base, item, out_found, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_search_contains)
 (_span_type span, const con_type* item) {
-  return span_search_contains(span.base, item, sizeof(con_type), _con_cmp);
+  return span_search_contains(span.base, item, _con_cmp, sizeof(con_type));
 }
 
 #endif

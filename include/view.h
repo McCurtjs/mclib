@@ -148,7 +148,7 @@ bool view_read_front(view_t view, void* out, index_t element_size);
 bool view_read_back(view_t view, void* out, index_t element_size);
 
 bool view_eq(view_t lhs, view_t rhs);
-bool view_eq_deep(view_t lhs, view_t rhs, index_t elsz, compare_nosize_fn cmp);
+bool view_eq_deep(view_t lhs, view_t rhs, compare_nosize_fn cmp, index_t elsz);
 bool view_is_ordered(view_t view, compare_nosize_fn cmp, index_t element_size);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ view_t view_take(view_t view, index_t count, index_t element_size);
 pair_view_t view_split(view_t view, index_t element_size);
 pair_view_t view_split_at(view_t view, index_t pivot, index_t element_size);
 partition_view_t view_partition(
-  view_t view, const void* del, index_t element_size, compare_nosize_fn compare
+  view_t view, const void* del, compare_nosize_fn compare, index_t element_size
 );
 partition_view_t view_partition_at(view_t view, index_t index, index_t el_size);
 partition_view_t view_partition_match(
@@ -188,32 +188,32 @@ bool view_match_contains(
 
 // linear search
 index_t view_find_index(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 const void* view_find_ref(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 bool view_find(
   view_t view, const void* item, void* out_value,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 );
 bool view_contains(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 
 // binary search
 index_t view_search_index(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 const void* view_search_ref(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 bool view_search(
   view_t view, const void* item, void* out_value,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 );
 bool view_search_contains(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 );
 
 #endif
@@ -418,7 +418,7 @@ static inline bool _prefix(_match_contains)
 
 static inline bool _prefix(_eq_deep)
 (_view_type lhs, _view_type rhs) {
-  return view_eq_deep(lhs.base, rhs.base, sizeof(con_type), _con_cmp);
+  return view_eq_deep(lhs.base, rhs.base, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_is_ordered)
@@ -429,50 +429,49 @@ static inline bool _prefix(_is_ordered)
 static inline _partition_type _prefix(_partition)
 (_view_type view, const con_type* del) {
   partition_view_t part = view_partition(
-    view.base, del, sizeof(con_type), _con_cmp
+    view.base, del, _con_cmp, sizeof(con_type)
   );
   return *(_partition_type*)&part;
 }
 
 static inline index_t _prefix(_find_index)
 (_view_type view, const con_type* item) {
-  return view_find_index(view.base, item, sizeof(con_type), _con_cmp);
+  return view_find_index(view.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline const con_type* _prefix(_find_ref)
 (_view_type view, const con_type* item) {
-  return view_find_ref(view.base, item, sizeof(con_type), _con_cmp);
+  return view_find_ref(view.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_find)
 (_view_type view, const con_type* item, con_type* out_found) {
-  return view_find(view.base, item, out_found, sizeof(con_type), _con_cmp);
+  return view_find(view.base, item, out_found, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_contains)
 (_view_type view, const con_type* item) {
-  return view_contains(view.base, item, sizeof(con_type), _con_cmp);
+  return view_contains(view.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline index_t _prefix(_search_index)
 (_view_type view, const con_type* item) {
-  return view_search_index(view.base, item, sizeof(con_type), _con_cmp);
+  return view_search_index(view.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline const con_type* _prefix(_search_ref)
 (_view_type view, const con_type* item) {
-  return view_search_ref(view.base, item, sizeof(con_type), _con_cmp);
+  return view_search_ref(view.base, item, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_search)
 (_view_type view, const con_type* item, con_type* out_found) {
-  size_t item_size = sizeof(con_type);
-  return view_search(view.base, item, out_found, item_size, _con_cmp);
+  return view_search(view.base, item, out_found, _con_cmp, sizeof(con_type));
 }
 
 static inline bool _prefix(_search_contains)
 (_view_type view, const con_type* item) {
-  return view_search_contains(view.base, item, sizeof(con_type), _con_cmp);
+  return view_search_contains(view.base, item, _con_cmp, sizeof(con_type));
 }
 
 #endif

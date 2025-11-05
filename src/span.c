@@ -49,9 +49,9 @@ bool span_eq(span_t lhs, span_t rhs) {
 }
 
 bool span_eq_deep(
-  span_t lhs, span_t rhs, index_t element_size, compare_nosize_fn compare
+  span_t lhs, span_t rhs, compare_nosize_fn compare, index_t element_size
 ) {
-  return view_eq_deep(lhs.view, rhs.view, element_size, compare);
+  return view_eq_deep(lhs.view, rhs.view, compare, element_size);
 }
 
 bool span_is_ordered(span_t span, compare_nosize_fn cmp, index_t el_size) {
@@ -86,9 +86,9 @@ pair_span_t span_split_at(span_t span, index_t pivot, index_t element_size) {
 }
 
 partition_span_t span_partition(
-  span_t span, const void* del, index_t element_size, compare_nosize_fn compare
+  span_t span, const void* del, compare_nosize_fn compare, index_t element_size
 ) {
-  partition_view_t ret = view_partition(span.view, del, element_size, compare);
+  partition_view_t ret = view_partition(span.view, del, compare, element_size);
   return *((partition_span_t*)&ret);
 }
 
@@ -139,7 +139,7 @@ void span_fill(span_t span, const void* value, index_t element_size) {
   }
 }
 
-void span_sort(span_t span, index_t element_size, compare_nosize_fn cmp) {
+void span_sort(span_t span, compare_nosize_fn cmp, index_t element_size) {
   index_t length = span_size(span, element_size);
   qsort(span.begin, length, element_size, cmp);
 }
@@ -262,53 +262,53 @@ bool span_match_contains(
 }
 
 index_t span_find_index(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_find_index(span.view, item, element_size, cmp);
+  return view_find_index(span.view, item, cmp, element_size);
 }
 
 void* span_find_ref(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return (void*)view_find_ref(span.view, item, element_size, cmp);
+  return (void*)view_find_ref(span.view, item, cmp, element_size);
 }
 
 bool span_find(
   span_t span, const void* item, void* out_value,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_find(span.view, item, out_value, element_size, cmp);
+  return view_find(span.view, item, out_value, cmp, element_size);
 }
 
 bool span_contains(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_find_ref(span.view, item, element_size, cmp) != NULL;
+  return view_find_ref(span.view, item, cmp, element_size) != NULL;
 }
 
 index_t span_search_index(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_search_index(span.view, item, element_size, cmp);
+  return view_search_index(span.view, item, cmp, element_size);
 }
 
 void* span_search_ref(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return (void*)view_search_ref(span.view, item, element_size, cmp);
+  return (void*)view_search_ref(span.view, item, cmp, element_size);
 }
 
 bool span_search(
   span_t span, const void* item, void* out_found,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_search(span.view, item, out_found, element_size, cmp);
+  return view_search(span.view, item, out_found, cmp, element_size);
 }
 
 bool span_search_contains(
-  span_t span, const void* item, index_t element_size, compare_nosize_fn cmp
+  span_t span, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
-  return view_search_ref(span.view, item, element_size, cmp) != NULL;
+  return view_search_ref(span.view, item, cmp, element_size) != NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

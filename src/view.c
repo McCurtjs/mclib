@@ -68,7 +68,7 @@ bool view_eq(view_t lhs, view_t rhs) {
 }
 
 bool view_eq_deep(
-  view_t lhs, view_t rhs, index_t element_size, compare_nosize_fn compare
+  view_t lhs, view_t rhs, compare_nosize_fn compare, index_t element_size
 ) {
   index_t size = view_size(lhs, element_size);
   if (size != view_size(rhs, element_size)) return false;
@@ -169,7 +169,7 @@ pair_view_t view_split_at(view_t view, index_t pivot, index_t element_size) {
 }
 
 partition_view_t view_partition(
-  view_t view, const void* del, index_t element_size, compare_nosize_fn compare
+  view_t view, const void* del, compare_nosize_fn compare, index_t element_size
 ) {
   if (view_is_empty(view)) return (partition_view_t) { view, view, NULL };
   const byte* item = view.begin;
@@ -265,7 +265,7 @@ bool view_match_contains(
 }
 
 index_t view_find_index(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
   const byte* found = view_find_ref(view, item, element_size, cmp);
   if (!found) return view_size(view, element_size);
@@ -273,7 +273,7 @@ index_t view_find_index(
 }
 
 const void* view_find_ref(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
   VIEW_VALID(view);
   assert(cmp);
@@ -289,7 +289,7 @@ const void* view_find_ref(
 
 bool view_find(
   view_t view, const void* item, void* out_value,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 ) {
   assert(out_value);
   const void* ref = view_find_ref(view, item, element_size, cmp);
@@ -299,7 +299,7 @@ bool view_find(
 }
 
 bool view_contains(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
   return view_find_ref(view, item, element_size, cmp) != NULL;
 }
@@ -307,7 +307,7 @@ bool view_contains(
 #include <stdlib.h>
 
 index_t view_search_index(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
   const byte* found = view_search_ref(view, item, element_size, cmp);
   if (!found) return view_size(view, element_size);
@@ -315,7 +315,7 @@ index_t view_search_index(
 }
 
 const void* view_search_ref(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
   VIEW_VALID(view);
   assert(cmp);
@@ -326,7 +326,7 @@ const void* view_search_ref(
 
 bool view_search(
   view_t view, const void* item, void* out_found,
-  index_t element_size, compare_nosize_fn cmp
+  compare_nosize_fn cmp, index_t element_size
 ) {
   assert(out_found);
   const void* ref = view_search_ref(view, item, element_size, cmp);
@@ -336,7 +336,7 @@ bool view_search(
 }
 
 bool view_search_contains(
-  view_t view, const void* item, index_t element_size, compare_nosize_fn cmp
+  view_t view, const void* item, compare_nosize_fn cmp, index_t element_size
 ) {
   return view_search_ref(view, item, element_size, cmp) != NULL;
 }

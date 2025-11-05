@@ -357,7 +357,7 @@ static inline bool arr_eq_deep(
   ARR_VALID(rhs);
   assert(cmp);
   if (lhs->element_size != rhs->element_size) return false;
-  return span_eq_deep(lhs->span, rhs->span, lhs->element_size, cmp);
+  return span_eq_deep(lhs->span, rhs->span, cmp, lhs->element_size);
 }
 
 static inline bool arr_is_ordered(
@@ -413,7 +413,7 @@ static inline partition_span_t arr_partition(
   Array arr, const void* item, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_partition(arr->span, item, arr->element_size, cmp);
+  return span_partition(arr->span, item, cmp, arr->element_size);
 }
 
 static inline partition_span_t arr_partition_at(
@@ -441,7 +441,7 @@ static inline void arr_sort(
   Array arr, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  span_sort(arr->span, arr->element_size, cmp);
+  span_sort(arr->span, cmp, arr->element_size);
 }
 
 static inline void arr_rotate(
@@ -526,35 +526,35 @@ static inline index_t arr_find_index(
   const Array arr, const void* item, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_find_index(arr->span, item, arr->element_size, cmp);
+  return span_find_index(arr->span, item, cmp, arr->element_size);
 }
 
 static inline void* arr_find_ref(
   Array arr, const void* item, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_find_ref(arr->span, item, arr->element_size, cmp);
+  return span_find_ref(arr->span, item, cmp, arr->element_size);
 }
 
 static inline  bool arr_find(
   Array arr, const void* item, void* out_element, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_find(arr->span, item, out_element, arr->element_size, cmp);
+  return span_find(arr->span, item, out_element, cmp, arr->element_size);
 }
 
 static inline bool arr_contains(
   const Array arr, const void* item, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_contains(arr->span, item, arr->element_size, cmp);
+  return span_contains(arr->span, item, cmp, arr->element_size);
 }
 
 static inline index_t arr_search_index(
   const Array arr, const void* item, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_search_index(arr->span, item, arr->element_size, cmp);
+  return span_search_index(arr->span, item, cmp, arr->element_size);
 }
 
 static inline
@@ -562,21 +562,21 @@ void* arr_search_ref(
   Array arr, const void* item, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_search_ref(arr->span, item, arr->element_size, cmp);
+  return span_search_ref(arr->span, item, cmp, arr->element_size);
 }
 
 static inline bool arr_search(
   Array arr, const void* item, void* out_element, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_search(arr->span, item, out_element, arr->element_size, cmp);
+  return span_search(arr->span, item, out_element, cmp, arr->element_size);
 }
 
 static inline bool arr_search_contains(
   const Array arr, const void* item, compare_nosize_fn cmp
 ) {
   ARR_VALID(arr);
-  return span_search_contains(arr->span, item, arr->element_size, cmp);
+  return span_search_contains(arr->span, item, cmp, arr->element_size);
 }
 
 #endif
