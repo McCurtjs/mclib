@@ -168,20 +168,6 @@ typedef struct array_t {
   //Allocator   const alloc;
 } array_t, *Array;
 
-typedef struct _opaque_arrayview_t {
-  union {
-    view_t        const view;
-    struct {
-      const void* const begin;
-      const void* const end;
-    };
-  };
-  index_t         const element_size;
-  index_t         const capacity;
-  index_t         const size;
-  index_t         const size_bytes;
-}* ArrayView;
-
 #define     arr_new(TYPE) iarr_new(sizeof(TYPE))
 #define     arr_new_reserve(TYPE, capacity) \
                             iarr_new_reserve(sizeof(TYPE), capacity)

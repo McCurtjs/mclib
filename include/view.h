@@ -52,7 +52,9 @@
 // #undef con_cmp
 //
 // // Create
-// view_a_t view_a(const A* begin, const A* end);
+// view_a_t view_a_build(const A* begin, const A* end);
+// view_a_t view_a_range(const A* begin, index_t size);
+// view_a_t view_a(const A* begin, index_t size);
 // view_a_t view_a_cast(view_t);
 //
 // // Utility
@@ -112,6 +114,22 @@
 #undef tuple_pair_type
 #undef delim_type
 #undef tuple_type
+
+////////////////////////////////////////////////////////////////////////////////
+// Builders
+////////////////////////////////////////////////////////////////////////////////
+
+static inline view_t view_build(const void* begin, const void* end) {
+  assert(begin <= end);
+  return (view_t) { .begin = begin, .end = end };
+}
+
+static inline view_t view_range(const void* begin, index_t size, index_t elsz) {
+  assert(size >= 0);
+  assert(elsz > 0);
+  assert(begin || !size);
+  return (view_t) { .begin = begin, .end = (const byte*)begin + size * elsz };
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Accessors
@@ -250,10 +268,24 @@ static int _con_cmp(const void* lhs, const void* rhs) {
 }
 #endif
 
-static inline _view_type MACRO_CONCAT(view_, _con_name)
+////////////////////////////////////////////////////////////////////////////////
+
+static inline _view_type _prefix(_build)
 (const con_type* begin, const con_type* end) {
   assert(begin <= end);
   return (_view_type) { .begin = begin, .end = end };
+}
+
+static inline _view_type _prefix(_range)
+(const con_type* begin, index_t size) {
+  assert(size >= 0);
+  assert(begin || !size);
+  return (_view_type) { .begin = begin, .end = begin + size };
+}
+
+static inline _view_type MACRO_CONCAT(view_, _con_name)
+(const con_type* begin, index_t size) {
+  return _prefix(_range)(begin, size);
 }
 
 static inline _view_type _prefix(_cast)

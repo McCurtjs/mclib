@@ -48,7 +48,9 @@
 // #undef con_cmp
 //
 // // Create
-// span_a_t span_a(A* begin, A* end);
+// span_a_t span_a_build(A* begin, A* end);
+// span_a_t span_a_range(A* begin, index_t size);
+// span_a_t span_a(A* begin, index_t size);
 // span_a_t span_a_cast(span_t);
 //
 // // Utility
@@ -120,6 +122,22 @@
 #undef tuple_pair_type
 #undef delim_type
 #undef tuple_type
+
+////////////////////////////////////////////////////////////////////////////////
+// Builders
+////////////////////////////////////////////////////////////////////////////////
+
+static inline span_t span_build(void* begin, void* end) {
+  assert(begin <= end);
+  return (span_t) { .begin = begin, .end = end };
+}
+
+static inline span_t span_range(void* begin, index_t size, index_t elsz) {
+  assert(size >= 0);
+  assert(elsz > 0);
+  assert(begin || !size);
+  return (span_t) { .begin = begin, .end = (byte*)begin + size * elsz };
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Accessors
@@ -286,10 +304,22 @@ static int _con_cmp(const void* lhs, const void* rhs) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline _span_type MACRO_CONCAT(span_, _con_name)
+static inline _span_type _prefix(_build)
 (con_type* begin, con_type* end) {
   assert(begin <= end);
   return (_span_type) { .begin = begin, .end = end };
+}
+
+static inline _span_type _prefix(_range)
+(con_type* begin, index_t size) {
+  assert(size >= 0);
+  assert(begin || !size);
+  return (_span_type) { .begin = begin, .end = begin + size };
+}
+
+static inline _span_type MACRO_CONCAT(span_, _con_name)
+(con_type* begin, index_t size) {
+  return _prefix(_range)(begin, size);
 }
 
 static inline _span_type _prefix(_cast)

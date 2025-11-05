@@ -53,7 +53,7 @@ describe(span_sizes) {
 
   context("using a typed span") {
 
-    span_int_t span = span_int(data, data + count);
+    span_int_t span = span_int(data, count);
 
     it("gets the size of the span with no explicit size input") {
       expect(span_int_size(span), == , count);
@@ -92,7 +92,8 @@ describe(span_set_bytes) {
 
   context("using a typed span") {
 
-    span_int_t span = span_int(data, data + ARRAY_COUNT(data));
+    //span_int_t span = SPAN(data);
+    span_int_t span = span_int(data, ARRAY_COUNT(data));
 
     it("replaces an array's data with a single character") {
       expect(data to all_be( != , 0));

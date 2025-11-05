@@ -824,7 +824,7 @@ static void _format_print_arg(
 
       _format_print_arg_int(out, spec, i);
 
-      span_byte_t digits = span_byte(out->begin + msd, out->end);
+      span_byte_t digits = span_byte_build(out->begin + msd, out->end);
       span_byte_reverse(digits);
 
       index_t width = MAX(spec.width, out->size - start);
