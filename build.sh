@@ -144,6 +144,7 @@ sources=" \
   ./src/array.c \
   ./src/map.c \
   ./src/str.c \
+  ./src/str_format.c \
   ./src/vec.c \
   ./src/utility.c \
   ./lib/murmur3/murmur3.c \

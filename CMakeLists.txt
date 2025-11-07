@@ -11,6 +11,7 @@ target_sources(McLib PRIVATE
   src/slice.c
   src/span.c
   src/str.c
+  src/str_format.c
   src/utility.c
   src/vec.c
   src/view.c
@@ -28,6 +29,7 @@ target_sources(McLib PRIVATE
   include/span_byte.h
   include/span_slice.h
   include/str.h
+  include/str_format.h
   include/utility.h
   include/vec.h
   include/view.h

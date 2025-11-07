@@ -91,7 +91,9 @@ typedef enum _str_argtype_t {
   _str_arg_slice,
   _str_arg_span,
   _str_arg_int,
-  _str_arg_float
+  _str_arg_float,
+  _str_arg_vec2i,
+  _str_arg_vec3i
 } _str_argtype_t;
 
 typedef struct _str_arg_t {
@@ -101,8 +103,24 @@ typedef struct _str_arg_t {
     span_slice_t span;
     ptrdiff_t i;
     double f;
+    byte other[16];
   };
 } _str_arg_t;
+
+#include "str_format.h"
+
+// \brief str_split and str_join argument macro
+#define _spa(arg) _Generic((arg),       \
+  slice_t:            _sarg_slice,      \
+  String:             _sarg_str,        \
+  slice_t*:           _sarg_slice_ptr,  \
+  const slice_t*:     _sarg_slice_ptr,  \
+  span_slice_t:       _sarg_span,       \
+  Array_slice:        _sarg_array,      \
+  char*:              _sarg_c_str,      \
+  const char*:        _sarg_c_str,      \
+  int:                _sarg_int         \
+)(arg)                                  //
 
 ////////////////////////////////////////////////////////////////////////////////
 // Construction and basic type serialization
@@ -412,78 +430,5 @@ Array_slice istr_tokenize(slice_t st, _str_arg_t args[], index_t count);
 //String    istr_replace_all(slice_t str, slice_t r, slice_t w);
 void        istr_print(slice_t fmt, _str_arg_t args[], index_t count);
 void        istr_log(slice_t fmt, _str_arg_t args[], index_t count);
-
-////////////////////////////////////////////////////////////////////////////////
-// Variadic arg implementation for formatting and join
-////////////////////////////////////////////////////////////////////////////////
-
-static inline _str_arg_t _sarg_str(const String s) {
-  return (_str_arg_t) { .type = _str_arg_slice, .slice = s->slice };
-}
-
-static inline _str_arg_t _sarg_slice(slice_t r) {
-  return (_str_arg_t) { .type = _str_arg_slice, .slice = r };
-}
-
-static inline _str_arg_t _sarg_slice_ptr(const slice_t* r) {
-  if (!r) r = &slice_empty;
-  return (_str_arg_t) { .type = _str_arg_slice, .slice = *r };
-}
-
-static inline _str_arg_t _sarg_span(span_slice_t s) {
-  return (_str_arg_t) { .type = _str_arg_span, .span = s };
-}
-
-static inline _str_arg_t _sarg_array(Array_slice a) {
-  return (_str_arg_t) { .type = _str_arg_span, .span = a->span };
-}
-
-static inline _str_arg_t _sarg_c_str(const char* c_str) {
-  if (!c_str) c_str = slice_empty.begin;
-  return (_str_arg_t) {
-    .type = _str_arg_slice, .slice = slice_from_c_str(c_str)
-  };
-}
-
-static inline _str_arg_t _sarg_int(long long int i) {
-  return (_str_arg_t) { .type = _str_arg_int, .i = i };
-}
-
-static inline _str_arg_t _sarg_unsigned(long long unsigned int i) {
-  return (_str_arg_t) { .type = _str_arg_int, .i = (long long)i };
-}
-
-static inline _str_arg_t _sarg_float(double f) {
-  return (_str_arg_t) { .type = _str_arg_float, .f = f };
-}
-
-// \brief str_format argument macro
-#define _sfa(arg) _Generic((arg),       \
-  slice_t:            _sarg_slice,      \
-  String:             _sarg_str,        \
-  slice_t*:           _sarg_slice_ptr,  \
-  const slice_t*:     _sarg_slice_ptr,  \
-  char*:              _sarg_c_str,      \
-  const char*:        _sarg_c_str,      \
-  int:                _sarg_int,        \
-  long long:          _sarg_int,        \
-  unsigned int:       _sarg_unsigned,   \
-  unsigned long:      _sarg_unsigned,   \
-  unsigned long long: _sarg_unsigned,   \
-  double:             _sarg_float       \
-)(arg)                                  //
-
-// \brief str_split and str_join argument macro
-#define _spa(arg) _Generic((arg),       \
-  slice_t:            _sarg_slice,      \
-  String:             _sarg_str,        \
-  slice_t*:           _sarg_slice_ptr,  \
-  const slice_t*:     _sarg_slice_ptr,  \
-  span_slice_t:       _sarg_span,       \
-  Array_slice:        _sarg_array,      \
-  char*:              _sarg_c_str,      \
-  const char*:        _sarg_c_str,      \
-  int:                _sarg_int         \
-)(arg)                                  //
 
 #endif
