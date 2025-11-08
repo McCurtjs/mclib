@@ -27,12 +27,6 @@
 
 #include "types.h"
 
-float stof(const char* s);
-const char* ftos(float f);
-int stoi(const char* i);
-const char* itos(int i);
-void memrev(void* p, unsigned size);
-
 size_t msb(size_t x);
 hash_t hash(const void* src, index_t size);
 

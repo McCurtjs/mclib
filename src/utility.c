@@ -24,47 +24,7 @@
 
 #include "types.h"
 
-#include <stdlib.h>
-#include <string.h>
-
 #include "murmur3.h"
-
-// WASI doesn't support stof yet, which is annoying. Too lazy to make a function
-// right now, pulled from Karl Knechtel at:
-// https://stackoverflow.com/questions/4392665/converting-string-to-float-without-stof-in-c
-float stof(const char* s) {
-  float rez = 0, fact = 1;
-  if (*s == '-'){
-    s++;
-    fact = -1;
-  };
-  for (int point_seen = 0; *s; s++){
-    if (*s == '.'){
-      point_seen = 1;
-      continue;
-    };
-    int d = *s - '0';
-    if (d >= 0 && d <= 9){
-      if (point_seen) fact /= 10.0f;
-      rez = rez * 10.0f + (float)d;
-    };
-  };
-  return rez * fact;
-}
-
-int stoi(const char* s) {
-  return atoi(s);
-}
-
-void memrev(void* p, unsigned size) {
-  byte* s = p;
-  byte* e = s + size - 1;
-  while (s < e) {
-    byte t = *s;
-    *s++ = *e;
-    *e-- = t;
-  }
-}
 
 // Most significant bit algorithm, from:
 //    https://aggregate.org/MAGIC/#Most%20Significant%201%20Bit
