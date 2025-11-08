@@ -78,11 +78,42 @@ static inline _str_arg_t _sarg_float(double f) {
 #endif // end str_format basics
 
 ////////////////////////////////////////////////////////////////////////////////
-// Variadic arg implementation for formatting and join
+// Adds support for format args of types from vec.h
+// - float vector types: vec2, vec3, vec4
+// - integer vector types: vec2i, vec3i
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MCLIB_STR_FORMAT_VECTOR_
-# ifdef MCLIB_VECTOR_H_
+#ifndef MCLIB_VECTOR_H_
+# define MCLIB_STR_FORMAT_VECTOR_
+#else
+
+# ifdef MCLIB_STR_FORMAT_VECTOR_
+#   undef MCLIB_STR_FORMAT_VECTOR_
+# endif
+
+# ifndef MCLIB_STR_FORMAT_VECTOR_FNS_
+# define MCLIB_STR_FORMAT_VECTOR_FNS_
+
+static inline _str_arg_t _sarg_vec2(vec2 v) {
+  _str_arg_t ret = { .type = _str_arg_vec2 };
+  assert(sizeof(ret.other) >= sizeof(v));
+  *((vec2*)ret.other) = v;
+  return ret;
+}
+
+static inline _str_arg_t _sarg_vec3(vec3 v) {
+  _str_arg_t ret = { .type = _str_arg_vec3 };
+  assert(sizeof(ret.other) >= sizeof(v));
+  *((vec3*)ret.other) = v;
+  return ret;
+}
+
+static inline _str_arg_t _sarg_vec4(vec4 v) {
+  _str_arg_t ret = { .type = _str_arg_vec4 };
+  assert(sizeof(ret.other) >= sizeof(v));
+  *((vec4*)ret.other) = v;
+  return ret;
+}
 
 static inline _str_arg_t _sarg_vec2i(vec2i v) {
   _str_arg_t ret = { .type = _str_arg_vec2i };
@@ -98,17 +129,20 @@ static inline _str_arg_t _sarg_vec3i(vec3i v) {
   return ret;
 }
 
-#   define MCLIB_STR_FORMAT_VECTOR_ ,   \
-      vec2i: _sarg_vec2i,               \
-      vec3i: _sarg_vec3i                //
-# else
-#   define MCLIB_STR_FORMAT_VECTOR_
 # endif
+
+# define MCLIB_STR_FORMAT_VECTOR_ ,     \
+    vec2:  _sarg_vec2,                  \
+    vec3:  _sarg_vec3,                  \
+    vec4:  _sarg_vec4,                  \
+    vec2i: _sarg_vec2i,                 \
+    vec3i: _sarg_vec3i                  //
+
 #endif
 
-#if !defined(MCLIB_STR_FORMAT_VEC_) && defined(MCLIB_VECTOR_H_)
-
-#endif // end vector handling
+////////////////////////////////////////////////////////////////////////////////
+// Type selector for format args
+////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _sfa
 # undef _sfa

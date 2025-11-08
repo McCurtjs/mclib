@@ -92,6 +92,9 @@ typedef enum _str_argtype_t {
   _str_arg_span,
   _str_arg_int,
   _str_arg_float,
+  _str_arg_vec2,
+  _str_arg_vec3,
+  _str_arg_vec4,
   _str_arg_vec2i,
   _str_arg_vec3i
 } _str_argtype_t;
@@ -366,6 +369,7 @@ bool    str_is_null_or_empty(const String str);
 //        - < left align
 //        - > right align
 //        - ^ center align
+//        - , comma-separated triplets (TODO)
 //        - = ledger style (right-align, +/- signs left aligned)
 //        - 0 ledger with leading zeroes {:05}, equivalent to {:#0=5}
 //    - padding character:  {:#,5} fills whitespace with ',' instead of ' '
@@ -430,5 +434,13 @@ Array_slice istr_tokenize(slice_t st, _str_arg_t args[], index_t count);
 //String    istr_replace_all(slice_t str, slice_t r, slice_t w);
 void        istr_print(slice_t fmt, _str_arg_t args[], index_t count);
 void        istr_log(slice_t fmt, _str_arg_t args[], index_t count);
+
+////////////////////////////////////////////////////////////////////////////////
+// Additional functions brought in when other headers are present
+////////////////////////////////////////////////////////////////////////////////
+
+#ifdef MCLIB_ARRAY_BYTE_
+# include "array_byte.h"
+#endif
 
 #endif

@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef CSPEC_MSVC
   /* Test values for Visual Studio without having to modify properties */
-  argv = (char* []){ argv[0], "-y", "slice_spec.c" };
+  argv = (char* []){ argv[0], "-y", "str_spec.c" };
   argc = 2;
 #endif
 

@@ -336,6 +336,10 @@ describe(str_concat) {
 
 }
 
+#include "vec.h"
+
+
+
 describe(str_format) {
   String result = NULL;
 
@@ -668,6 +672,11 @@ describe(str_format) {
         expect(result to match("|+5.400    |", str_eq));
       }
 
+      it("prints at least one trailing zero if any precision is requested") {
+        result = str_format("|{:+10.4}|", 1.000006);
+        expect(result to match("|+1.0      |", str_eq));
+      }
+
     }
 
     context("alignment and padding") {
@@ -725,6 +734,52 @@ describe(str_format) {
       it("prints ledger-aligned with trailing zeroes and zero-fill") {
         result = str_format("|{:+010.2+}|", 23.0);
         expect(result to match("|+000023.00|", str_eq));
+      }
+
+    }
+
+    context("Vector types") {
+
+      it("prints 2d float vectors") {
+        vec2 vec = v2f(123.456f, 78.90f);
+        result = str_format("|{}|", vec);
+        expect(result to match("|<123.4, 78.9>|", str_eq));
+      }
+
+      it("prints 2d float vectors using precision") {
+        vec2 vec = v2f(123.456f, 78.90f);
+        result = str_format("|{:.3}|", vec);
+        expect(result to match("|<123.456, 78.9>|", str_eq));
+      }
+
+      it("prints 2d float vectors using precision and trailing zeroes") {
+        vec2 vec = v2f(123.456f, 78.90f);
+        result = str_format("|{:.4+}|", vec);
+        expect(result to match("|<123.4560, 78.9000>|", str_eq));
+      }
+
+      it("prints 3d float vectors") {
+        vec3 vec = v3f(123.456f, 78.90f, 50.0f);
+        result = str_format("|{}|", vec);
+        expect(result to match("|<123.4, 78.9, 50>|", str_eq));
+      }
+
+      it("prints 4d float vectors") {
+        vec4 vec = v4f(123.456f, 78.90f, 9.3314423f, 1.0f);
+        result = str_format("|{:.3+}|", vec);
+        expect(result to match("|<123.456, 78.900, 9.331, 1.000>|", str_eq));
+      }
+
+      it("prints 2d integer vectors") {
+        vec2i vec = v2i(31, 28);
+        result = str_format("|{}|", vec);
+        expect(result to match("|<31, 28>|", str_eq));
+      }
+
+      it("prints 3d integer vectors") {
+        vec3i vec = v3i(73, 126, -99302);
+        result = str_format("|{}|", vec);
+        expect(result to match("|<73, 126, -99302>|", str_eq));
       }
 
     }

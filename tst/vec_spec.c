@@ -28,15 +28,10 @@
 
 describe(vector_z_order_curve) {
 
-  it("tests the z-curve") {
-    vec2i test[64];
-    for (size_t i = 0; i < ARRAY_COUNT(test); ++i) {
-      test[i] = i2zcurve(i);
-    }
-    size_t i = 2468;
+  it("tests the z-curve in both directions") {
+    size_t i = 246810;
     vec2i v = i2zcurve(i);
-    size_t j = i2zindex(v);
-    i = j;
+    expect(i2zindex(v) == i);
   }
 
 }

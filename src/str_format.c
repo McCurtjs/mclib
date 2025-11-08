@@ -308,7 +308,7 @@ static void _format_print_arg_align_number(
 }
 
 static void _format_print_arg_int(
-  Array_byte out, _fmt_spec_t spec, ptrdiff_t i
+  Array_byte out, _fmt_spec_t spec, index_t i
 ) {
 
   switch (spec.representation) {
@@ -321,7 +321,7 @@ static void _format_print_arg_int(
 
     case _fmt_rep_default: {
       do {
-        ptrdiff_t digit = i % 10;
+        index_t digit = i % 10;
         arr_byte_push_back(out, (byte)(digit + '0'));
         i /= 10;
       } while (i);
@@ -330,7 +330,7 @@ static void _format_print_arg_int(
     case _fmt_rep_hex:
     case _fmt_rep_HEX: {
       do {
-        ptrdiff_t digit = i % 16;
+        index_t digit = i % 16;
         byte c = spec.representation == _fmt_rep_HEX ? 'A' : 'a';
         byte b = (byte)digit + (digit >= 10 ? c-10 : '0');
         arr_byte_push_back(out, b);
@@ -340,7 +340,7 @@ static void _format_print_arg_int(
 
     case _fmt_rep_binary: {
       do {
-        ptrdiff_t digit = i % 2;
+        index_t digit = i % 2;
         arr_byte_push_back(out, (byte)(digit + '0'));
         i /= 2;
       } while (i);
@@ -350,49 +350,31 @@ static void _format_print_arg_int(
 
 }
 
-static void _format_print_arg_float(
-  Array_byte out, _fmt_spec_t spec, double f_val, index_t start
+static void _format_print_arg_vector_float(
+  Array_byte out, _fmt_spec_t spec, const float* floats, index_t count
 ) {
-
-  double f = f_val;
-  do {
-    ptrdiff_t digit = (int)f;
-    digit %= 10;
-    f /= 10;
-    arr_byte_push_back(out, (byte)(digit + '0'));
-  } while (f >= 1.0);
-
-  byte* digits = arr_byte_ref(out, start);
-  memrev(digits, (uint)(out->size - start));
-
-  f = f_val - floor(f_val);
-  byte p = spec.precision;
-
-  if (f != 0.0 && spec.precision) {
-    arr_byte_push_back(out, '.');
-    for (; p && f > 0.00000000001; --p) {
-      f *= 10.0;
-      int int_part = (int)f;
-      arr_byte_push_back(out, (byte)(int_part + '0'));
-      f -= int_part;
+  arr_byte_push_back(out, '<');
+  for (index_t i = 0; i < count;) {
+    int prec = spec.trailing ? -spec.precision : spec.precision;
+    arr_byte_append_float(out, floats[i], prec);
+    if (++i < count) {
+      iarr_byte_append(out, S(", "));
     }
-  } else if (spec.precision && spec.trailing) {
-    arr_byte_push_back(out, '.');
   }
-
-  while (p && spec.trailing) {
-    arr_byte_push_back(out, '0');
-    --p;
-  }
-
+  arr_byte_push_back(out, '>');
 }
 
-static void _format_print_arg_vector_int(const int* ints, index_t count) {
-
-}
-
-static void _format_print_arg_vector_float(const float* floats, index_t count) {
-
+static void _format_print_arg_vector_int(
+  Array_byte out, const int* ints, index_t count
+) {
+  arr_byte_push_back(out, '<');
+  for (index_t i = 0; i < count;) {
+    arr_byte_append_int(out, ints[i]);
+    if (++i < count) {
+      iarr_byte_append(out, S(", "));
+    }
+  }
+  arr_byte_push_back(out, '>');
 }
 
 static void _format_print_arg(
@@ -489,9 +471,10 @@ static void _format_print_arg(
         arr_byte_push_back(out, '+');
       }
 
+      // msd = most significant digit (to avoid flipping signs)
       index_t msd = out->size;
 
-      _format_print_arg_float(out, spec, f, msd);
+      arr_byte_append_float(out, f, spec.precision * (spec.trailing ? -1 : 1));
 
       index_t width = MAX(spec.width, out->size - start);
       index_t excess = width - (out->size - start);
@@ -500,44 +483,43 @@ static void _format_print_arg(
 
     } break;
 
+    case _str_arg_vec2: {
+      vec2 v = *((vec2*)arg->other);
+      _format_print_arg_vector_float(out, spec, v.f, 2);
+    } break;
+
+    case _str_arg_vec3: {
+      vec3 v = *((vec3*)arg->other);
+      _format_print_arg_vector_float(out, spec, v.f, 3);
+    } break;
+
+    case _str_arg_vec4: {
+      vec4 v = *((vec4*)arg->other);
+      _format_print_arg_vector_float(out, spec, v.f, 4);
+    } break;
+
     case _str_arg_vec2i: {
-
       vec2i v = *((vec2i*)arg->other);
-      _format_print_arg_vector_int(v.i, 2);
-
+      _format_print_arg_vector_int(out, v.i, 2);
     } break;
 
     case _str_arg_vec3i: {
-
       vec3i v = *((vec3i*)arg->other);
-      _format_print_arg_vector_int(v.i, 3);
-
+      _format_print_arg_vector_int(out, v.i, 3);
     } break;
 
     default: {
-
       byte* bytes = arr_byte_emplace_back_range(out, 22).begin;
-      memcpy(bytes, " <can't resolve type> ", 22);
-
+      memcpy(bytes, "!<can't resolve type>!", 22);
     } break;
 
   } 
 
 }
 
-String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
-  index_t reserve_size = sizeof(String_Internal) + fmt.size;
-
-  for (index_t i = 0; i < arg_count; ++i) {
-    reserve_size += (args[i].type == _str_arg_slice) ? args[i].slice.size : 3;
-  }
-
-  // Set the starting allocation for the new string
-  Array_byte output = arr_byte_new_reserve(reserve_size);
-
-  // Push the String header to the front of the array data
-  arr_byte_emplace_back_range(output, sizeof(slice_t));
-
+void arr_byte_append_format(
+  Array_byte output, slice_t fmt, _str_arg_t args[], index_t argc
+) {
   // Process the format string
   byte arg_index = 0;
 
@@ -560,7 +542,6 @@ String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
       memcpy(bytes.begin, section.begin, section.size);
     }
 
-
     // handle case for "{{" to print escaped left brace
     if (fmt.begin[i + 1] == '{') {
       section.begin = fmt.begin + ++i;
@@ -582,7 +563,7 @@ String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
 
     arg_index = spec.index + 1;
 
-    _format_print_arg(output, spec, args, arg_count);
+    _format_print_arg(output, spec, args, argc);
 
     i += spec_end;
     section.begin = fmt.begin + i + 1;
@@ -594,14 +575,34 @@ String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
     span_byte_t bytes = arr_byte_emplace_back_range(output, section.size);
     memcpy(bytes.begin, section.begin, section.size);
   }
+}
 
+String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
+  index_t reserve_size = sizeof(String_Internal) + fmt.size;
+
+  for (index_t i = 0; i < arg_count; ++i) {
+    reserve_size += (args[i].type == _str_arg_slice) ? args[i].slice.size : 3;
+  }
+
+  // Set the starting allocation for the new string
+  array_byte_t output_header = arr_byte_build_reserve(reserve_size);
+  Array_byte output = &output_header;
+
+  // Push the String header to the front of the array data
+  arr_byte_emplace_back_range(output, sizeof(slice_t));
+
+  // process the format string
+  arr_byte_append_format(output, fmt, args, arg_count);
+
+  // include the null-terminator
   arr_byte_push_back(output, '\0');
+  arr_byte_truncate(output, output->size);
+
+  // update the string's header and return
   String_Internal* header = (String_Internal*)output->begin;
   header->size = output->size - sizeof(struct slice_t) - 1;
   header->begin = header->head;
-  arr_byte_truncate(output, output->size);
-  String ret = (String)arr_byte_release(&output).begin;
-  return ret;
+  return (String)header;
 }
 
 void istr_print(slice_t fmt, _str_arg_t args[], index_t arg_count) {

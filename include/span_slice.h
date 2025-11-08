@@ -29,9 +29,12 @@
 
 #define con_type slice_t
 #define con_prefix slice
+#define con_view_type view_slice_t
+#include "view.h"
 #include "span.h"
 #undef con_type
 #undef con_prefix
+#undef con_view_type
 
 bool            slice_contains_any(slice_t str, span_slice_t any);
 bool            slice_find_any(slice_t str, span_slice_t any, slice_t* out_s);

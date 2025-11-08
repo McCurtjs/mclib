@@ -95,6 +95,8 @@ inline static bool str_is_literal(String str) {
 // Direct string str_ functions
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "array_byte.h"
+
 String str_build(const char* c_str, index_t length) {
   if (!c_str) return str_empty;
   String_Internal* ret = _istr_new(length);
@@ -108,13 +110,27 @@ String str_from_bool(bool b) {
 }
 
 String str_from_int(int i) {
-  slice_t tmp = slice_from_c_str(itos(i));
-  return istr_copy(tmp);
+  array_byte_t arr = arr_byte_build_reserve(sizeof(String_Internal) + 10);
+  arr_byte_emplace_back_range(&arr, sizeof(slice_t));
+  span_byte_t number = arr_byte_append_int(&arr, i);
+  arr_byte_push_back(&arr, '\0');
+  arr_byte_truncate(&arr, arr.size);
+  String_Internal* header = (String_Internal*)arr.begin;
+  header->begin = header->head;
+  header->size = span_size_bytes(number.base);
+  return (String)header;
 }
 
 String str_from_float(float f) {
-  slice_t tmp = slice_from_c_str(ftos(f));
-  return istr_copy(tmp);
+  array_byte_t arr = arr_byte_build_reserve(sizeof(String_Internal) + 10);
+  arr_byte_emplace_back_range(&arr, sizeof(slice_t));
+  span_byte_t number = arr_byte_append_float(&arr, f, 3);
+  arr_byte_push_back(&arr, '\0');
+  arr_byte_truncate(&arr, arr.size);
+  String_Internal* header = (String_Internal*)arr.begin;
+  header->begin = header->head;
+  header->size = span_size_bytes(number.base);
+  return (String)header;
 }
 
 void str_delete(String* str) {

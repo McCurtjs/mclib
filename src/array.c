@@ -426,3 +426,90 @@ bool arr_pop_last(Array a_in, index_t count) {
   a->size -= count;
   return true;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Array_byte specialized functions
+////////////////////////////////////////////////////////////////////////////////
+
+#include <math.h> // fmod
+
+#include "array_byte.h"
+#include "slice.h"
+
+span_byte_t iarr_byte_append(Array_byte arr, slice_t slice) {
+  span_byte_t ret = arr_byte_emplace_back_range(arr, slice.size);
+  memcpy(ret.begin, slice.begin, slice.size);
+  return ret;
+}
+
+span_byte_t arr_byte_append_int(Array_byte arr, long long int i) {
+  index_t origin = arr->size;
+  if (i < 0) {
+    arr_byte_push_back(arr, '-');
+    i *= -1;
+  }
+  index_t start = arr->size;
+  do {
+    int digit = i % 10;
+    arr_byte_push_back(arr, (byte)(digit + '0'));
+    i /= 10;
+  } while (i);
+  span_reverse_bytes(span_byte(arr->begin + start, arr->size - start).base);
+  return span_byte_build(arr->begin + origin, arr->end);
+}
+
+span_byte_t arr_byte_append_float(Array_byte arr, double f_in, int precision) {
+  index_t origin = arr->size;
+  if (f_in < 0) {
+    arr_byte_push_back(arr, '-');
+    f_in *= -1;
+  }
+
+  // print the integer part the same way as normal ints, but using fmod
+  index_t start = arr->size;
+  double f = f_in;
+  do {
+    int digit = (int)(fmod(f, 10.0));
+    arr_byte_push_back(arr, (byte)(digit + '0'));
+    f /= 10.0;
+  } while (f >= 1);
+  span_reverse_bytes(span_byte(arr->begin + start, arr->size - start).base);
+
+  // convert precision to positive - negative means we want trailing zeroes
+  bool trailing = false;
+  if (precision < 0) {
+    precision *= -1;
+    trailing = true;
+  }
+
+  // print the decimal and decimal part up to the requested precision
+  f = f_in - floor(f_in);
+
+  if (!precision || (f == 0.0 && !trailing)) {
+    return span_byte_build(arr->begin + origin, arr->end);
+  }
+
+  arr_byte_push_back(arr, '.');
+
+  for (; precision && f > 0.0000000001; --precision) {
+    f *= 10.0;
+    int digit = (int)f;
+    arr_byte_push_back(arr, (byte)(digit + '0'));
+    f -= digit;
+  }
+
+  // trailing zeroes up to the given precision if requested
+  if (trailing) {
+    while (precision--) {
+      arr_byte_push_back(arr, '0');
+    }
+  }
+  // remove trailing zeroes if they're not wanted
+  else {
+    while (arr_byte_get_back(arr) == '0' && arr_byte_get(arr, -2) != '.') {
+      arr_byte_pop_back(arr);
+    }
+  }
+
+  return span_byte_build(arr->begin + origin, arr->end);
+}

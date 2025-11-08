@@ -164,8 +164,9 @@ void span_reverse(span_t span, index_t element_size) {
 }
 
 void span_reverse_bytes(span_t span) {
+  if (span_is_empty(span)) return;
   byte* begin = span.begin;
-  byte* end = span.end;
+  byte* end = (byte*)span.end - 1;
   byte tmp;
   while (begin < end) {
     tmp = *begin;

@@ -35,16 +35,33 @@
 #undef con_view_type
 #undef con_type
 
+span_byte_t arr_byte_append_int(Array_byte arr, long long int i);
+span_byte_t arr_byte_append_float(Array_byte arr, double f, int precision);
+
 #endif
 
 #ifdef MCLIB_SLICE_H_
 # ifndef MCLIB_ARR_BYTE_SLICE_FNS_
-# define MCLIB_ARR_BYTE_SLICE_FNS_
+#   define MCLIB_ARR_BYTE_SLICE_FNS_
 
-static inline void arr_byte_append(Array_byte arr, slice_t slice) {
-  span_byte_t bytes = arr_byte_emplace_back_range(arr, slice.size);
-  span_byte_copy_range(bytes, slice_to_view(slice), slice.size);
-}
+span_byte_t iarr_byte_append(Array_byte arr, slice_t slice);
+
+#   define arr_byte_append(arr, slice) iarr_byte_append(arr, slice)
+
+# endif
+#endif
+
+
+#ifdef MCLIB_STRING_H_
+# ifndef MCLIB_ARR_BYTE_STRING_FNS_
+#   define MCLIB_ARR_BYTE_STRING_FNS_
+
+#   undef arr_byte_append
+#   define arr_byte_append(arr, slice) iarr_byte_append(arr, _s2r(slice))
+
+void arr_byte_append_format(
+  Array_byte output, slice_t fmt, _str_arg_t args[], index_t argc
+);
 
 # endif
 #endif
