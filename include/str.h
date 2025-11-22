@@ -386,7 +386,7 @@ bool    str_is_null_or_empty(const String str);
 // \brief `void str_print(fmt, ...)`
 // \brief Prints a formatted string as a log.
 // \brief See str_format for details on formatting.
-#define str_print(...) istr_print(                  \
+#define str_print(fmt, ...) istr_print(_s2r(fmt),   \
   (_str_arg_t[]) { _va_exp(_sfa, __VA_ARGS__) },    \
   _va_count(__VA_ARGS__)                            \
 )                                                   //
@@ -395,7 +395,7 @@ bool    str_is_null_or_empty(const String str);
 // \brief Prints a formatted string as a log. Differes from str_print in that
 //    values are not printed in release mode (TODO).
 // \brief See str_format for details on formatting.
-#define str_log(...) istr_log(                      \
+#define str_log(fmt, ...) istr_log(_s2r(fmt),       \
   (_str_arg_t[]) { _va_exp(_sfa, __VA_ARGS__) },    \
   _va_count(__VA_ARGS__)                            \
 )                                                   //
