@@ -40,13 +40,9 @@ vec3 qtransform(quat q, vec3 v) {
   //return v + 2.0*cross(cross(v, q.xyz ) + q.w*v, q.xyz);
 }
 
-vec3b v3b(byte r, byte g, byte b) {
-  return (vec3b){.i={r, g, b}};
-}
-
-vec4b v4b(byte r, byte g, byte b, byte a) {
-  return (vec4b){.i={r, g, b, a}};
-}
+////////////////////////////////////////////////////////////////////////////////
+// Vector 2 (integer)
+////////////////////////////////////////////////////////////////////////////////
 
 float i2aspect(vec2i v) {
   return (float)v.w / (float)v.h;
@@ -78,13 +74,9 @@ size_t i2zindex(vec2i v) {
   return ret;
 }
 
-vec2i v2i(int x, int y) {
-  return (vec2i){.i={x, y}};
-}
-
-vec3i v3i(int x, int y, int z) {
-  return (vec3i){.i={x, y, z}};
-}
+////////////////////////////////////////////////////////////////////////////////
+// Vector 2 (float)
+////////////////////////////////////////////////////////////////////////////////
 
 float v2mag(vec2 v) {
   return sqrtf(v2magsq(v));
@@ -229,33 +221,9 @@ bool v2seg_seg(vec2 P1, vec2 P2, vec2 Q1, vec2 Q2, vec2* out) {
   return TRUE;
 }
 
-vec2 v2f(float x, float y) {
-  return (vec2){.f = {x, y} };
-}
-
-vec3 v23(vec2 v) {
-  return v3f(v.x, v.y, 0);
-}
-
-vec4 v24(vec2 v) {
-  return v4f(v.x, v.y, 0, 0);
-}
-
-vec4 p24(vec2 v) {
-  return v4f(v.x, v.y, 0, 1);
-}
-
-vec3 v23f(vec2 v, float z) {
-  return v3f(v.x, v.y, z);
-}
-
-vec4 v24f(vec2 v, float z, float w) {
-  return v4f(v.x, v.y, z, w);
-}
-
-vec4 p24f(vec2 v, float z) {
-  return v4f(v.x, v.y, z, 1);
-}
+////////////////////////////////////////////////////////////////////////////////
+// Vector 3 (float)
+////////////////////////////////////////////////////////////////////////////////
 
 float v3mag(vec3 v) {
   return sqrtf(v3magsq(v));
@@ -351,31 +319,4 @@ bool v3ray_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out) {
   if (t < 0) return FALSE;
   if (t_out) *t_out = t;
   return TRUE;
-}
-
-// Constructs a vec3 out of floats.
-// Generally would prefer to use the form "(vec3){x, y, z}", but gcc is annoying
-// about that syntax, throwing -Wmissing-braces because it actaully wants the
-// form "(vec3){ .f = {x, y, z}}", which is annoying to type, so here we are.
-vec3 v3f(float x, float y, float z) {
-  return (vec3){.f = {x, y, z} };
-}
-
-// Converts a vec3 to a vec4 with homogeneous w component set to 0
-vec4 v34(vec3 v) {
-  return v4f(v.x, v.y, v.z, 0);
-}
-
-// Converts a vec3 to a vec4 with homogeneous w component set to 1
-vec4 p34(vec3 p) {
-  return v4f(p.x, p.y, p.z, 1);
-}
-
-// Converts a vec3 and a given float w to a vec4
-vec4 v34f(vec3 v, float w) {
-  return v4f(v.x, v.y, v.z, w);
-}
-
-vec4 v4f(float x, float y, float z, float w) {
-  return (vec4){ .f = {x, y, z, w} };
 }

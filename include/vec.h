@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -233,15 +233,9 @@ typedef vec4 color4;
 
 vec3    qtransform(quat q, vec3 v);
 
-vec3b   v3b(byte r, byte g, byte b);
-vec4b   v4b(byte r, byte g, byte b, byte a);
-
 float   i2aspect(vec2i v);
 vec2i   i2zcurve(size_t i);
 size_t  i2zindex(vec2i v);
-vec2i   v2i(int x, int y);
-
-vec3i   v3i(int x, int y, int z);
 
 float   v2mag(vec2 v);
 float   v2magsq(vec2 v);
@@ -268,13 +262,6 @@ bool    v2ray_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out);
 bool    v2ray_ray(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
 bool    v2ray_seg(vec2 P, vec2 v, vec2 Q1, vec2 Q2, float* t_out);
 bool    v2seg_seg(vec2 P1, vec2 P2, vec2 Q1, vec2 Q2, vec2* out);
-vec2    v2f(float x, float y);
-vec3    v23(vec2 xy);
-vec4    v24(vec2 xy);
-vec4    p24(vec2 xy);
-vec3    v23f(vec2 xy, float z);
-vec4    v24f(vec2 xy, float z, float w);
-vec4    p24f(vec2 xy, float z);
 
 float   v3mag(vec3 v);
 float   v3magsq(vec3 v);
@@ -290,16 +277,86 @@ vec3    v3perp(vec3 v);
 float   v3angle(vec3 a, vec3 b);
 bool    v3line_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
 bool    v3ray_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
-vec3    v3f(float x, float y, float z);
-vec4    v34(vec3 xyz);
-vec4    p34(vec3 xyz);
-vec4    v34f(vec3 xyz, float w);
-
-vec4    v4f(float x, float y, float z, float w);
 
 //vec2  v2orbit(vec2 a, vec2 center, float theta);
 //vec3  v3reflect(vec3 v, vec3 axis);
 //vec3  v3rot(vec3 v, vec3 axis, float theta);
+
+////////////////////////////////////////////////////////////////////////////////
+// Vector type conversion shorthands
+////////////////////////////////////////////////////////////////////////////////
+
+static inline vec3b v3b(byte r, byte g, byte b) {
+  return (vec3b) { .i = { r, g, b } };
+}
+
+static inline vec4b v4b(byte r, byte g, byte b, byte a) {
+  return (vec4b) { .i = { r, g, b, a } };
+}
+
+static inline vec4b v34b(vec3b rgb, byte a) {
+  return v4b(rgb.r, rgb.g, rgb.b, a);
+}
+
+static inline vec2i v2i(int x, int y) {
+  return (vec2i) { .i = { x, y } };
+}
+
+static inline vec3i v3i(int x, int y, int z) {
+  return (vec3i) { .i = { x, y, z } };
+}
+
+static inline vec2 v2f(float x, float y) {
+  return (vec2) { .f = { x, y } };
+}
+
+static inline vec3 v3f(float x, float y, float z) {
+  return (vec3) { .f = { x, y, z } };
+}
+
+static inline vec4 v4f(float x, float y, float z, float w) {
+  return (vec4) { .f = { x, y, z, w } };
+}
+
+static inline vec3 v23(vec2 v) {
+  return v3f(v.x, v.y, 0);
+}
+
+static inline vec4 v24(vec2 v) {
+  return v4f(v.x, v.y, 0, 0);
+}
+
+static inline vec4 p24(vec2 v) {
+  return v4f(v.x, v.y, 0, 1);
+}
+
+static inline vec3 v23f(vec2 v, float z) {
+  return v3f(v.x, v.y, z);
+}
+
+static inline vec4 v24f(vec2 v, float z, float w) {
+  return v4f(v.x, v.y, z, w);
+}
+
+static inline vec4 p24f(vec2 v, float z) {
+  return v4f(v.x, v.y, z, 1);
+}
+
+static inline vec4 v24v(vec2 xy, vec2 zw) {
+  return v4f(xy.x, xy.y, zw.x, zw.y);
+}
+
+static inline vec4 v34(vec3 v) {
+  return v4f(v.x, v.y, v.z, 0);
+}
+
+static inline vec4 p34(vec3 p) {
+  return v4f(p.x, p.y, p.z, 1);
+}
+
+static inline vec4 v34f(vec3 v, float w) {
+  return v4f(v.x, v.y, v.z, w);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Add vector types to the string formatter
