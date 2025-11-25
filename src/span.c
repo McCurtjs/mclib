@@ -114,9 +114,15 @@ partition_span_t span_partition_match(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <malloc.h>
+#ifdef __WASM__
+# include <alloca.h>
+#else
+# include <malloc.h>
+#endif
+
 #ifdef _MSC_VER
 # define alloca _alloca
+//# define alloca _malloca // consider using this for null-returning over crash?
 #endif
 
 static inline void mem_swap(byte* lhs, byte* rhs, index_t element_size) {

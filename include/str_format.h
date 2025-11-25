@@ -157,6 +157,7 @@ static inline _str_arg_t _sarg_vec3i(vec3i v) {
   char*:              _sarg_c_str,      \
   const char*:        _sarg_c_str,      \
   int:                _sarg_int,        \
+  long:               _sarg_int,        \
   long long:          _sarg_int,        \
   unsigned int:       _sarg_unsigned,   \
   unsigned long:      _sarg_unsigned,   \
