@@ -82,8 +82,8 @@ typedef struct pair_kv_t {
 
 typedef void (*map_process_fn)(pair_kv_t slot);
 
-#define       map_new(T_KEY, T_VAL, FN_CMP, FN_HASH)  \
-                imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_CMP, FN_HASH)
+#define       map_new(T_KEY, T_VAL, FN_HASH, FN_CMP)  \
+                imap_new(sizeof(T_KEY), sizeof(T_VAL), FN_HASH, FN_CMP)
 
 //void*     map_emplace_hash(HMap map, const void* key, hash_t hash);
 
