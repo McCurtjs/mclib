@@ -146,6 +146,17 @@ vec4 mv4mul(mat4 m, vec4 v) {
   return ret;
 }
 
+mat4 m4transpose(mat4 m) {
+  mat4 ret = m;
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      if (i == j) continue;
+      ret.m[i][j] = m.m[j][i];
+    }
+  }
+  return ret;
+}
+
 mat4 m4inverse(mat4 m) {
   return (mat4) {.f={
     m.f[5] * m.f[10] * m.f[15] - m.f[5] * m.f[11] * m.f[14] -

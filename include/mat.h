@@ -60,6 +60,7 @@ mat4 m4scalar(vec3 scalar);
 mat4 m4uniform(float scalar);
 mat4 m4mul(mat4 a, mat4 b);
 vec4 mv4mul(mat4 m, vec4 v);
+mat4 m4transpose(mat4 mat);
 mat4 m4inverse(mat4 mat);
 
 #endif
