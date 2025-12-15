@@ -147,13 +147,14 @@ vec4 mv4mul(mat4 m, vec4 v) {
 }
 
 mat4 m4transpose(mat4 m) {
-  mat4 ret = m;
+  mat4 ret;
+
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
-      if (i == j) continue;
       ret.m[i][j] = m.m[j][i];
     }
   }
+
   return ret;
 }
 
