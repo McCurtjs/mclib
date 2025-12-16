@@ -137,7 +137,9 @@ String  str_from_float(float f);
 
 void    str_delete(String* str);
 
-static inline slice_t slice_from_str(String s) { return s->slice; }
+static inline slice_t slice_from_str(String s) {
+  return s ? s->slice : slice_empty;
+}
 
 // \brief Returns size of a string. Equivalent to str->size, but can also be
 //    applied to slices and c-strings.
