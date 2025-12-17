@@ -405,17 +405,6 @@ bool    str_is_null_or_empty(const String str);
 //String str_pad_left(slice_t str, index_t length, char c);
 //String str_pad_right(slice_t str, index_t length, char c);
 
-////////////////////////////////////////////////////////////////////////////////
-// Internal string functions for slice input
-////////////////////////////////////////////////////////////////////////////////
-
-static inline index_t _str_size(slice_t s) { return s.size; }
-static inline slice_t _str_slice_r(slice_t slice) { return slice; }
-static inline slice_t _str_slice_st(const String str) {
-  if (str) return str->slice;
-  return str_empty->slice;
-}
-
 String      istr_copy(slice_t str);
 String      istr_concat(_str_arg_t args[], index_t count);
 String      istr_join(slice_t delim, _str_arg_t args[], index_t count);
