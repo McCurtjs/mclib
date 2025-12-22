@@ -271,9 +271,9 @@ SI void*    arr_search_ref(Array arr, const void* item, compare_nosize_fn);
 // \brief MyType* arr_foreach_index(iter, i, array) { other[i] = *iter; }
 #define arr_foreach_index(VAR, INDEX, ARRAY)                                  \
   VAR = (ARRAY)->begin;                                                       \
-  assert(sizeof(*VAR) == ARRAY->element_size);                                \
-  for (index_t INDEX = 0; INDEX < ARRAY->size; ++INDEX,                       \
-    VAR = (void*)((byte*)ARRAY->begin + INDEX * sizeof(*VAR))                 \
+  assert(sizeof(*VAR) == (ARRAY)->element_size);                              \
+  for (index_t INDEX = 0; INDEX < (ARRAY)->size; ++INDEX,                     \
+    VAR = (void*)((byte*)(ARRAY)->begin + INDEX * sizeof(*VAR))               \
   )                                                                           //
 
 // TODO: would it be better to also track an offset rather than multiply?
