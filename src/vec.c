@@ -119,7 +119,7 @@ float v2dot(vec2 a, vec2 b) {
   return a.x * b.x + a.y * b.y;
 }
 
-vec2 v2had(vec2 a, vec2 b) {
+vec2 v2mul(vec2 a, vec2 b) {
   return v2f(a.x * b.x, a.y * b.y);
 }
 
@@ -161,41 +161,41 @@ vec2 v2lerp(vec2 P, vec2 Q, float t) {
   return v2add(P, v);
 }
 
-float v2line_dist(vec2 P, vec2 v, vec2 Q) {
-  return v2cross(v2sub(Q, P), v) / v2mag(v);
+float v2line_dist(vec2 L, vec2 v, vec2 P) {
+  return v2cross(v2sub(P, L), v) / v2mag(v);
 }
 
 // todo: change return types, look up other version of formula that uses t?
 //       (should return t value like intersections?)
-float v2line_closest(vec2 P, vec2 v, vec2 Q, vec2* R_out) {
-  float d = v2line_dist(P, v, Q);
+float v2line_closest(vec2 L, vec2 v, vec2 P, vec2* R_out) {
+  float d = v2line_dist(L, v, P);
   if (!R_out) return d;
   vec2 n = v2norm(v2perp(v));
-  *R_out = v2add(Q, v2scale(n, d));
+  *R_out = v2add(P, v2scale(n, d));
   return d;
 }
 
-// t = (P.x * u.y - P.y * u.x + u.x * Q.y - u.y * Q.x) / (u.x * v.y - u.y * v.x)
-// s = (v.x * P.y - v.y * P.x + Q.x * v.y - Q.y * v.x) / (v.x * u.y - v.y * u.x)
-bool v2line_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out) {
+// t = (L.x * u.y - L.y * u.x + u.x * Q.y - u.y * Q.x) / (u.x * v.y - u.y * v.x)
+// s = (v.x * L.y - v.y * L.x + Q.x * v.y - Q.y * v.x) / (v.x * u.y - v.y * u.x)
+bool v2line_line(vec2 L, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out) {
   float div = v2cross(u, v);
   if (div == 0) return FALSE;
-  if (t_out) *t_out = (v2cross(P, u) + v2cross(u, Q)) / div;
-  if (s_out) *s_out = (v2cross(v, P) + v2cross(Q, v)) / -div;
+  if (t_out) *t_out = (v2cross(L, u) + v2cross(u, Q)) / div;
+  if (s_out) *s_out = (v2cross(v, L) + v2cross(Q, v)) / -div;
   return TRUE;
 }
 
-bool v2ray_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out) {
+bool v2ray_line(vec2 R, vec2 v, vec2 L, vec2 u, float* t_out) {
   float t;
-  if (!v2line_line(P, v, Q, u, &t, NULL)) return FALSE;
+  if (!v2line_line(R, v, L, u, &t, NULL)) return FALSE;
   if (t_out) *t_out = t;
   if (t < 0) return FALSE;
   return TRUE;
 }
 
-bool v2ray_ray(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out) {
+bool v2ray_ray(vec2 R, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out) {
   float t, s;
-  if (!v2line_line(P, v, Q, u, &t, &s)) return FALSE;
+  if (!v2line_line(R, v, Q, u, &t, &s)) return FALSE;
   if (t_out) *t_out = t;
   if (s_out) *s_out = s;
   if (t < 0) return FALSE;
@@ -203,21 +203,21 @@ bool v2ray_ray(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out) {
   return TRUE;
 }
 
-bool v2ray_seg(vec2 P, vec2 v, vec2 Q1, vec2 Q2, float* t_out) {
-  vec2 u = v2sub(Q2, Q1);
+bool v2ray_seg(vec2 L, vec2 v, vec2 S1, vec2 S2, float* t_out) {
+  vec2 u = v2sub(S2, S1);
   float t, s; float* t_ptr = t_out ? t_out : &t;
-  if (!v2ray_ray(P, v, Q1, u, t_ptr, &s)) return FALSE;
+  if (!v2ray_ray(L, v, S1, u, t_ptr, &s)) return FALSE;
   if (s > 1) return FALSE;
   return TRUE;
 }
 
-bool v2seg_seg(vec2 P1, vec2 P2, vec2 Q1, vec2 Q2, vec2* out) {
-  vec2 v = v2sub(P2, P1), u = v2sub(Q2, Q1);
+bool v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out) {
+  vec2 v = v2sub(S2, S1), u = v2sub(Q2, Q1);
   float t, s;
-  if (!v2ray_ray(P1, v, Q1, u, &t, &s)) return FALSE;
+  if (!v2ray_ray(S1, v, Q1, u, &t, &s)) return FALSE;
   if (t > 1) return FALSE;
   if (s > 1) return FALSE;
-  if (out) *out = v2add(P1, v2scale(v, t));
+  if (out) *out = v2add(S1, v2scale(v, t));
   return TRUE;
 }
 
@@ -258,7 +258,7 @@ float v3dot(vec3 a, vec3 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-vec3  v3had(vec3 a, vec3 b) {
+vec3  v3mul(vec3 a, vec3 b) {
   return v3f( a.x * b.x, a.y * b.y, a.z * b.z );
 }
 
@@ -287,36 +287,40 @@ float v3angle(vec3 a, vec3 b) {
   return acosf(v3dot(a, b) / (v3mag(a) * v3mag(b)));
 }
 
-float v3line_dist(vec3 P, vec3 v, vec3 Q) {
-  return v3mag(v3cross(v3sub(Q, P), v)) / v3mag(v);
+vec3 v3lerp(vec3 P, vec3 Q, float t) {
+  vec3 v = v3scale(v3sub(Q, P), t);
+  return v3add(P, v);
 }
 
-// Gets the intersection between the line [P, v] and plane [R, n]
+float v3line_dist(vec3 L, vec3 v, vec3 P) {
+  return v3mag(v3cross(v3sub(P, L), v)) / v3mag(v);
+}
+
+// Gets the intersection between the line [L, v] and plane [P, n]
 //
 // @param t_out If non-null and return value is TRUE, is set to t value of the
 //              intersection point described by P + v * t_out
 // @returns TRUE on intersection, FALSE if objects are parallel
-bool v3line_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out) {
+bool v3line_plane(vec3 L, vec3 v, vec3 P, vec3 n, float* t_out) {
   vec3 norm = v3norm(n);
   float vdotn = v3dot(v, norm);
-  if (vdotn == 0) return FALSE;
-  vec3 PtoR = v3sub(R, P);
-  float PRdotn = v3dot(PtoR, norm);
-  // if (lpdotn == 0) return TRALUSE? // line contained in plane
-  float t = PRdotn / vdotn;
+  if (vdotn == 0) return false;
+  vec3 LtoP = v3sub(P, L);
+  float LPdotn = v3dot(LtoP, norm);
+  float t = LPdotn / vdotn;
   if (t_out) *t_out = t;
-  return t != 0;
+  return true;
 }
 
-// Gets the intersection between the ray [P, v] and plane [R, n]
+// Gets the intersection between the ray [R, v] and plane [P, n]
 //
 // @param t_out If non-null and return value is TRUE, is set to t value of the
 //              intersection point described by P + v * t_out
 // @returns TRUE on intersection, FALSE if no intersection
-bool v3ray_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out) {
+bool v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out) {
   float t;
-  if (!v3line_plane(P, v, R, n, &t)) return FALSE;
-  if (t < 0) return FALSE;
+  if (!v3line_plane(R, v, P, n, &t)) return false;
+  if (t < 0) return false;
   if (t_out) *t_out = t;
-  return TRUE;
+  return true;
 }

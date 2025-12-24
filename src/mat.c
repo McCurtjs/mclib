@@ -26,6 +26,52 @@
 
 #include <math.h>
 
+////////////////////////////////////////////////////////////////////////////////
+// Matrix 3x3
+////////////////////////////////////////////////////////////////////////////////
+
+mat3 m3mul(mat3 a, mat3 b) {
+  mat3 ret = m3zero;
+
+  for (int x = 0; x < 3; ++x) {
+    for (int y = 0; y < 3; ++y) {
+      for (int i = 0; i < 3; ++i) {
+        ret.m[x][y] += a.m[i][y] * b.m[x][i];
+      }
+    }
+  }
+
+  return ret;
+}
+
+vec3 mv3mul(mat3 m, vec3 v) {
+  vec3 ret = v3zero;
+
+  for (int y = 0; y < 3; ++y) {
+    for (int x = 0; x < 3; ++x) {
+      ret.f[y] += m.m[x][y] * v.f[x];
+    }
+  }
+
+  return ret;
+}
+
+mat3 m3transpose(mat3 m) {
+  mat3 ret;
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      ret.m[i][j] = m.m[j][i];
+    }
+  }
+
+  return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Matrix 4x4
+////////////////////////////////////////////////////////////////////////////////
+
 mat4 m4ortho(
   float left, float right, float top, float bottom, float near, float far
 ) {
@@ -104,19 +150,19 @@ mat4 m4rotation(vec3 axis, float angle) {
   return ret;
 }
 
-mat4 m4scalar(vec3 scalar) {
-  mat4 ret = m4identity;
-  ret.m[0][0] = scalar.x;
-  ret.m[1][1] = scalar.y;
-  ret.m[2][2] = scalar.z;
-  return ret;
-}
-
-mat4 m4uniform(float scalar) {
+mat4 m4scalar(float scalar) {
   mat4 ret = m4identity;
   ret.m[0][0] = scalar;
   ret.m[1][1] = scalar;
   ret.m[2][2] = scalar;
+  return ret;
+}
+
+mat4 m4vscalar(vec3 scalar) {
+  mat4 ret = m4identity;
+  ret.m[0][0] = scalar.x;
+  ret.m[1][1] = scalar.y;
+  ret.m[2][2] = scalar.z;
   return ret;
 }
 

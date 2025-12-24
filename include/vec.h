@@ -85,6 +85,7 @@ typedef vec4b color4b;
 typedef struct vec2 {
   union {
     float f[2];
+    float row[2];
     struct {
       union { float x; float w; float u; float s; float p; float i; };
       union { float y; float h; float v; float t; float q; float r; };
@@ -96,6 +97,7 @@ typedef vec2 inum;
 typedef struct vec3 {
   union {
     float f[3];
+    float row[3];
     struct {
       union {          float r; float u; };
       union { float y; float g; float v; };
@@ -247,21 +249,21 @@ vec2    v2add(vec2 a, vec2 b);
 vec2    v2sub(vec2 a, vec2 b);
 vec2    v2scale(vec2 v, float f);
 float   v2dot(vec2 a, vec2 b);
-vec2    v2had(vec2 a, vec2 b);
+vec2    v2mul(vec2 a, vec2 b);
 float   v2cross(vec2 a, vec2 b);
 vec2    v2perp(vec2 v);
-vec2    v2reflect(vec2 a, vec2 b);
+vec2    v2reflect(vec2 v, vec2 mirror);
 float   v2angle(vec2 a, vec2 b);
 vec2    v2dir(float theta);
 vec2    v2rot(vec2 v, float theta);
 vec2    v2lerp(vec2 P, vec2 Q, float t);
-float   v2line_dist(vec2 P, vec2 v, vec2 Q);
-float   v2line_closest(vec2 P, vec2 v, vec2 Q, vec2* R_out);
-bool    v2line_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
-bool    v2ray_line(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out);
-bool    v2ray_ray(vec2 P, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
-bool    v2ray_seg(vec2 P, vec2 v, vec2 Q1, vec2 Q2, float* t_out);
-bool    v2seg_seg(vec2 P1, vec2 P2, vec2 Q1, vec2 Q2, vec2* out);
+float   v2line_dist(vec2 L, vec2 v, vec2 P);
+float   v2line_closest(vec2 L, vec2 v, vec2 P, vec2* R_out);
+bool    v2line_line(vec2 L, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
+bool    v2ray_line(vec2 R, vec2 v, vec2 L, vec2 u, float* t_out);
+bool    v2ray_ray(vec2 R, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
+bool    v2ray_seg(vec2 R, vec2 v, vec2 S1, vec2 S2, float* t_out);
+bool    v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out);
 
 float   v3mag(vec3 v);
 float   v3magsq(vec3 v);
@@ -271,12 +273,14 @@ vec3    v3add(vec3 a, vec3 b);
 vec3    v3sub(vec3 a, vec3 b);
 vec3    v3scale(vec3 a, float f);
 float   v3dot(vec3 a, vec3 b);
-vec3    v3had(vec3 a, vec3 b);
+vec3    v3mul(vec3 a, vec3 b);
 vec3    v3cross(vec3 a, vec3 b);
 vec3    v3perp(vec3 v);
 float   v3angle(vec3 a, vec3 b);
-bool    v3line_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
-bool    v3ray_plane(vec3 P, vec3 v, vec3 R, vec3 n, float* t_out);
+vec3    v3lerp(vec3 P, vec3 Q, float t);
+float   v3line_dist(vec3 L, vec3 v, vec3 P);
+bool    v3line_plane(vec3 L, vec3 v, vec3 P, vec3 n, float* t_out);
+bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);
 
 //vec2  v2orbit(vec2 a, vec2 center, float theta);
 //vec3  v3reflect(vec3 v, vec3 axis);

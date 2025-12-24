@@ -197,6 +197,8 @@ static _ensure_t _map_ensure(Map_Internal* m, const void* key, hash_t hash);
 static void _map_clear(Map_Internal* m) {
   m->free_list = (Map_Cell*)m->data;
 
+  if (!m->free_list) return;
+
   // Link the map slots together to create the free list.
   Map_Cell* cell = m->free_list;
   cell->free_prev = NULL;
