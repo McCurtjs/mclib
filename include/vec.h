@@ -113,6 +113,18 @@ typedef struct vec3 {
 } vec3;
 typedef vec3 color3;
 
+typedef struct quat {
+  union {
+    struct {
+      float i, j, k, w;
+    };
+    struct {
+      float x, y, z;
+    };
+    vec3 ijk;
+  };
+} quat;
+
 typedef struct vec4 {
   union {
     float f[4];
@@ -137,9 +149,9 @@ typedef struct vec4 {
     vec3 xyz;
     vec3 rgb;
     vec3 ijk;
+    quat ijkw;
   };
 } vec4;
-typedef vec4 quat;
 typedef vec4 color4;
 
 //     c d e     h       l   n o
@@ -233,8 +245,6 @@ typedef vec4 color4;
 #define b4white     ((vec4b){.i={ 255, 255, 255, 255 } })
 #define b4gray      ((vec4b){.i={ 128, 128, 128, 255 } })
 
-vec3    qtransform(quat q, vec3 v);
-
 float   i2aspect(vec2i v);
 vec2i   i2zcurve(size_t i);
 size_t  i2zindex(vec2i v);
@@ -247,16 +257,21 @@ vec2    v2norm(vec2 v);
 vec2    v2neg(vec2 v);
 vec2    v2add(vec2 a, vec2 b);
 vec2    v2sub(vec2 a, vec2 b);
+vec2    v2dir(vec2 dst, vec2 src);
 vec2    v2scale(vec2 v, float f);
+vec2    v2rescale(vec2 v, float length);
+vec2    v2limit(vec2 v, float max_length);
+vec2    v2clamp(vec2 v, float min_len, float max_len);
 float   v2dot(vec2 a, vec2 b);
 vec2    v2mul(vec2 a, vec2 b);
 float   v2cross(vec2 a, vec2 b);
 vec2    v2perp(vec2 v);
 vec2    v2reflect(vec2 v, vec2 mirror);
 float   v2angle(vec2 a, vec2 b);
-vec2    v2dir(float theta);
+vec2    v2heading(float theta);
 vec2    v2rot(vec2 v, float theta);
 vec2    v2lerp(vec2 P, vec2 Q, float t);
+vec2    v2towards(vec2 P, vec2 Q, float max);
 float   v2line_dist(vec2 L, vec2 v, vec2 P);
 float   v2line_closest(vec2 L, vec2 v, vec2 P, vec2* R_out);
 bool    v2line_line(vec2 L, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
@@ -267,17 +282,25 @@ bool    v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out);
 
 float   v3mag(vec3 v);
 float   v3magsq(vec3 v);
+float   v3dist(vec3 P, vec3 Q);
+float   v3distsq(vec3 P, vec3 Q);
 vec3    v3norm(vec3 v);
 vec3    v3neg(vec3 v);
 vec3    v3add(vec3 a, vec3 b);
 vec3    v3sub(vec3 a, vec3 b);
-vec3    v3scale(vec3 a, float f);
+vec3    v3dir(vec3 dst, vec3 src);
+vec3    v3scale(vec3 v, float f);
+vec3    v3rescale(vec3 v, float length);
+vec3    v3limit(vec3 v, float max_length);
+vec3    v3clamp(vec3 v, float min_len, float max_len);
 float   v3dot(vec3 a, vec3 b);
 vec3    v3mul(vec3 a, vec3 b);
 vec3    v3cross(vec3 a, vec3 b);
 vec3    v3perp(vec3 v);
+vec3    v3reflect(vec3 v, vec3 n_mirror);
 float   v3angle(vec3 a, vec3 b);
 vec3    v3lerp(vec3 P, vec3 Q, float t);
+vec3    v3towards(vec3 P, vec3 Q, float max);
 float   v3line_dist(vec3 L, vec3 v, vec3 P);
 bool    v3line_plane(vec3 L, vec3 v, vec3 P, vec3 n, float* t_out);
 bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);

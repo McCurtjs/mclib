@@ -8,6 +8,7 @@ target_sources(McLib PRIVATE
   src/array.c
   src/map.c
   src/mat.c
+  src/quat.c
   src/slice.c
   src/span.c
   src/str.c
@@ -23,6 +24,7 @@ target_sources(McLib PRIVATE
   include/mat.h
   include/pair.h
   include/partition.h
+  include/quat.h
   include/slice.h
   include/span.h
   include/span_base.h

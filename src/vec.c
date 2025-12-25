@@ -103,6 +103,10 @@ vec2 v2neg(vec2 v) {
   return v2f(-v.x, -v.y);
 }
 
+vec2 v2dir(vec2 dst, vec2 src) {
+  return v2norm(v2sub(dst, src));
+}
+
 vec2 v2add(vec2 a, vec2 b) {
   return v2f(a.x + b.x, a.y + b.y);
 }
@@ -113,6 +117,24 @@ vec2 v2sub(vec2 a, vec2 b) {
 
 vec2 v2scale(vec2 v, float f) {
   return v2f(v.x * f, v.y * f);
+}
+
+vec2 v2rescale(vec2 v, float f) {
+  return v2scale(v2norm(v), f);
+}
+
+vec2 v2limit(vec2 v, float max) {
+  float mag = v2mag(v);
+  if (mag <= max || mag == 0.0f) return v;
+  return v2scale(v, max / mag);
+}
+
+vec2 v2clamp(vec2 v, float min, float max) {
+  float mag = v2mag(v);
+  if (mag == 0.0f) return v;
+  if (mag < min) return v2scale(v, min / mag);
+  if (mag > max) return v2scale(v, max / mag);
+  return v;
 }
 
 float v2dot(vec2 a, vec2 b) {
@@ -142,23 +164,30 @@ float v2angle(vec2 a, vec2 b) {
   return acosf(v2dot(a, b) / (v2mag(a) * v2mag(b)));
 }
 
-vec2 v2dir(float theta) {
-  float sint, cost;
+vec2 v2heading(float theta) {
+  float cost, sint;
   //sincosf(theta, &sint, &cost);
-  sint = sinf(theta); cost = sinf(theta);
-  return v2f( cost, sint );
+  cost = cosf(theta); sint = sinf(theta);
+  return v2f(cost, sint);
 }
 
 vec2 v2rot(vec2 v, float theta) {
-  float sint, cost;
+  float cost, sint;
   //sincosf(theta, &sint, &cost);
-  sint = sinf(theta); cost = cosf(theta);
-  return v2f( cost * v.x - sint * v.y, sint * v.x + cost * v.y );
+  cost = cosf(theta); sint = sinf(theta);
+  return v2f(cost * v.x - sint * v.y, sint * v.x + cost * v.y);
 }
 
 vec2 v2lerp(vec2 P, vec2 Q, float t) {
   vec2 v = v2scale(v2sub(Q, P), t);
   return v2add(P, v);
+}
+
+vec2 v2towards(vec2 P, vec2 Q, float max) {
+  vec2 v = v2sub(Q, P);
+  float mag = v2mag(v);
+  if (mag <= max || mag == 0.0f) return Q;
+  return v2add(P, v2scale(v, max / mag));
 }
 
 float v2line_dist(vec2 L, vec2 v, vec2 P) {
@@ -233,6 +262,14 @@ float v3magsq(vec3 v) {
   return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
+float v3dist(vec3 P, vec3 Q) {
+  return sqrtf(v3distsq(P, Q));
+}
+
+float v3distsq(vec3 P, vec3 Q) {
+  return v3magsq(v3sub(P, Q));
+}
+
 vec3 v3norm(vec3 v) {
   float mag = v3mag(v);
   return v3f( v.x / mag, v.y / mag, v.z / mag );
@@ -250,8 +287,30 @@ vec3 v3sub(vec3 a, vec3 b) {
   return v3f( a.x - b.x, a.y - b.y, a.z - b.z );
 }
 
-vec3 v3scale(vec3 a, float f) {
-  return v3f( a.x * f, a.y * f, a.z * f );
+vec3 v3dir(vec3 dst, vec3 src) {
+  return v3norm(v3sub(dst, src));
+}
+
+vec3 v3scale(vec3 v, float f) {
+  return v3f( v.x * f, v.y * f, v.z * f );
+}
+
+vec3 v3rescale(vec3 v, float f) {
+  return v3scale(v3norm(v), f);
+}
+
+vec3 v3limit(vec3 v, float max) {
+  float mag = v3mag(v);
+  if (mag <= max || mag == 0.0f) return v;
+  return v3scale(v, max / mag);
+}
+
+vec3 v3clamp(vec3 v, float min, float max) {
+  float mag = v3mag(v);
+  if (mag == 0.0f) return v;
+  if (mag < min) return v3scale(v, min / mag);
+  if (mag > max) return v3scale(v, max / mag);
+  return v;
 }
 
 float v3dot(vec3 a, vec3 b) {
@@ -290,6 +349,13 @@ float v3angle(vec3 a, vec3 b) {
 vec3 v3lerp(vec3 P, vec3 Q, float t) {
   vec3 v = v3scale(v3sub(Q, P), t);
   return v3add(P, v);
+}
+
+vec3 v3towards(vec3 P, vec3 Q, float max) {
+  vec3 v = v3sub(Q, P);
+  float mag = v3mag(v);
+  if (mag <= max || mag == 0.0f) return Q;
+  return v3add(P, v3scale(v, max / mag));
 }
 
 float v3line_dist(vec3 L, vec3 v, vec3 P) {

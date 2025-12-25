@@ -68,11 +68,29 @@ mat3 m3transpose(mat3 m) {
   return ret;
 }
 
+mat3 m3q(quat q) {
+  float xx = q.x * q.x;
+  float yy = q.y * q.y;
+  float zz = q.z * q.z;
+  float xy = q.x * q.y;
+  float xz = q.x * q.z;
+  float yz = q.y * q.z;
+  float wx = q.w * q.x;
+  float wy = q.w * q.y;
+  float wz = q.w * q.z;
+
+  return (mat3) { .f = {
+    1.f - 2.f * (yy + zz) , 2.f * (xy + wz)       , 2.f * (xz - wy),
+    2.f * (xy - wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz + wx),
+    2.f * (xz + wy)       , 2.f * (yz - wx)       , 1.f - 2.f * (xx + yy)
+  }};
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Matrix 4x4
 ////////////////////////////////////////////////////////////////////////////////
 
-mat4 m4ortho(
+mat4 m4orthographic(
   float left, float right, float top, float bottom, float near, float far
 ) {
   mat4 ret = m4identity;
@@ -129,7 +147,7 @@ mat4 m4translation(vec3 vec) {
 }
 
 mat4 m4rotation(vec3 axis, float angle) {
-  mat4 ret = m4identity;
+  mat4 ret;
 
   float s = sinf(angle);
   float c = cosf(angle);
@@ -138,16 +156,40 @@ mat4 m4rotation(vec3 axis, float angle) {
   ret.m[0][0] = cd1 * axis.x * axis.x + c;
   ret.m[0][1] = cd1 * axis.y * axis.x + axis.z * s;
   ret.m[0][2] = cd1 * axis.z * axis.x - axis.y * s;
+  ret.m[0][3] = 0;
 
   ret.m[1][0] = cd1 * axis.x * axis.y - axis.z * s;
   ret.m[1][1] = cd1 * axis.y * axis.y + c;
   ret.m[1][2] = cd1 * axis.z * axis.y + axis.x * s;
+  ret.m[1][3] = 0;
 
   ret.m[2][0] = cd1 * axis.x * axis.z + axis.y * s;
   ret.m[2][1] = cd1 * axis.y * axis.z - axis.x * s;
   ret.m[2][2] = cd1 * axis.z * axis.z + c;
+  ret.m[2][3] = 0;
+
+  ret.col[3] = v4w;
 
   return ret;
+}
+
+mat4 m4q(quat q) {
+  float xx = q.x * q.x;
+  float yy = q.y * q.y;
+  float zz = q.z * q.z;
+  float xy = q.x * q.y;
+  float xz = q.x * q.z;
+  float yz = q.y * q.z;
+  float wx = q.w * q.x;
+  float wy = q.w * q.y;
+  float wz = q.w * q.z;
+
+  return (mat4) {.f = {
+    1.f - 2.f * (yy + zz) , 2.f * (xy + wz)       , 2.f * (xz - wy)       , 0,
+    2.f * (xy - wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz + wx)       , 0,
+    2.f * (xz + wy)       , 2.f * (yz - wx)       , 1.f - 2.f * (xx + yy) , 0,
+    0                     , 0                     , 0                     , 1
+  }};
 }
 
 mat4 m4scalar(float scalar) {
@@ -235,7 +277,7 @@ mat4 m4inverse(mat4 m) {
     m.f[12] * m.f[2] * m.f[7] + m.f[12] * m.f[3] * m.f[6]
     ,
     m.f[0] * m.f[6] * m.f[11] - m.f[0] * m.f[7] * m.f[10] -
-     m.f[4] * m.f[2] * m.f[11] + m.f[4] * m.f[3] * m.f[10] +
+    m.f[4] * m.f[2] * m.f[11] + m.f[4] * m.f[3] * m.f[10] +
     m.f[8] * m.f[2] * m.f[7] - m.f[8] * m.f[3] * m.f[6]
     ,
     m.f[4] * m.f[9] * m.f[15] - m.f[4] * m.f[11] * m.f[13] -
@@ -243,8 +285,8 @@ mat4 m4inverse(mat4 m) {
     m.f[12] * m.f[5] * m.f[11] - m.f[12] * m.f[7] * m.f[9]
     ,
     -m.f[0] * m.f[9] * m.f[15] + m.f[0] * m.f[11] * m.f[13] +
-     m.f[8] * m.f[1] * m.f[15] - m.f[8] * m.f[3] * m.f[13] -
-     m.f[12] * m.f[1] * m.f[11] + m.f[12] * m.f[3] * m.f[9]
+    m.f[8] * m.f[1] * m.f[15] - m.f[8] * m.f[3] * m.f[13] -
+    m.f[12] * m.f[1] * m.f[11] + m.f[12] * m.f[3] * m.f[9]
     ,
     m.f[0] * m.f[5] * m.f[15] - m.f[0] * m.f[7] * m.f[13] -
     m.f[4] * m.f[1] * m.f[15] + m.f[4] * m.f[3] * m.f[13] +
@@ -255,8 +297,8 @@ mat4 m4inverse(mat4 m) {
     m.f[8] * m.f[1] * m.f[7] + m.f[8] * m.f[3] * m.f[5]
     ,
     -m.f[4] * m.f[9] * m.f[14] + m.f[4] * m.f[10] * m.f[13] +
-     m.f[8] * m.f[5] * m.f[14] - m.f[8] * m.f[6] * m.f[13] -
-     m.f[12] * m.f[5] * m.f[10] + m.f[12] * m.f[6] * m.f[9]
+    m.f[8] * m.f[5] * m.f[14] - m.f[8] * m.f[6] * m.f[13] -
+    m.f[12] * m.f[5] * m.f[10] + m.f[12] * m.f[6] * m.f[9]
     ,
     m.f[0] * m.f[9] * m.f[14] - m.f[0] * m.f[10] * m.f[13] -
     m.f[8] * m.f[1] * m.f[14] + m.f[8] * m.f[2] * m.f[13] +
@@ -270,4 +312,88 @@ mat4 m4inverse(mat4 m) {
     m.f[4] * m.f[1] * m.f[10] + m.f[4] * m.f[2] * m.f[9] +
     m.f[8] * m.f[1] * m.f[6] - m.f[8] * m.f[2] * m.f[5]
   }};
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Transform shorthand
+////////////////////////////////////////////////////////////////////////////////
+
+mat4 m4trs(vec3 translation, vec3 axis, float angle, float uniform_scalar) {
+  mat4 ret = m4rs(axis, angle, uniform_scalar);
+  ret.col[3].xyz = translation;
+  return ret;
+}
+
+mat4 m4trsv(vec3 translation, vec3 axis, float angle, vec3 non_uniform_scalar) {
+  mat4 ret = m4rsv(axis, angle, non_uniform_scalar);
+  ret.col[3].xyz = translation;
+  return ret;
+}
+
+mat4 m4trsq(vec3 translation, quat q, float uniform_scalar) {
+  mat4 ret = m4rsq(q, uniform_scalar);
+  ret.col[3].xyz = translation;
+  return ret;
+}
+
+mat4 m4trsqv(vec3 translation, quat q, vec3 non_uniform_scalar) {
+  mat4 ret = m4rsqv(q, non_uniform_scalar);
+  ret.col[3].xyz = translation;
+  return ret;
+}
+
+mat4 m4ts(vec3 translation, float uniform_scalar) {
+  return m4mul(m4translation(translation), m4scalar(uniform_scalar));
+}
+
+mat4 m4tsv(vec3 translation, vec3 non_uniform_scalar) {
+  return m4mul(m4translation(translation), m4vscalar(non_uniform_scalar));
+}
+
+mat4 m4tr(vec3 translation, vec3 axis, float angle) {
+  mat4 ret = m4rotation(axis, angle);
+  ret.col[3].xyz = translation;
+  return ret;
+}
+
+mat4 m4trq(vec3 translation, quat q) {
+  mat4 ret = m4q(q);
+  ret.col[3].xyz = translation;
+  return ret;
+}
+
+mat4 m4rs(vec3 axis, float angle, float scale) {
+  return m4rsv(axis, angle, v3f(scale, scale, scale));
+}
+
+mat4 m4rsv(vec3 axis, float angle, vec3 scale) {
+  mat4 ret = m4rotation(axis, angle);
+  ret.m[0][0] *= scale.x;
+  ret.m[0][1] *= scale.x;
+  ret.m[0][2] *= scale.x;
+  ret.m[1][0] *= scale.y;
+  ret.m[1][1] *= scale.y;
+  ret.m[1][2] *= scale.y;
+  ret.m[2][0] *= scale.z;
+  ret.m[2][1] *= scale.z;
+  ret.m[2][2] *= scale.z;
+  return ret;
+}
+
+mat4 m4rsq(quat q, float scale) {
+  return m4rsqv(q, v3f(scale, scale, scale));
+}
+
+mat4 m4rsqv(quat q, vec3 scale) {
+  mat4 ret = m4q(q);
+  ret.m[0][0] *= scale.x;
+  ret.m[0][1] *= scale.x;
+  ret.m[0][2] *= scale.x;
+  ret.m[1][0] *= scale.y;
+  ret.m[1][1] *= scale.y;
+  ret.m[1][2] *= scale.y;
+  ret.m[2][0] *= scale.z;
+  ret.m[2][1] *= scale.z;
+  ret.m[2][2] *= scale.z;
+  return ret;
 }

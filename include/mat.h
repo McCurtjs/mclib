@@ -22,8 +22,8 @@
 * SOFTWARE.
 */
 
-#ifndef _MCLIB_MATRIX_H_
-#define _MCLIB_MATRIX_H_
+#ifndef MCLIB_MATRIX_H_
+#define MCLIB_MATRIX_H_
 
 #include "vec.h"
 
@@ -95,9 +95,11 @@ mat3 m3mul(mat3 a, mat3 b);
 vec3 mv3mul(mat3 m, vec3 v);
 mat3 m3transpose(mat3 m);
 
-mat4 m4ortho(
+mat4 m4orthographic(
   float left, float right, float top, float bottom, float near, float far);
-mat4 m4perspective(float fov_rads, float aspect, float near, float far);
+mat4 m4perspective(
+  float fov_rads, float aspect, float near, float far);
+
 mat4 m4basis(vec3 x, vec3 y, vec3 z, vec3 origin);
 mat4 m4look(vec3 pos, vec3 target, vec3 up);
 mat4 m4translation(vec3 vec);
@@ -108,6 +110,22 @@ mat4 m4mul(mat4 a, mat4 b);
 vec4 mv4mul(mat4 m, vec4 v);
 mat4 m4transpose(mat4 mat);
 mat4 m4inverse(mat4 mat);
+
+mat4 m4trs(vec3 translation, vec3 axis, float angle, float uniform_scalar);
+mat4 m4trsv(vec3 translation, vec3 axis, float angle, vec3 non_uniform_scalar);
+mat4 m4trsq(vec3 translation, quat q, float uniform_scalar);
+mat4 m4trsqv(vec3 translation, quat q, vec3 non_uniform_scalar);
+mat4 m4ts(vec3 translation, float uniform_scalar);
+mat4 m4tsv(vec3 translation, vec3 non_uniform_scalar);
+mat4 m4tr(vec3 translation, vec3 axis, float angle);
+mat4 m4trq(vec3 translation, quat q);
+mat4 m4rs(vec3 axis, float angle, float uniform_scalar);
+mat4 m4rsv(vec3 axis, float angle, vec3 non_uniform_scalar);
+mat4 m4rsq(quat q, float uniform_scalar);
+mat4 m4rsqv(quat q, vec3 non_uniform_scalar);
+
+mat3 m3q(quat q);
+mat4 m4q(quat q);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Matrix type conversion shorthands
