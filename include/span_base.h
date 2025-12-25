@@ -78,17 +78,22 @@ static inline view_t view_to_view(view_t view) { return view; }
   span_t: span_to_view, view_t: view_to_view                                  \
 )(VAL)                                                                        //
 
-#define SPAN_VALID(SPAN) do {                                                 \
+#ifdef _DEBUG
+# define SPAN_VALID(SPAN) do {                                                \
   span_t _span = (SPAN);                                                      \
   assert((_span.begin && _span.end) || !(_span.begin || _span.end));          \
   assert((byte*)_span.begin <= (byte*)_span.end);                             \
 } while(false)                                                                //
 
-#define VIEW_VALID(VIEW) do {                                                 \
+# define VIEW_VALID(VIEW) do {                                                \
   view_t _view = (VIEW);                                                      \
   assert((_view.begin && _view.end) || !(_view.begin || _view.end));          \
   assert((const byte*)_view.begin <= (const byte*)_view.end);                 \
 } while(false)                                                                //
+#else
+# define SPAN_VALID(SPAN)
+# define VIEW_VALID(VIEW)
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Size and element count

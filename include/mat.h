@@ -114,7 +114,7 @@ mat4 m4inverse(mat4 mat);
 ////////////////////////////////////////////////////////////////////////////////
 
 static inline mat2 m2f(float m00, float m01, float m10, float m11) {
-  return (mat2) { m00, m01, m10, m11 };
+  return (mat2) { .f = { m00, m01, m10, m11 } };
 }
 
 static inline mat2 m2v(vec2 A, vec2 B) {

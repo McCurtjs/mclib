@@ -282,13 +282,17 @@ SI void*    arr_search_ref(Array arr, const void* item, compare_nosize_fn);
 // Inlining
 ////////////////////////////////////////////////////////////////////////////////
 
-#define ARR_VALID(ARR) do {                                                   \
+#ifdef _DEBUG
+# define ARR_VALID(ARR) do {                                                  \
   const Array _arr = (const Array)(ARR);                                      \
   assert(_arr);                                                               \
   assert(_arr->size >= 0);                                                    \
   assert(_arr->begin || _arr->size == 0);                                     \
   assert(_arr->element_size > 0);                                             \
 } while(false)                                                                //
+#else
+# define ARR_VALID(ARR)
+#endif
 
 static inline void arr_write_back(
   Array array, const void* in_element

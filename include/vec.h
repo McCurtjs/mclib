@@ -290,6 +290,8 @@ bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);
 // Vector type conversion shorthands
 ////////////////////////////////////////////////////////////////////////////////
 
+// Construct from individual components
+
 static inline vec3b v3b(byte r, byte g, byte b) {
   return (vec3b) { .i = { r, g, b } };
 }
@@ -322,6 +324,8 @@ static inline vec4 v4f(float x, float y, float z, float w) {
   return (vec4) { .f = { x, y, z, w } };
 }
 
+// Convert dimensions with default new values where applicable
+
 static inline vec3 v23(vec2 v) {
   return v3f(v.x, v.y, 0);
 }
@@ -333,6 +337,38 @@ static inline vec4 v24(vec2 v) {
 static inline vec4 p24(vec2 v) {
   return v4f(v.x, v.y, 0, 1);
 }
+
+static inline vec4 v34(vec3 v) {
+  return v4f(v.x, v.y, v.z, 0);
+}
+
+static inline vec4 p34(vec3 p) {
+  return v4f(p.x, p.y, p.z, 1);
+}
+
+// Convert dimensions while flipping from xz coords to xy
+
+static inline vec3 v23xz(vec2 v) {
+  return v3f(v.x, 0.f, v.y);
+}
+
+static inline vec4 v24xz(vec2 v) {
+  return v4f(v.x, 0.f, v.y, 0.f);
+}
+
+static inline vec4 p24xz(vec2 v) {
+  return v4f(v.x, 0.f, v.y, 1.f);
+}
+
+static inline vec2 v32xz(vec3 v) {
+  return v2f(v.x, v.z);
+}
+
+static inline vec2 v42xz(vec4 v) {
+  return v2f(v.x, v.z);
+}
+
+// Inrease dimensions and provide new component values
 
 static inline vec3 v23f(vec2 v, float z) {
   return v3f(v.x, v.y, z);
@@ -346,20 +382,46 @@ static inline vec4 p24f(vec2 v, float z) {
   return v4f(v.x, v.y, z, 1);
 }
 
+static inline vec4 v34f(vec3 v, float w) {
+  return v4f(v.x, v.y, v.z, w);
+}
+
 static inline vec4 v24v(vec2 xy, vec2 zw) {
   return v4f(xy.x, xy.y, zw.x, zw.y);
 }
 
-static inline vec4 v34(vec3 v) {
-  return v4f(v.x, v.y, v.z, 0);
+// Convert between vector types
+
+static inline vec2i v2iv(vec2 v) {
+  return v2i((int)v.x, (int)v.y);
 }
 
-static inline vec4 p34(vec3 p) {
-  return v4f(p.x, p.y, p.z, 1);
+static inline vec2 v2vi(vec2i v) {
+  return v2f((float)v.x, (float)v.y);
 }
 
-static inline vec4 v34f(vec3 v, float w) {
-  return v4f(v.x, v.y, v.z, w);
+static inline vec3i v3iv(vec3 v) {
+  return v3i((int)v.x, (int)v.y, (int)v.z);
+}
+
+static inline vec3 v3vi(vec3i v) {
+  return v3f((float)v.x, (float)v.y, (float)v.z);
+}
+
+static inline vec3 v3vb(vec3b v) {
+  return v3f((float)v.x, (float)v.y, (float)v.z);
+}
+
+static inline vec3b v3bv(vec3 v) {
+  return v3b((byte)v.x, (byte)v.y, (byte)v.z);
+}
+
+static inline vec3 v3vc(vec3b c) {
+  return v3f((float)c.x / 255.f, (float)c.g / 255.f, (float)c.b / 255.f);
+}
+
+static inline vec3b v3cv(vec3 c) {
+  return v3b((byte)(c.x * 255.f), (byte)(c.g * 255.f), (byte)(c.b * 255.f));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
