@@ -291,6 +291,45 @@ describe(packedmap_foreach) {
 
 }
 
+#define con_type int
+#include "packedmap.h"
+#undef con_type
+
+describe(packedmap_specialized_type) {
+
+  PackedMap_int ints = pmap_int_new();
+  slotkey_t key;
+
+  it("can add and remove using specialized functions") {
+    *pmap_int_emplace(ints, &key) = 25;
+    *pmap_int_emplace(ints, &key) = 67;
+    *pmap_int_emplace(ints, &key) = 42;
+    expect(ints->size , == , 3);
+    pmap_int_remove(ints, key);
+    expect(ints->size , == , 2);
+    key = pmap_int_key(ints, 1);
+    bool test = (*(pmap_int_ref(ints, key))) == 67;
+    expect(test);
+  }
+
+  it("can add and remove items by value") {
+    key = pmap_int_add(ints, 12);
+    pmap_int_add(ints, 9484);
+    pmap_int_add(ints, 99);
+    expect(ints->size, == , 3);
+    expect(pmap_int_get(ints, key), == , 12);
+    pmap_int_clear(ints);
+    expect(ints->size to be_zero);
+    expect(ints->begin to not be_null);
+  }
+
+  after {
+    pmap_int_delete(&ints);
+    expect(ints == NULL);
+  }
+
+}
+
 test_suite(tests_packedmap) {
   test_group(packedmap_construction),
   test_group(packedmap_add_item),
@@ -298,5 +337,6 @@ test_suite(tests_packedmap) {
   test_group(packedmap_read),
   test_group(packedmap_remove),
   test_group(packedmap_foreach),
+  test_group(packedmap_specialized_type),
   test_suite_end
 };

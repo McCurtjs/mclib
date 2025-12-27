@@ -74,7 +74,7 @@ typedef size_t    jshandle;
 typedef ptrdiff_t index_t;
 
 // Common pointer types
-typedef struct _opaque_String_base* String;
+typedef struct _opaque_String_base_t* String;
 
 // Common function pointer types
 typedef int     (*compare_fn)(const void* lhs, const void* rhs, size_t size);

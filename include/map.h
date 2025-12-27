@@ -194,7 +194,7 @@ static hash_t _key_hash(const void* key, index_t key_size) {
 # endif
 #endif
 
-typedef struct MACRO_CONCAT3(_opaque_, _map_type, _base) {
+typedef struct MACRO_CONCAT3(_opaque_, _map_type, _base_t) {
   index_t const size;
   index_t const capacity;
   index_t const key_size;

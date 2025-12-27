@@ -94,7 +94,7 @@
     </Expand>
   </Type>
 
-  <Type Name="_opaque_String_base">
+  <Type Name="_opaque_String_base_t">
     <DisplayString Condition="size == 0">String: length = 0 &lt;empty&gt;</DisplayString>
     <DisplayString>String: length = {size} "{begin,sb}"</DisplayString>
     <Expand HideRawView="true">
