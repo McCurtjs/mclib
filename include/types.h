@@ -84,6 +84,11 @@ typedef hash_t  (*hash_fn)(const void* key, index_t size);
 typedef void    (*delete_fn)(void* to_delete);
 typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 
+// Index type for slot-maps
+typedef struct slotkey_t {
+  index_t index, unique;
+} slotkey_t;
+
 #ifndef NULL
 # define NULL nullptr
 #endif

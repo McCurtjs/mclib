@@ -59,6 +59,7 @@ extern const span_t span_empty;
 extern const view_t view_empty;
 
 #define SPAN(S) { .begin = (S), .end = (S) + ARRAY_COUNT(S) }
+#define VIEW(S) SPAN(S)
 
 #define span_foreach(VAR, SPAN)                                               \
   VAR = SPAN.begin;                                                           \
@@ -94,6 +95,34 @@ static inline view_t view_to_view(view_t view) { return view; }
 # define SPAN_VALID(SPAN)
 # define VIEW_VALID(VIEW)
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Builders
+////////////////////////////////////////////////////////////////////////////////
+
+static inline view_t view_build(const void* begin, const void* end) {
+  assert(begin <= end);
+  return (view_t) { .begin = begin, .end = end };
+}
+
+static inline span_t span_build(void* begin, void* end) {
+  assert(begin <= end);
+  return (span_t) { .begin = begin, .end = end };
+}
+
+static inline view_t view_range(const void* begin, index_t size, index_t elsz) {
+  assert(size >= 0);
+  assert(elsz > 0);
+  assert(begin || !size);
+  return (view_t) { .begin = begin, .end = (const byte*)begin + size * elsz };
+}
+
+static inline span_t span_range(void* begin, index_t size, index_t elsz) {
+  assert(size >= 0);
+  assert(elsz > 0);
+  assert(begin || !size);
+  return (span_t) { .begin = begin, .end = (byte*)begin + size * elsz };
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Size and element count

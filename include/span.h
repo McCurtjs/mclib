@@ -128,17 +128,6 @@
 // Builders
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline span_t span_build(void* begin, void* end) {
-  assert(begin <= end);
-  return (span_t) { .begin = begin, .end = end };
-}
-
-static inline span_t span_range(void* begin, index_t size, index_t elsz) {
-  assert(size >= 0);
-  assert(elsz > 0);
-  assert(begin || !size);
-  return (span_t) { .begin = begin, .end = (byte*)begin + size * elsz };
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Accessors

@@ -28,6 +28,8 @@
 #include "array_byte.h"
 #include "array_slice.h"
 #include "map.h"
+#include "slotmap.h"
+#include "packedmap.h"
 
 #include <string.h>
 
@@ -97,6 +99,23 @@ int main(void) {
   map_write(map, &(int) { 5 }, & (int) { 12 });
   map_write(map, &(int) { 122 }, & (int) { 512432145 });
   map_write(map, &(int) { 1337 }, & (int) { 12 });
+
+  slotkey_t key;
+  SlotMap slotmap = smap_new(slice_t);
+  smap_insert(slotmap, &slice);
+  smap_insert(slotmap, &slice);
+  smap_insert(slotmap, &slice);
+  key = smap_insert(slotmap, &slice);
+  smap_insert(slotmap, &slice);
+  smap_remove(slotmap, key);
+  smap_insert(slotmap, &chop);
+
+  PackedMap packmap = pmap_new(vec2);
+  pmap_insert(packmap, &f2);
+  key = pmap_insert(packmap, &f2);
+  pmap_insert(packmap, &f2);
+  pmap_insert(packmap, &v2zero);
+  pmap_remove(packmap, key);
 
   __debugbreak();
 

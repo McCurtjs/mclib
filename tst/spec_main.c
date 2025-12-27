@@ -70,6 +70,8 @@ extern TestSuite tests_array;
 extern TestSuite tests_string;
 extern TestSuite tests_map;
 extern TestSuite tests_vec;
+extern TestSuite tests_slotmap;
+extern TestSuite tests_packedmap;
 
 // Main
 
@@ -77,7 +79,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef CSPEC_MSVC
   /* Test values for Visual Studio without having to modify properties */
-  argv = (char* []){ argv[0], "-y", "str_spec.c" };
+  argv = (char* []){ argv[0], "-y", "packedmap_spec.c" };
   argc = 2;
 #endif
 
@@ -89,6 +91,8 @@ int main(int argc, char* argv[]) {
     &tests_string,
     &tests_map,
     &tests_vec,
+    &tests_slotmap,
+    &tests_packedmap,
   };
 
   cspec_opt_print_line = printer;

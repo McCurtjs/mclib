@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2025 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@
 // #define con_view_type view_v_t // optional, required to use specialized view
 //
 // #include "span.h"
-// #define con_span_type span_v_t // optoinal, required to use specialized span
+// #define con_span_type span_v_t // optional, required to use specialized span
 //
 // #include "array.h"
 // #undef con_type
@@ -71,8 +71,8 @@
 // V*         arr_v_emplace_back(Array_V);
 // slice_v_t  arr_v_emplace_range(Array_V, index_t position, index_t count);
 // slice_v_t  arr_v_emplace_back_range(Array_V, index_t count);
-// void       arr_v_insert(Array_V, index_t position, V element);
-// void       arr_v_insert_back(Array_V, V element);
+// void       arr_v_insert(Array_V, index_t position, V* element);
+// void       arr_v_insert_back(Array_V, V* element);
 // void       arr_v_insert_range(Array_V, index_t position, span_t range);
 // void       arr_v_insert_back_range(Array_V, span_t range);
 // void       arr_v_write(Array_V, index_t position, const V* element);

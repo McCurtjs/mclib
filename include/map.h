@@ -56,7 +56,7 @@
 
 #include "types.h"
 
-typedef struct _opaque_Map_base {
+typedef struct _opaque_Map_base_t {
   index_t const size;
   index_t const capacity;
   index_t const key_size;

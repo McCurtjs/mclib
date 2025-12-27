@@ -8,8 +8,10 @@ target_sources(McLib PRIVATE
   src/array.c
   src/map.c
   src/mat.c
+  src/packedmap.c
   src/quat.c
   src/slice.c
+  src/slotmap.c
   src/span.c
   src/str.c
   src/str_format.c
@@ -22,10 +24,12 @@ target_sources(McLib PRIVATE
   include/array_slice.h
   include/map.h
   include/mat.h
+  include/packedmap.h
   include/pair.h
   include/partition.h
   include/quat.h
   include/slice.h
+  include/slotmap.h
   include/span.h
   include/span_base.h
   include/span_byte.h
@@ -71,10 +75,12 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     lib/cspec/tst/cspec_spec.c
     tst/spec_main.c
     tst/array_spec.c
+    tst/map_spec.c
+    tst/packedmap_spec.c
+    tst/slotmap_spec.c
     tst/span_spec.c
     tst/str_spec.c
     tst/slice_spec.c
-    tst/map_spec.c
     tst/vec_spec.c
   )
 

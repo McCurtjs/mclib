@@ -46,9 +46,9 @@ typedef struct Array_Internal {
     struct {
       union { byte* begin; byte* data; };
       byte* end;
-      index_t element_size;
     };
   };
+  index_t element_size;
   index_t capacity;
   index_t size;
   index_t size_bytes;
