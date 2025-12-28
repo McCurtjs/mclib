@@ -113,6 +113,7 @@ slotkey_t   pmap_insert(PackedMap, const void* element);
 slotkey_t   pmap_key(PackedMap, index_t index);
 void*       pmap_ref(PackedMap, slotkey_t);
 bool        pmap_read(PackedMap, slotkey_t, void* out_element);
+bool        pmap_contains(PackedMap, slotkey_t);
 bool        pmap_remove(PackedMap, slotkey_t);
 
 //void      pmap_sort(PackedMap, compare_fn, compare_nosize_fn);

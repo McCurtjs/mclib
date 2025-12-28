@@ -188,6 +188,7 @@ void* pmap_emplace(PackedMap pm_in, slotkey_t* out_key) {
     mapping = &pm->mapping[map_index];
   }
   mapping->unique = ++pm->unique_counter;
+  assert(mapping->unique);
   mapping->index = pm->size;
   pm->mapping[slot_index].reverse = map_index;
   *out_key = (slotkey_t) {
@@ -222,7 +223,7 @@ slotkey_t pmap_key(PackedMap pm_in, index_t index) {
 
 void* pmap_ref(PackedMap pm_in, slotkey_t key) {
   PACKEDMAP_INTERNAL;
-  if (key.index >= pm->capacity) return NULL;
+  if (key.index < 0 || key.index >= pm->capacity) return NULL;
   entry_t mapping = pm->mapping[key.index];
   if (mapping.unique != key.unique) return NULL;
   return _get_slot(pm, mapping.index);
@@ -236,11 +237,19 @@ bool pmap_read(PackedMap pm_in, slotkey_t key, void* out_element) {
   return true;
 }
 
+bool pmap_contains(PackedMap pm_in, slotkey_t key) {
+  PACKEDMAP_INTERNAL;
+  if (key.index < 0 || key.index >= pm->capacity) return false;
+  return pm->mapping[key.index].unique == key.unique;
+}
+
+#include <ctype.h>
+
 bool pmap_remove(PackedMap pm_in, slotkey_t key) {
   PACKEDMAP_INTERNAL;
 
   // Check index validity and validate unique identifier
-  if (key.index >= pm->capacity) return false;
+  if (key.index < 0 || key.index >= pm->capacity) return false;
   entry_t* mapping = &pm->mapping[key.index];
   if (mapping->unique != key.unique) return false;
 

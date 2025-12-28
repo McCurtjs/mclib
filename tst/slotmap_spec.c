@@ -157,6 +157,13 @@ describe(slotmap_read) {
     expect(smap_read(map, key, &value) to be_false);
   }
 
+  it("can check that a map contains a given key") {
+    smap_emplace(map, &key);
+    expect(smap_contains(map, key) to be_true);
+    key.unique += 1;
+    expect(smap_contains(map, key) to be_false);
+  }
+
   after{
     smap_delete(&map);
   }

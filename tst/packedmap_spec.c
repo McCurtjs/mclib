@@ -160,6 +160,13 @@ describe(packedmap_read) {
     expect(pmap_read(map, key, &value) to be_false);
   }
 
+  it("can check that a map contains a given key") {
+    pmap_emplace(map, &key);
+    expect(pmap_contains(map, key) to be_true);
+    key.unique += 1;
+    expect(pmap_contains(map, key) to be_false);
+  }
+
   it("can retrieve the slotkey for a given index") {
     double values[] = { 1.11111111, 22.2222222, 333.333333 };
     pmap_insert(map, &values[0]);

@@ -55,6 +55,7 @@ typedef struct slot_t {
 } slot_t;
 
 #define SLOTMAP_STARTING_SIZE 8
+#define EMPTY_FREELIST -1
 
 #define GROWTH_FACTOR \
   MAX(SLOTMAP_STARTING_SIZE, sm->capacity + sm->capacity / 2)
@@ -81,7 +82,7 @@ SlotMap ismap_new(index_t element_size) {
     .capacity = 0,
     .size = 0,
     .slot_size = sizeof(slot_t) + MAX(element_size, sizeof(index_t)),
-    .free_list = -1,
+    .free_list = EMPTY_FREELIST,
     .unique_counter = 0,
     .begin = NULL,
   };
@@ -158,6 +159,7 @@ void* smap_emplace(SlotMap sm_in, slotkey_t* out_key) {
     slot = _get_slot(sm, index);
   }
   slot->unique = ++sm->unique_counter;
+  assert(slot->unique);
   *out_key = (slotkey_t) {
     .index = index,
     .unique = slot->unique
@@ -194,6 +196,7 @@ void* smap_next(SlotMap sm_in, slotkey_t* iterator) {
   SLOTMAP_INTERNAL;
   assert(iterator);
   index_t index = iterator->index;
+  assert(index >= 0);
   if (iterator->unique == 0) index = 0;
   for (; index < sm->capacity; ++index) {
     slot_t* slot = _get_slot(sm, index);
@@ -203,6 +206,12 @@ void* smap_next(SlotMap sm_in, slotkey_t* iterator) {
   }
   *iterator = (slotkey_t){ 0 };
   return NULL;
+}
+
+bool smap_contains(SlotMap sm_in, slotkey_t key) {
+  SLOTMAP_INTERNAL;
+  if (key.index < 0 || key.index >= sm->capacity) return false;
+  return _get_slot(sm, key.index)->unique == key.unique;
 }
 
 bool smap_remove(SlotMap sm_in, slotkey_t key) {

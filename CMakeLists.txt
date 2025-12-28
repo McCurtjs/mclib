@@ -99,7 +99,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     # Testbed project for checking Natvis output
     add_executable(Natvis_test)
     set_property(TARGET Natvis_test PROPERTY C_STANDARD 23)
-    target_sources(Natvis_test PRIVATE tst/natvis.c)
+    target_sources(Natvis_test PRIVATE tst/natvis/natvis.c)
     target_link_libraries(Natvis_test PRIVATE McLib)
     target_link_libraries(Natvis_test PRIVATE CSpec)
     target_link_libraries(Natvis_test PRIVATE DbgHelp)

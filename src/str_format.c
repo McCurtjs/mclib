@@ -92,7 +92,7 @@ typedef struct {
   byte trailing : 1;        // 0 = don't, 1 = do ; only for decimals
   byte sci_notation : 2;    // 0 = no, 1 = e, 2 = E
   byte percentage : 1;      // 0 = no, 1 = display decimals as percent
-  ushort width;             // 0 = no padding
+  uint16_t width;           // 0 = no padding
 } _fmt_spec_t;
 
 // handle format specifier

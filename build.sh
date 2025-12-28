@@ -125,29 +125,15 @@ esac
 
 # Run build based on target type
 
-sources_test=" \
-  ./lib/cspec/cspec.c \
-  ./lib/cspec/tst/cspec_spec.c \
-  ./tst/spec_main.c \
-  ./tst/array_spec.c \
-  ./tst/span_spec.c \
-  ./tst/slice_spec.c \
-  ./tst/str_spec.c \
-  ./tst/map_spec.c \
-  ./tst/vec_spec.c \
+sources_test="
+  ./lib/cspec/cspec.c
+  ./lib/cspec/tst/cspec_spec.c
+  ./tst/*.c
 "
 
-sources=" \
-  ./src/view.c \
-  ./src/span.c \
-  ./src/slice.c \
-  ./src/array.c \
-  ./src/map.c \
-  ./src/str.c \
-  ./src/str_format.c \
-  ./src/vec.c \
-  ./src/utility.c \
-  ./lib/murmur3/murmur3.c \
+sources="
+  ./src/*.c
+  ./lib/murmur3/murmur3.c
 "
 
 includes=" \

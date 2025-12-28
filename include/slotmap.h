@@ -90,6 +90,7 @@ slotkey_t smap_insert(SlotMap, const void* element);
 void*     smap_ref(SlotMap, slotkey_t);
 bool      smap_read(SlotMap, slotkey_t, void* out_element);
 void*     smap_next(SlotMap, slotkey_t* iterator);
+bool      smap_contains(SlotMap, slotkey_t);
 bool      smap_remove(SlotMap, slotkey_t);
 
 #define smap_foreach_kv(VALUE, KEY, SMAP)                                     \
