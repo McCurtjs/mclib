@@ -44,7 +44,7 @@ typedef struct SlotMap_Internal {
 
   // Secrets
   index_t   slot_size;
-  index_t   free_list;
+  int32_t   free_list;
   uint64_t  unique_counter;
   byte*     begin;
 } SlotMap_Internal;
@@ -69,8 +69,8 @@ static inline slot_t* _get_slot(SlotMap_Internal* sm, index_t index) {
   return (void*)(sm->begin + sm->slot_size * index);
 }
 
-static inline index_t* _slot_free_list(slot_t* slot) {
-  return (index_t*)&slot->data[0];
+static inline int32_t* _slot_free_list(slot_t* slot) {
+  return (int32_t*)&slot->data[0];
 }
 
 static inline void _reset_slots_from(SlotMap_Internal* sm, index_t from) {
@@ -82,6 +82,8 @@ static inline void _reset_slots_from(SlotMap_Internal* sm, index_t from) {
 SlotMap ismap_new(index_t element_size) {
   SlotMap_Internal* ret = malloc(sizeof(SlotMap_Internal));
   assert(ret);
+  // use sizeof(index_t) for hopefully better slot alignment?
+  // the space needed is for the int32 free_list, so it should fit regardless.
   *ret = (SlotMap_Internal) {
     .element_size = element_size,
     .capacity = 0,
@@ -151,7 +153,7 @@ void* smap_emplace(SlotMap sm_in, slotkey_t* out_key) {
   SLOTMAP_INTERNAL;
   assert(out_key);
   slot_t* slot;
-  index_t index;
+  int32_t index;
   if (sm->free_list != EMPTY_FREELIST) {
     index = sm->free_list;
     slot = _get_slot(sm, index);
@@ -159,7 +161,7 @@ void* smap_emplace(SlotMap sm_in, slotkey_t* out_key) {
     sm->free_list = *_slot_free_list(slot);
   }
   else {
-    index = sm->size;
+    index = (int32_t)sm->size;
     if (index >= sm->capacity) {
       smap_reserve(sm_in, GROWTH_FACTOR);
     }
@@ -200,7 +202,7 @@ bool smap_read(SlotMap sm, slotkey_t key, void* out_element) {
 void* smap_next(SlotMap sm_in, slotkey_t* iterator) {
   SLOTMAP_INTERNAL;
   assert(iterator);
-  index_t index = sk_index(*iterator) + 1;
+  int32_t index = sk_index(*iterator) + 1;
   assert(index >= 0 && index < SK_INDEX_MAX);
   if (iterator->hash == SK_NULL.hash) index = 0;
   for (; index < sm->capacity; ++index) {
@@ -216,14 +218,14 @@ void* smap_next(SlotMap sm_in, slotkey_t* iterator) {
 
 bool smap_contains(SlotMap sm_in, slotkey_t key) {
   SLOTMAP_INTERNAL;
-  index_t key_index = sk_index(key);
+  int32_t key_index = sk_index(key);
   if (key_index < 0 || key_index >= sm->capacity) return false;
   return _get_slot(sm, key_index)->unique == sk_unique(key);
 }
 
 bool smap_remove(SlotMap sm_in, slotkey_t key) {
   SLOTMAP_INTERNAL;
-  index_t key_index = sk_index(key);
+  int32_t key_index = sk_index(key);
   if (key_index < 0 || key_index >= sm->capacity) return false;
   slot_t* slot = _get_slot(sm, key_index);
   if (slot->unique != sk_unique(key)) return false;

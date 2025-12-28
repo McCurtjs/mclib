@@ -213,7 +213,7 @@ describe(slotmap_foreach) {
 
   int input_data[] = { 0xAAAAAA, 0xBBBBB, 0xCCCC, 0xDDD, 0xEE, 0xF };
   SlotMap map = smap_new(int);
-  for (int i = 0; i < ARRAY_COUNT(input_data); ++i) {
+  for (size_t i = 0; i < ARRAY_COUNT(input_data); ++i) {
     smap_insert(map, &input_data[i]);
   }
 
