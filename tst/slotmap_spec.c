@@ -202,11 +202,79 @@ describe(slotmap_remove) {
 
 }
 
+describe(slotmap_foreach) {
+
+  int input_data[] = { 0xAAAAAA, 0xBBBBB, 0xCCCC, 0xDDD, 0xEE, 0xF };
+  SlotMap map = smap_new(int);
+  for (int i = 0; i < ARRAY_COUNT(input_data); ++i) {
+    smap_insert(map, &input_data[i]);
+  }
+
+  it("will iterate through all the items in order") {
+    int* test = &input_data[0];
+    int* smap_foreach(value, map) {
+      expect(*value, == , *test);
+      ++test;
+    }
+  }
+
+  it("can iterate using keys") {
+    int* smap_foreach_kv(value, key, map) {
+      expect(*value, == , input_data[key.index]);
+    }
+  }
+
+  after{
+    smap_delete(&map);
+  }
+
+}
+
+#define con_type int
+#include "slotmap.h"
+#undef con_type
+
+describe(slotmap_specialized_type) {
+
+  SlotMap_int ints = smap_int_new();
+  slotkey_t key;
+
+  it("can add and remove using specialized functions") {
+    slotkey_t first;
+    *smap_int_emplace(ints, &first) = 25;
+    *smap_int_emplace(ints, &key) = 67;
+    *smap_int_emplace(ints, &key) = 42;
+    expect(ints->size, == , 3);
+    smap_int_remove(ints, key);
+    expect(ints->size, == , 2);
+    bool test = (*(smap_int_ref(ints, first))) == 25;
+    expect(test);
+  }
+
+  it("can add and remove items by value") {
+    key = smap_int_add(ints, 12);
+    smap_int_add(ints, 9484);
+    smap_int_add(ints, 99);
+    expect(ints->size, == , 3);
+    expect(smap_int_get(ints, key), == , 12);
+    smap_int_clear(ints);
+    expect(ints->size to be_zero);
+  }
+
+  after{
+    smap_int_delete(&ints);
+    expect(ints == NULL);
+  }
+
+}
+
 test_suite(tests_slotmap) {
   test_group(slotmap_construction),
   test_group(slotmap_add_item),
   test_group(slotmap_add_multiple),
   test_group(slotmap_read),
   test_group(slotmap_remove),
+  test_group(slotmap_foreach),
+  test_group(slotmap_specialized_type),
   test_suite_end
 };

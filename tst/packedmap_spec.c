@@ -265,6 +265,40 @@ describe(packedmap_remove) {
 
 describe(packedmap_foreach) {
 
+  int input_data[] = { 0xAAAAAA, 0xBBBBB, 0xCCCC, 0xDDD, 0xEE, 0xF };
+  PackedMap map = pmap_new(int);
+  for (int i = 0; i < ARRAY_COUNT(input_data); ++i) {
+    pmap_insert(map, &input_data[i]);
+  }
+
+  it("will iterate through all the items in order") {
+    int* test = &input_data[0];
+    int* pmap_foreach(value, map) {
+      expect(*value, == , *test);
+      ++test;
+    }
+  }
+
+  it("will iterate while providing a sequential index") {
+    int* pmap_foreach_index(value, i, map) {
+      expect(*value, == , input_data[i]);
+    }
+  }
+
+  it("can iterate using keys") {
+    int* pmap_foreach_kv(value, key, map) {
+      expect(*value, == , input_data[key.index]);
+    }
+  }
+
+  after{
+    pmap_delete(&map);
+  }
+
+}
+
+describe(packedmap_views) {
+
   view_t expected = view_empty;
   int input_data[] = { 0xAAAAAA, 0xBBBBB, 0xCCCC, 0xDDD, 0xEE, 0xF };
   PackedMap map = pmap_new(int);
@@ -337,6 +371,7 @@ test_suite(tests_packedmap) {
   test_group(packedmap_read),
   test_group(packedmap_remove),
   test_group(packedmap_foreach),
+  test_group(packedmap_views),
   test_group(packedmap_specialized_type),
   test_suite_end
 };

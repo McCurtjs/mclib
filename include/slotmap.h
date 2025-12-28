@@ -48,7 +48,7 @@
 // // Create, Setup, Delete
 // SlotMap_A    smap_a_new();
 // SlotMap_A    smap_a_new_reserve(index_t capacity);
-// void         smap_a_reserve();
+// void         smap_a_reserve(SlotMap_A, index_t capacity);
 // void         smap_a_trim(SlotMap_A);
 // void         smap_a_clear(SlotMap_A);
 // void         smap_a_free(SlotMap_A);
@@ -89,6 +89,112 @@ void*     smap_emplace(SlotMap, slotkey_t* out_key);
 slotkey_t smap_insert(SlotMap, const void* element);
 void*     smap_ref(SlotMap, slotkey_t);
 bool      smap_read(SlotMap, slotkey_t, void* out_element);
+void*     smap_next(SlotMap, slotkey_t* iterator);
 bool      smap_remove(SlotMap, slotkey_t);
+
+#define smap_foreach_kv(VALUE, KEY, SMAP)                                     \
+  VALUE = NULL;                                                               \
+  for (                                                                       \
+    slotkey_t KEY = { 0, 0 };                                                 \
+    VALUE = smap_next((SlotMap)(SMAP), &KEY), VALUE;                          \
+  )                                                                           //
+
+#define smap_foreach(VALUE, SMAP)                                             \
+  smap_foreach_kv(VALUE, MACRO_CONCAT(_smkey_, __LINE__), (SMAP))             //
+
+#endif
+
+#ifdef con_type
+
+#ifdef con_prefix
+# define _con_name con_prefix
+#else
+# define _con_name con_type
+#endif
+
+#define _map_type MACRO_CONCAT(SlotMap_, _con_name)
+#define _prefix(_FN) MACRO_CONCAT3(smap_, _con_name, _FN)
+
+typedef struct MACRO_CONCAT3(_opaque_, _map_type, _base_t) {
+  index_t const element_size;
+  index_t const capacity;
+  index_t const size;
+}* _map_type;
+
+static inline _map_type _prefix(_new)
+(void) {
+  return (_map_type)smap_new(con_type);
+}
+
+static inline _map_type _prefix(_new_reserve)
+(index_t capacity) {
+  return (_map_type)smap_new_reserve(con_type, capacity);
+}
+
+static inline void _prefix(_reserve)
+(_map_type map, index_t capacity) {
+  smap_reserve((SlotMap)map, capacity);
+}
+
+static inline void _prefix(_trim)
+(_map_type map) {
+  smap_trim((SlotMap)map);
+}
+
+static inline void _prefix(_clear)
+(_map_type map) {
+  smap_clear((SlotMap)map);
+}
+
+static inline void _prefix(_free)
+(_map_type map) {
+  smap_free((SlotMap)map);
+}
+
+static inline void _prefix(_delete)
+(_map_type* p_map) {
+  smap_delete((SlotMap*)p_map);
+}
+
+static inline con_type* _prefix(_emplace)
+(_map_type map, slotkey_t* out_key) {
+  return smap_emplace((SlotMap)map, out_key);
+}
+
+static inline slotkey_t _prefix(_insert)
+(_map_type map, const con_type* element) {
+  return smap_insert((SlotMap)map, element);
+}
+
+static inline slotkey_t _prefix(_add)
+(_map_type map, con_type element) {
+  return smap_insert((SlotMap)map, &element);
+}
+
+static inline con_type _prefix(_get)
+(_map_type map, slotkey_t key) {
+  con_type* ret = smap_ref((SlotMap)map, key);
+  assert(ret);
+  return *ret;
+}
+
+static inline con_type* _prefix(_ref)
+(_map_type map, slotkey_t key) {
+  return smap_ref((SlotMap)map, key);
+}
+
+static inline bool _prefix(_read)
+(_map_type map, slotkey_t key, con_type* out) {
+  return smap_read((SlotMap)map, key, out);
+}
+
+static inline bool _prefix(_remove)
+(_map_type map, slotkey_t key) {
+  return smap_remove((SlotMap)map, key);
+}
+
+#undef _con_name
+#undef _map_type
+#undef _prefix
 
 #endif

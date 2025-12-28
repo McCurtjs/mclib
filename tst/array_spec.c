@@ -460,6 +460,16 @@ describe(arr_inserts) {
 
 describe(arr_removal) {
 
+  it("removes an element from the middle of the array") {
+    Array arr = arr_new(int);
+    int vals[] = { 1, 2, 3, 4, 5, 6 };
+    for (int i = 0; i < 6; ++i) arr_write_back(arr, &vals[i]);
+    arr_remove(arr, 2);
+    expect(arr->size, == , 5);
+    expect(arr->size_bytes, == , (index_t)(5 * sizeof(int)));
+    arr_delete(&arr);
+  }
+
   it("removes elements by index range") {
     Array arr = arr_new(int);
     int vals[] = { 1, 2, 3, 4, 5 };

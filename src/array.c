@@ -334,9 +334,10 @@ bool arr_remove(Array a_in, index_t position) {
   if (position >= a->size) return false;
   if (position == a->size - 1) return arr_pop_back(a_in);
   byte* pos = a->data + a->element_size * position;
+  index_t remainder_size = a->end - (pos + a->element_size);
+  memmove(pos, pos + a->element_size, remainder_size);
   a->size_bytes -= a->element_size;
   a->end = a->begin + a->size_bytes;
-  memmove(pos, pos + a->element_size, a->size_bytes);
   --a->size;
   return true;
 }

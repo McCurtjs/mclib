@@ -86,16 +86,16 @@
 
 typedef struct _opaque_PackedMap_base_t {
   union {
-    view_t        const view;
+    view_t  const view;
     struct {
-      const void* const begin;
-      const void* const end;
+      void* const begin;
+      void* const end;
     };
   };
-  index_t         const element_size;
-  index_t         const capacity;
-  index_t         const size;
-  index_t         const size_bytes;
+  index_t   const element_size;
+  index_t   const capacity;
+  index_t   const size;
+  index_t   const size_bytes;
 }* PackedMap;
 
 #define     pmap_new(TYPE) ipmap_new(sizeof(TYPE))
@@ -115,8 +115,27 @@ void*       pmap_ref(PackedMap, slotkey_t);
 bool        pmap_read(PackedMap, slotkey_t, void* out_element);
 bool        pmap_remove(PackedMap, slotkey_t);
 
-#define     pmap_foreach(PMAP) view_foreach((PMAP)->view)
-#define     pmap_foreach_index(PMAP) view_foreach((PMAP)->view)
+//void      pmap_sort(PackedMap, compare_fn, compare_nosize_fn);
+
+#define pmap_foreach_index(VAR, INDEX, PMAP)                                  \
+  VAR = (PMAP)->begin;                                                        \
+  assert(sizeof(*VAR) == (PMAP)->element_size);                               \
+  for (                                                                       \
+    index_t INDEX = 0; INDEX < ((PackedMap)(PMAP))->size; ++INDEX,            \
+    VAR = (void*)((byte*)(PMAP)->begin + INDEX * sizeof(*VAR))                \
+  )                                                                           //
+
+#define pmap_foreach(VAR, PMAP)                                               \
+  pmap_foreach_index(VAR, MACRO_CONCAT(_pmkey_, __LINE__), (PMAP))            //
+
+#define pmap_foreach_kv(VAR, KEY, PMAP)                                       \
+  VAR = (PMAP)->begin;                                                        \
+  assert(sizeof(*VAR) == (PMAP)->element_size);                               \
+  for (slotkey_t KEY = pmap_key((PackedMap)(PMAP), 0);                        \
+    KEY.unique != 0;                                                          \
+    KEY = pmap_key((PackedMap)(PMAP), KEY.index + 1),                         \
+    VAR = (void*)((byte*)(PMAP)->begin + KEY.index * sizeof(*VAR))            \
+  )                                                                           //
 
 #endif
 
@@ -159,6 +178,11 @@ static inline _map_type _prefix(_new)
 static inline _map_type _prefix(_new_reserve)
 (index_t capacity) {
   return (_map_type)pmap_new_reserve(con_type, capacity);
+}
+
+static inline void _prefix(_reserve)
+(_map_type map, index_t capacity) {
+  pmap_reserve((PackedMap)map, capacity);
 }
 
 static inline void _prefix(_trim)

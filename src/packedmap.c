@@ -210,10 +210,14 @@ slotkey_t pmap_insert(PackedMap pm_in, const void* element) {
 
 slotkey_t pmap_key(PackedMap pm_in, index_t index) {
   PACKEDMAP_INTERNAL;
-  if (index < 0 || index >= pm->capacity) return (slotkey_t) { 0 };
+  if (index < 0 || index >= pm->size) return (slotkey_t) { 0 };
   entry_t entry = pm->mapping[index];
-  entry = pm->mapping[entry.reverse];
-  return (slotkey_t) { .index = entry.reverse, .unique = entry.unique };
+  index_t map_index = entry.reverse;
+  entry = pm->mapping[map_index];
+  return (slotkey_t) {
+    .index = map_index,
+    .unique = entry.unique
+  };
 }
 
 void* pmap_ref(PackedMap pm_in, slotkey_t key) {

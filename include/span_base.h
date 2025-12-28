@@ -69,8 +69,8 @@ extern const view_t view_empty;
   V = SPAN.begin;                                                             \
   for (index_t IDX = 0; (const byte*)V < (const byte*)SPAN.end; ++V, ++IDX)   //
 
-#define view_foreach span_foreach
-#define view_foreach_index span_foreach_index
+#define view_foreach(VAR, VIEW) span_foreach(VAR, VIEW)
+#define view_foreach_index(V, INDEX, VIEW) span_foreach_index(V, INDEX, VIEW)
 
 static inline view_t span_to_view(span_t span) { return span.view; }
 static inline view_t view_to_view(view_t view) { return view; }

@@ -181,84 +181,76 @@ array_t    iarr_build_reserve(index_t element_size, index_t capacity);
 Array       arr_copy(Array to_copy);
 Array       arr_new_copy(view_t to_copy, index_t element_size);
 //Array     arr_copy_span_deep(span_t to_copy, void (*copy_fn)(void* dst, void* src));
-void        arr_reserve(Array array, index_t capacity);
-void        arr_truncate(Array array, index_t capacity);
-void        arr_trim(Array array);
-void        arr_clear(Array array);
-void        arr_free(Array array);
+void        arr_reserve(Array, index_t capacity);
+void        arr_truncate(Array, index_t capacity);
+void        arr_trim(Array);
+void        arr_clear(Array);
+void        arr_free(Array);
 void        arr_delete(Array* array);
 span_t      arr_release(Array* array);
-void*       arr_emplace(Array array, index_t position);
-void*       arr_emplace_back(Array array);
-span_t      arr_emplace_range(Array array, index_t position, index_t count);
-span_t      arr_emplace_back_range(Array array, index_t count);
-void        arr_insert(Array array, index_t position, const void* in_element);
-void        arr_insert_back(Array array, const void* in_element);
-void        arr_insert_range(Array array, index_t position, span_t range);
-void        arr_insert_back_range(Array array, span_t range);
-void        arr_write(Array array, index_t index, const void* in_element);
-SI void     arr_write_back(Array array, const void* in_element);
-bool        arr_remove(Array array, index_t position);
-bool        arr_remove_unstable(Array array, index_t position);
-bool        arr_remove_range(Array array, index_t position, index_t count);
-bool        arr_remove_range_unstable(Array array, index_t pos, index_t count);
-bool        arr_pop_back(Array array);
-bool        arr_pop_last(Array array, index_t count);
+void*       arr_emplace(Array, index_t position);
+void*       arr_emplace_back(Array);
+span_t      arr_emplace_range(Array, index_t position, index_t count);
+span_t      arr_emplace_back_range(Array, index_t count);
+void        arr_insert(Array, index_t position, const void* in_element);
+void        arr_insert_back(Array, const void* in_element);
+void        arr_insert_range(Array, index_t position, span_t range);
+void        arr_insert_back_range(Array, span_t range);
+void        arr_write(Array, index_t index, const void* in_element);
+SI void     arr_write_back(Array, const void* in_element);
+bool        arr_remove(Array, index_t position);
+bool        arr_remove_unstable(Array, index_t position);
+bool        arr_remove_range(Array, index_t position, index_t count);
+bool        arr_remove_range_unstable(Array, index_t pos, index_t count);
+bool        arr_pop_back(Array);
+bool        arr_pop_last(Array, index_t count);
 
-SI void*    arr_ref(Array array, index_t index);
-SI void*    arr_ref_front(Array array);
-SI void*    arr_ref_back(Array array);
-SI bool     arr_read(const Array array, index_t index, void* out_element);
-SI bool     arr_read_front(const Array array, void* out_element);
-SI bool     arr_read_back(const Array array, void* out_element);
+SI void*    arr_ref(Array, index_t index);
+SI void*    arr_ref_front(Array);
+SI void*    arr_ref_back(Array);
+SI bool     arr_read(const Array, index_t index, void* out_element);
+SI bool     arr_read_front(const Array, void* out_element);
+SI bool     arr_read_back(const Array, void* out_element);
 SI bool     arr_eq(const Array lhs, const Array rhs);
 SI bool     arr_eq_deep(const Array lhs, const Array rhs, compare_nosize_fn);
-SI bool     arr_is_ordered(const Array arr, compare_nosize_fn);
-SI bool     arr_is_null_or_empty(const Array arr);
-SI span_t   arr_sub(const Array arr, index_t begin, index_t end);
-SI span_t   arr_drop(const Array arr, index_t count);
-SI span_t   arr_take(const Array arr, index_t count);
-SI pair_span_t arr_split(const Array arr);
-SI pair_span_t arr_aplit_at(const Array arr, index_t index);
+SI bool     arr_is_ordered(const Array, compare_nosize_fn);
+SI bool     arr_is_null_or_empty(const Array);
+SI span_t   arr_sub(const Array, index_t begin, index_t end);
+SI span_t   arr_drop(const Array, index_t count);
+SI span_t   arr_take(const Array, index_t count);
+SI pair_span_t arr_split(const Array);
+SI pair_span_t arr_aplit_at(const Array, index_t index);
 SI partition_span_t arr_partition(const Array, const void*, compare_nosize_fn);
-SI partition_span_t arr_partition_at(const Array arr, index_t index);
-SI partition_span_t arr_partition_match(const Array arr, predicate_fn matcher);
-SI void     arr_reverse(Array arr);
-SI void     arr_sort(Array arr, compare_nosize_fn);
-SI void     arr_rotate(Array arr, index_t count);
-SI void     arr_shuffle(Array arr);
-SI void     arr_swap(Array arr, index_t idx1, index_t idx2);
-SI void     arr_swap_back(Array arr, index_t index);
-SI void     arr_copy_range(Array arr, view_t src, index_t index);
+SI partition_span_t arr_partition_at(const Array, index_t index);
+SI partition_span_t arr_partition_match(const Array, predicate_fn matcher);
+SI void     arr_reverse(Array);
+SI void     arr_sort(Array, compare_nosize_fn);
+SI void     arr_rotate(Array, index_t count);
+SI void     arr_shuffle(Array);
+SI void     arr_swap(Array, index_t index1, index_t index2);
+SI void     arr_swap_back(Array, index_t index);
+SI void     arr_copy_range(Array, view_t src, index_t index);
 
-SI void     arr_filter(Array arr, predicate_fn filter);
-SI span_t   arr_filter_inplace(Array arr, predicate_fn filter);
-SI index_t  arr_match_index(const Array arr, predicate_fn matcher);
-SI index_t  arr_find_index(const Array a, const void* it, compare_nosize_fn);
+SI void     arr_filter(Array, predicate_fn filter);
+SI span_t   arr_filter_inplace(Array, predicate_fn filter);
+SI index_t  arr_match_index(const Array, predicate_fn matcher);
+SI index_t  arr_find_index(const Array, const void* item, compare_nosize_fn);
 SI index_t  arr_search_index(const Array, const void* item, compare_nosize_fn);
-SI bool     arr_match_contains(const Array arr, predicate_fn matcher);
-SI bool     arr_contains(const Array arr, const void* it, compare_nosize_fn);
+SI bool     arr_match_contains(const Array, predicate_fn matcher);
+SI bool     arr_contains(const Array, const void* item, compare_nosize_fn);
 SI bool     arr_search_contains(const Array, const void*, compare_nosize_fn);
-SI bool     arr_match(const Array arr, predicate_fn matcher, void* out_value);
-SI bool     arr_find(const Array a, const void*, void* out, compare_nosize_fn);
+SI bool     arr_match(const Array, predicate_fn matcher, void* out_value);
+SI bool     arr_find(const Array, const void*, void* out, compare_nosize_fn);
 SI bool     arr_search(const Array, const void*, void* out, compare_nosize_fn);
-SI void*    arr_match_ref(Array arr, predicate_fn matcher);
-SI void*    arr_find_ref(Array arr, const void* item, compare_nosize_fn);
-SI void*    arr_search_ref(Array arr, const void* item, compare_nosize_fn);
+SI void*    arr_match_ref(Array, predicate_fn matcher);
+SI void*    arr_find_ref(Array, const void* item, compare_nosize_fn);
+SI void*    arr_search_ref(Array, const void* item, compare_nosize_fn);
 
 #undef SI
 
 ////////////////////////////////////////////////////////////////////////////////
 // foreach macros
 ////////////////////////////////////////////////////////////////////////////////
-
-// \brief A macro shorthand to write foreach loops with any dynamic Array or
-//    Array-based sub-types.
-//
-// \brief usage example:
-// \brief MyType* arr_foreach(iterator, array) { use(iterator); }
-#define arr_foreach(VAR, ARRAY)                                               \
-  arr_foreach_index(VAR, MACRO_CONCAT(_arrit_, __LINE__), ARRAY)              //
 
 // \brief A macro shorthand to write foreach loops with any dynamic Array or
 //    Array-based sub-types. Includes a tracking index value as well.
@@ -275,6 +267,14 @@ SI void*    arr_search_ref(Array arr, const void* item, compare_nosize_fn);
   for (index_t INDEX = 0; INDEX < (ARRAY)->size; ++INDEX,                     \
     VAR = (void*)((byte*)(ARRAY)->begin + INDEX * sizeof(*VAR))               \
   )                                                                           //
+
+// \brief A macro shorthand to write foreach loops with any dynamic Array or
+//    Array-based sub-types.
+//
+// \brief usage example:
+// \brief MyType* arr_foreach(iterator, array) { use(iterator); }
+#define arr_foreach(VAR, ARRAY)                                               \
+  arr_foreach_index(VAR, MACRO_CONCAT(_arrit_, __LINE__), ARRAY)              //
 
 // TODO: would it be better to also track an offset rather than multiply?
 

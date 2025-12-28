@@ -190,6 +190,21 @@ bool smap_read(SlotMap sm, slotkey_t key, void* out_element) {
   return true;
 }
 
+void* smap_next(SlotMap sm_in, slotkey_t* iterator) {
+  SLOTMAP_INTERNAL;
+  assert(iterator);
+  index_t index = iterator->index;
+  if (iterator->unique == 0) index = 0;
+  for (; index < sm->capacity; ++index) {
+    slot_t* slot = _get_slot(sm, index);
+    if (slot->unique) {
+      *iterator = (slotkey_t){ .index = index, .unique = slot->unique };
+    }
+  }
+  *iterator = (slotkey_t){ 0 };
+  return NULL;
+}
+
 bool smap_remove(SlotMap sm_in, slotkey_t key) {
   SLOTMAP_INTERNAL;
   if (key.index < 0 || key.index >= sm->capacity) return false;
