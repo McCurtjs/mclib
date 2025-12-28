@@ -29,6 +29,7 @@ target_sources(McLib PRIVATE
   include/partition.h
   include/quat.h
   include/slice.h
+  include/slotkey.h
   include/slotmap.h
   include/span.h
   include/span_base.h

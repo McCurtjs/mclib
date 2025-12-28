@@ -82,6 +82,7 @@
 //
 
 #include "types.h"
+#include "slotkey.h"
 #include "span_base.h"
 
 typedef struct _opaque_PackedMap_base_t {
@@ -133,9 +134,9 @@ bool        pmap_remove(PackedMap, slotkey_t);
   VAR = (PMAP)->begin;                                                        \
   assert(sizeof(*VAR) == (PMAP)->element_size);                               \
   for (slotkey_t KEY = pmap_key((PackedMap)(PMAP), 0);                        \
-    KEY.unique != 0;                                                          \
-    KEY = pmap_key((PackedMap)(PMAP), KEY.index + 1),                         \
-    VAR = (void*)((byte*)(PMAP)->begin + KEY.index * sizeof(*VAR))            \
+    KEY.hash != 0;                                                            \
+    KEY = pmap_key((PackedMap)(PMAP), sk_index(KEY) + 1),                     \
+    VAR = (void*)((byte*)(PMAP)->begin + sk_index(KEY) * sizeof(*VAR))        \
   )                                                                           //
 
 #endif

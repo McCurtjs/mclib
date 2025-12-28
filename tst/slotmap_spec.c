@@ -71,13 +71,13 @@ describe(slotmap_add_item) {
   it("emplaces a value into an empty map") {
     int* value = smap_emplace(map, &key);
     expect(value to not be_null);
-    expect(key.unique to not be_zero);
+    expect(sk_unique(key) to not be_zero);
   }
 
   it("inserts a value into an empty map") {
     int value = 53;
     key = smap_insert(map, &value);
-    expect(key.unique to not be_zero);
+    expect(sk_unique(key) to not be_zero);
   }
 
   context("adding items to a reserved map") {
@@ -94,7 +94,7 @@ describe(slotmap_add_item) {
     it("inserts a value into an existing map") {
       int value = 12;
       key = smap_insert(map, &value);
-      expect(key.unique to not be_zero);
+      expect(sk_unique(key) to not be_zero);
     }
 
   }
@@ -121,7 +121,7 @@ describe(slotmap_add_multiple) {
   it("inserts a value into an empty map") {
     for (int i = 0; i < 40; ++i) {
       key = smap_insert(map, &i);
-      expect(key.unique to not be_zero);
+      expect(sk_unique(key) to not be_zero);
     }
   }
 
@@ -145,7 +145,7 @@ describe(slotmap_read) {
 
   it("requires a valid read target") {
     expect(to_assert);
-    key = (slotkey_t){ 0, 0 };
+    key = SK_NULL;
     smap_read(map, key, NULL);
   }
 
@@ -153,14 +153,14 @@ describe(slotmap_read) {
     double value = 5;
     key = smap_insert(map, &value);
     expect(smap_read(map, key, &value) to be_true);
-    ++key.index;
+    key = sk_build(sk_index(key) + 1, sk_unique(key));
     expect(smap_read(map, key, &value) to be_false);
   }
 
   it("can check that a map contains a given key") {
     smap_emplace(map, &key);
     expect(smap_contains(map, key) to be_true);
-    key.unique += 1;
+    key = sk_build(sk_index(key), sk_unique(key) + 1);
     expect(smap_contains(map, key) to be_false);
   }
 
@@ -176,7 +176,7 @@ describe(slotmap_remove) {
   slotkey_t key;
 
   it("will ignore out of bounds keys") {
-    key.index = 30;
+    key = sk_build(0, 30);
     expect(smap_remove(map, key) to be_false);
   }
 
@@ -190,7 +190,7 @@ describe(slotmap_remove) {
   it("won't remove anything if the index is unoccupied") {
     smap_emplace(map, &key);
     expect(map->size to be_one);
-    ++key.index;
+    key = sk_build(sk_index(key) + 1, sk_unique(key));
     smap_remove(map, key);
     expect(map->size to be_one);
   }
@@ -198,7 +198,7 @@ describe(slotmap_remove) {
   it("won't remove anything if the unique value doesn't match") {
     smap_emplace(map, &key);
     expect(map->size to be_one);
-    ++key.unique;
+    key = sk_build(sk_index(key), sk_unique(key) + 1);
     smap_remove(map, key);
     expect(map->size to be_one);
   }
@@ -227,7 +227,7 @@ describe(slotmap_foreach) {
 
   it("can iterate using keys") {
     int* smap_foreach_kv(value, key, map) {
-      expect(*value, == , input_data[key.index]);
+      expect(*value, == , input_data[sk_index(key)]);
     }
   }
 

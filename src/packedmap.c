@@ -37,12 +37,12 @@
 #endif
 
 typedef struct entry_t {
-  index_t unique;
+  uint64_t unique;
   union {
-    index_t index;
-    index_t free_list;
+    int32_t index;
+    int32_t free_list;
   };
-  index_t reverse;
+  int32_t reverse;
 } entry_t;
 
 typedef struct PackedMap_Internal {
@@ -59,28 +59,30 @@ typedef struct PackedMap_Internal {
   index_t size_bytes;
 
   // Secrets
-  index_t free_list;
-  index_t unique_counter;
+  int32_t free_list;
+  uint64_t unique_counter;
   entry_t* mapping;
 } PackedMap_Internal;
 
-#define PACKEDMAP_STARTING_SIZE 8
+#define STARTING_SIZE 8
+#define EMPTY_FREELIST SK_INDEX_MAX
+#define EMPTY_SLOT 0
 
 #define GROWTH_FACTOR \
-  MAX(PACKEDMAP_STARTING_SIZE, pm->capacity + pm->capacity / 2)
+  MIN(SK_INDEX_MAX, MAX(STARTING_SIZE, pm->capacity + pm->capacity / 2))
 
 #define PACKEDMAP_INTERNAL \
   PackedMap_Internal* pm = (PackedMap_Internal*)(pm_in); \
   assert(pm)
 
-static inline byte* _get_slot(PackedMap_Internal* pm, index_t index) {
+static inline byte* _get_data(PackedMap_Internal* pm, index_t index) {
   return pm->begin + pm->element_size * index;
 }
 
 static void _reset_mapping_from(PackedMap_Internal* pm, index_t from) {
   for (index_t i = from; i < pm->capacity; ++i) {
     pm->mapping[i] = (entry_t) {
-      .unique = 0,
+      .unique = EMPTY_SLOT,
       .index = 0,
       .reverse = 0,
     };
@@ -96,7 +98,7 @@ PackedMap ipmap_new(index_t element_size) {
     .element_size = element_size,
     .capacity = 0,
     .size = 0,
-    .free_list = -1,
+    .free_list = EMPTY_FREELIST,
     .unique_counter = 0,
     .mapping = NULL,
   };
@@ -121,13 +123,14 @@ PackedMap ipmap_new_reserve(index_t element_size, index_t capacity) {
 void pmap_reserve(PackedMap pm_in, index_t capacity) {
   PACKEDMAP_INTERNAL;
   if (pm->size >= capacity) return;
+  assert(capacity <= SK_INDEX_MAX);
   byte* new_data = realloc(pm->begin, pm->element_size * capacity);
   entry_t* new_mapping = realloc(pm->mapping, sizeof(entry_t) * capacity);
   assert(new_data);
   assert(new_mapping);
   index_t old_capacity = pm->capacity;
   pm->begin = new_data;
-  pm->end = _get_slot(pm, pm->size),
+  pm->end = _get_data(pm, pm->size),
   pm->capacity = capacity;
   pm->mapping = new_mapping;
   _reset_mapping_from(pm, old_capacity);
@@ -172,16 +175,16 @@ void* pmap_emplace(PackedMap pm_in, slotkey_t* out_key) {
   PACKEDMAP_INTERNAL;
   assert(out_key);
   entry_t* mapping;
-  index_t map_index;
-  index_t slot_index = pm->size;
-  if (pm->free_list >= 0) {
+  int32_t map_index;
+  int32_t slot_index = (int32_t)pm->size;
+  if (pm->free_list != EMPTY_FREELIST) {
     map_index = pm->free_list;
     mapping = &pm->mapping[map_index];
-    assert(mapping->unique == 0);
+    assert(mapping->unique == EMPTY_SLOT);
     pm->free_list = mapping->free_list;
   }
   else {
-    map_index = pm->size;
+    map_index = slot_index;
     if (map_index >= pm->capacity) {
       pmap_reserve(pm_in, GROWTH_FACTOR);
     }
@@ -189,16 +192,13 @@ void* pmap_emplace(PackedMap pm_in, slotkey_t* out_key) {
   }
   mapping->unique = ++pm->unique_counter;
   assert(mapping->unique);
-  mapping->index = pm->size;
+  mapping->index = slot_index;
   pm->mapping[slot_index].reverse = map_index;
-  *out_key = (slotkey_t) {
-    .index = slot_index,
-    .unique = mapping->unique,
-  };
+  *out_key = sk_build(slot_index, mapping->unique);
   pm->size_bytes += pm->element_size;
   pm->end += pm->element_size;
   ++pm->size;
-  return _get_slot(pm, slot_index);
+  return _get_data(pm, slot_index);
 }
 
 slotkey_t pmap_insert(PackedMap pm_in, const void* element) {
@@ -211,22 +211,20 @@ slotkey_t pmap_insert(PackedMap pm_in, const void* element) {
 
 slotkey_t pmap_key(PackedMap pm_in, index_t index) {
   PACKEDMAP_INTERNAL;
-  if (index < 0 || index >= pm->size) return (slotkey_t) { 0 };
+  if (index < 0 || index >= pm->size) return SK_NULL;
   entry_t entry = pm->mapping[index];
-  index_t map_index = entry.reverse;
+  int32_t map_index = entry.reverse;
   entry = pm->mapping[map_index];
-  return (slotkey_t) {
-    .index = map_index,
-    .unique = entry.unique
-  };
+  return sk_build(map_index, entry.unique);
 }
 
 void* pmap_ref(PackedMap pm_in, slotkey_t key) {
   PACKEDMAP_INTERNAL;
-  if (key.index < 0 || key.index >= pm->capacity) return NULL;
-  entry_t mapping = pm->mapping[key.index];
-  if (mapping.unique != key.unique) return NULL;
-  return _get_slot(pm, mapping.index);
+  int32_t key_index = sk_index(key);
+  if (key_index < 0 || key_index >= pm->capacity) return NULL;
+  entry_t mapping = pm->mapping[key_index];
+  if (mapping.unique != sk_unique(key)) return NULL;
+  return _get_data(pm, mapping.index);
 }
 
 bool pmap_read(PackedMap pm_in, slotkey_t key, void* out_element) {
@@ -239,38 +237,39 @@ bool pmap_read(PackedMap pm_in, slotkey_t key, void* out_element) {
 
 bool pmap_contains(PackedMap pm_in, slotkey_t key) {
   PACKEDMAP_INTERNAL;
-  if (key.index < 0 || key.index >= pm->capacity) return false;
-  return pm->mapping[key.index].unique == key.unique;
+  int32_t key_index = sk_index(key);
+  if (key_index < 0 || key_index >= pm->capacity) return false;
+  return pm->mapping[key_index].unique == sk_unique(key);
 }
-
-#include <ctype.h>
 
 bool pmap_remove(PackedMap pm_in, slotkey_t key) {
   PACKEDMAP_INTERNAL;
 
   // Check index validity and validate unique identifier
-  if (key.index < 0 || key.index >= pm->capacity) return false;
-  entry_t* mapping = &pm->mapping[key.index];
-  if (mapping->unique != key.unique) return false;
+  int32_t key_index = sk_index(key);
+  if (key_index < 0 || key_index >= pm->capacity) return false;
+  entry_t* mapping = &pm->mapping[key_index];
+  if (mapping->unique != sk_unique(key)) return false;
 
   // Move data from the last slot into the now empty one
-  index_t slot_index = mapping->index;
-  index_t last_slot_index = pm->size - 1;
-  byte* data_slot = _get_slot(pm, slot_index);
-  byte* data_last = _get_slot(pm, last_slot_index);
+  int32_t slot_index = mapping->index;
+  int32_t last_slot_index = (int32_t)pm->size - 1;
+  byte* data_slot = _get_data(pm, slot_index);
+  byte* data_last = _get_data(pm, last_slot_index);
   if (data_last != data_slot) {
     memcpy(data_slot, data_last, pm->element_size);
   }
 
   // Update the last-item's new references to point to each other, drop old key
-  index_t map_reverse_index = pm->mapping[last_slot_index].reverse;
+  int32_t map_reverse_index = pm->mapping[last_slot_index].reverse;
   pm->mapping[slot_index].reverse = map_reverse_index;
   pm->mapping[map_reverse_index].index = slot_index;
-  mapping->unique = 0;
-  mapping->free_list = pm->free_list;
+  mapping->unique = EMPTY_SLOT;
 
   // Invalidate the removed key and put it on the free list
-  pm->free_list = key.index;
+  mapping->free_list = pm->free_list;
+  pm->free_list = key_index;
+
   pm->size_bytes -= pm->element_size;
   pm->end -= pm->element_size;
   --pm->size;

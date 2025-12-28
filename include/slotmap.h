@@ -68,6 +68,7 @@
 // bool         smap_a_remove(SlotMap_A, slotkey_t);
 
 #include "types.h"
+#include "slotkey.h"
 
 typedef struct _opaque_SlotMap_base_t {
   index_t const element_size;
@@ -96,7 +97,7 @@ bool      smap_remove(SlotMap, slotkey_t);
 #define smap_foreach_kv(VALUE, KEY, SMAP)                                     \
   VALUE = NULL;                                                               \
   for (                                                                       \
-    slotkey_t KEY = { 0, 0 };                                                 \
+    slotkey_t KEY = SK_NULL;                                                  \
     VALUE = smap_next((SlotMap)(SMAP), &KEY), VALUE;                          \
   )                                                                           //
 

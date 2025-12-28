@@ -64,13 +64,11 @@ typedef          long ptrdiff_t;
 
 // Shouldn't be necessary with C23?
 #include <stdbool.h>
+#include <stdint.h>
 
-typedef unsigned int uint;
-typedef unsigned short ushort;
-typedef unsigned short u16;
-typedef unsigned char byte;
+typedef uint32_t  uint;
+typedef uint8_t   byte;
 typedef size_t    hash_t;
-typedef size_t    jshandle;
 typedef ptrdiff_t index_t;
 
 // Common pointer types
@@ -83,11 +81,6 @@ typedef bool    (*predicate_fn)(const void* item);
 typedef hash_t  (*hash_fn)(const void* key, index_t size);
 typedef void    (*delete_fn)(void* to_delete);
 typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
-
-// Index type for slot-maps
-typedef struct slotkey_t {
-  index_t index, unique;
-} slotkey_t;
 
 #ifndef NULL
 # define NULL nullptr
