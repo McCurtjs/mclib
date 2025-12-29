@@ -128,6 +128,7 @@ void smap_trim(SlotMap sm_in) {
 void smap_clear(SlotMap sm_in) {
   SLOTMAP_INTERNAL;
   sm->size = 0;
+  sm->free_list = EMPTY_FREELIST;
   _reset_slots_from(sm, 0);
 }
 
@@ -135,8 +136,9 @@ void smap_free(SlotMap sm_in) {
   if (!sm_in) return;
   SLOTMAP_INTERNAL;
   if (!sm->begin) return;
-  smap_clear(sm_in);
   free(sm->begin);
+  sm->size = 0;
+  sm->free_list = EMPTY_FREELIST;
   sm->begin = NULL;
   sm->capacity = 0;
 }
@@ -152,12 +154,12 @@ void smap_delete(SlotMap* sm_in) {
 void* smap_emplace(SlotMap sm_in, slotkey_t* out_key) {
   SLOTMAP_INTERNAL;
   assert(out_key);
+  assert(sm->size < SK_INDEX_MAX);
   slot_t* slot;
   int32_t index;
   if (sm->free_list != EMPTY_FREELIST) {
     index = sm->free_list;
     slot = _get_slot(sm, index);
-    assert(slot->unique == 0);
     sm->free_list = *_slot_free_list(slot);
   }
   else {
@@ -167,6 +169,7 @@ void* smap_emplace(SlotMap sm_in, slotkey_t* out_key) {
     }
     slot = _get_slot(sm, index);
   }
+  assert(slot->unique == EMPTY_SLOT);
   slot->unique = ++sm->unique_counter;
   assert(slot->unique && slot->unique <= SK_UNIQUE_MAX);
   *out_key = sk_build(index, slot->unique);

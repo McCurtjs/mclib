@@ -214,6 +214,17 @@
     </Expand>
   </Type>
 
+  <Type Name="slotkey_t">
+    <DisplayString>
+      slotkey_t: {{{hash &amp; ((1ull &lt;&lt; 24) - 1ull)}, {hash &gt;&gt; 24}}
+    </DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Index">hash &amp; ((1ull &lt;&lt; 24) - 1ull)</Item>
+      <Item Name="Unique">hash &gt;&gt; 24</Item>
+      <Item Name="Hash">hash</Item>
+    </Expand>
+  </Type>
+
   <Type Name="_opaque_SlotMap_base_t">
     <DisplayString>SlotMap: size = {size}</DisplayString>
     <Expand HideRawView="true">

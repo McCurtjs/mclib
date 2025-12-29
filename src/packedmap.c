@@ -46,12 +46,8 @@ typedef struct entry_t {
 } entry_t;
 
 typedef struct PackedMap_Internal {
-  union {
-    struct {
-      byte* begin;
-      byte* end;
-    };
-  };
+  byte* begin;
+  byte* end;
 
   index_t element_size;
   index_t capacity;
@@ -146,6 +142,7 @@ void pmap_clear(PackedMap pm_in) {
   pm->end = pm->begin;
   pm->size = 0;
   pm->size_bytes = 0;
+  pm->free_list = EMPTY_FREELIST;
   _reset_mapping_from(pm, 0);
 }
 
@@ -153,9 +150,11 @@ void pmap_free(PackedMap pm_in) {
   if (!pm_in) return;
   PACKEDMAP_INTERNAL;
   if (!pm->begin && !pm->mapping) return;
-  pmap_clear(pm_in);
   free(pm->begin);
   free(pm->mapping);
+  pm->size = 0;
+  pm->size_bytes = 0;
+  pm->free_list = EMPTY_FREELIST;
   pm->begin = NULL;
   pm->end = NULL;
   pm->mapping = NULL;
@@ -251,22 +250,23 @@ bool pmap_remove(PackedMap pm_in, slotkey_t key) {
   entry_t* mapping = &pm->mapping[key_index];
   if (mapping->unique != sk_unique(key)) return false;
 
-  // Move data from the last slot into the now empty one
   int32_t slot_index = mapping->index;
   int32_t last_slot_index = (int32_t)pm->size - 1;
-  byte* data_slot = _get_data(pm, slot_index);
-  byte* data_last = _get_data(pm, last_slot_index);
-  if (data_last != data_slot) {
+
+  // Move data from the last slot into the now empty one
+  if (slot_index != last_slot_index) {
+    byte* data_slot = _get_data(pm, slot_index);
+    byte* data_last = _get_data(pm, last_slot_index);
     memcpy(data_slot, data_last, pm->element_size);
+
+    // Update the last-item's new references to point to each other
+    int32_t map_reverse_index = pm->mapping[last_slot_index].reverse;
+    pm->mapping[slot_index].reverse = map_reverse_index;
+    pm->mapping[map_reverse_index].index = slot_index;
   }
 
-  // Update the last-item's new references to point to each other, drop old key
-  int32_t map_reverse_index = pm->mapping[last_slot_index].reverse;
-  pm->mapping[slot_index].reverse = map_reverse_index;
-  pm->mapping[map_reverse_index].index = slot_index;
-  mapping->unique = EMPTY_SLOT;
-
   // Invalidate the removed key and put it on the free list
+  mapping->unique = EMPTY_SLOT;
   mapping->free_list = pm->free_list;
   pm->free_list = key_index;
 
