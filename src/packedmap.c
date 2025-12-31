@@ -173,13 +173,13 @@ void pmap_delete(PackedMap* pm_in) {
 void* pmap_emplace(PackedMap pm_in, slotkey_t* out_key) {
   PACKEDMAP_INTERNAL;
   assert(out_key);
+  assert(pm->size < SK_INDEX_MAX);
   entry_t* mapping;
   int32_t map_index;
   int32_t slot_index = (int32_t)pm->size;
   if (pm->free_list != EMPTY_FREELIST) {
     map_index = pm->free_list;
     mapping = &pm->mapping[map_index];
-    assert(mapping->unique == EMPTY_SLOT);
     pm->free_list = mapping->free_list;
   }
   else {
@@ -189,11 +189,12 @@ void* pmap_emplace(PackedMap pm_in, slotkey_t* out_key) {
     }
     mapping = &pm->mapping[map_index];
   }
+  assert(mapping->unique == EMPTY_SLOT);
   mapping->unique = ++pm->unique_counter;
   assert(mapping->unique);
   mapping->index = slot_index;
   pm->mapping[slot_index].reverse = map_index;
-  *out_key = sk_build(slot_index, mapping->unique);
+  *out_key = sk_build(map_index, mapping->unique);
   pm->size_bytes += pm->element_size;
   pm->end += pm->element_size;
   ++pm->size;

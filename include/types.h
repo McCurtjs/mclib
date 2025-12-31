@@ -175,7 +175,7 @@ typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 #endif
 
 // Variadic expander to apply a macro/function to each argument such as a
-//		_Generic selector for type safety.
+//    _Generic selector for type safety.
 #define _va_exp_1(F,a,...) F(a)
 #define _va_exp_2(F,a,...) F(a), _va_exp_1(F,__VA_ARGS__)
 #define _va_exp_3(F,a,...) F(a), _va_exp_2(F,__VA_ARGS__)
