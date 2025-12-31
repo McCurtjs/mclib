@@ -162,6 +162,7 @@ static inline _str_arg_t _sarg_vec3i(vec3i v) {
   unsigned int:       _sarg_unsigned,   \
   unsigned long:      _sarg_unsigned,   \
   unsigned long long: _sarg_unsigned,   \
+  float:              _sarg_float,      \
   double:             _sarg_float       \
   MCLIB_STR_FORMAT_VECTOR_              \
 )(arg)                                  //

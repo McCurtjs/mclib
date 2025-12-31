@@ -88,7 +88,7 @@ SlotMap ismap_new(index_t element_size) {
     .element_size = element_size,
     .capacity = 0,
     .size = 0,
-    .slot_size = sizeof(slot_t) + MAX(element_size, sizeof(index_t)),
+    .slot_size = sizeof(slot_t) + MAX(element_size, (index_t)sizeof(index_t)),
     .free_list = EMPTY_FREELIST,
     .unique_counter = 0,
     .begin = NULL,
