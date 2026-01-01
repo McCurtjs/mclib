@@ -78,6 +78,15 @@ size_t i2zindex(vec2i v) {
 // Vector 2 (float)
 ////////////////////////////////////////////////////////////////////////////////
 
+bool v2eq(vec2 a, vec2 b) {
+  return a.x == b.x && a.y == b.y;
+}
+
+bool v2about(vec2 a, vec2 b, float epsilon) {
+  if (fabsf(b.x - a.x) >= epsilon) return false;
+  return fabsf(b.y - a.y) < epsilon;
+}
+
 float v2mag(vec2 v) {
   return sqrtf(v2magsq(v));
 }
@@ -143,6 +152,10 @@ float v2dot(vec2 a, vec2 b) {
 
 vec2 v2mul(vec2 a, vec2 b) {
   return v2f(a.x * b.x, a.y * b.y);
+}
+
+vec2 v2div(vec2 a, vec2 b) {
+  return v2f(a.x / b.x, a.y / b.y);
 }
 
 float v2cross(vec2 a, vec2 b) {
@@ -254,6 +267,16 @@ bool v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out) {
 // Vector 3 (float)
 ////////////////////////////////////////////////////////////////////////////////
 
+bool v3eq(vec3 a, vec3 b) {
+  return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+bool v3about(vec3 a, vec3 b, float epsilon) {
+  if (fabsf(b.x - a.x) >= epsilon) return false;
+  if (fabsf(b.y - a.y) >= epsilon) return false;
+  return fabsf(b.z - a.z) < epsilon;
+}
+
 float v3mag(vec3 v) {
   return sqrtf(v3magsq(v));
 }
@@ -317,8 +340,12 @@ float v3dot(vec3 a, vec3 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-vec3  v3mul(vec3 a, vec3 b) {
+vec3 v3mul(vec3 a, vec3 b) {
   return v3f( a.x * b.x, a.y * b.y, a.z * b.z );
+}
+
+vec3 v3div(vec3 a, vec3 b) {
+  return v3f(a.x / b.x, a.y / b.y, a.z / b.z);
 }
 
 vec3 v3cross(vec3 a, vec3 b) {
@@ -356,6 +383,30 @@ vec3 v3towards(vec3 P, vec3 Q, float max) {
   float mag = v3mag(v);
   if (mag <= max || mag == 0.0f) return Q;
   return v3add(P, v3scale(v, max / mag));
+}
+
+vec2 v3oct(vec3 n) {
+  n = v3norm(n);
+  float sum_abs = fabsf(n.x) + fabsf(n.y) + fabsf(n.z);
+  n = v3scale(n, 1.0f / sum_abs);
+  if (n.z < 0.f) {
+    n.xy = v2f
+    ( copysignf(1.f - fabsf(n.y), n.x)
+    , copysignf(1.f - fabsf(n.x), n.y)
+    );
+  }
+  return n.xy;
+}
+
+vec3 v3oct_decode(vec2 n) {
+  vec3 r = v3f(n.x, n.y, 1.0f - fabsf(n.x) - fabsf(n.y));
+  if (r.z < 0.0f) {
+    r.xy = v2f
+    ( copysignf(1.0f - fabsf(r.y), r.x)
+    , copysignf(1.0f - fabsf(r.x), r.y)
+    );
+  }
+  return v3norm(r);
 }
 
 float v3line_dist(vec3 L, vec3 v, vec3 P) {

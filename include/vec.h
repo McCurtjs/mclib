@@ -249,6 +249,8 @@ float   i2aspect(vec2i v);
 vec2i   i2zcurve(size_t i);
 size_t  i2zindex(vec2i v);
 
+bool    v2eq(vec2 a, vec2 b);
+bool    v2about(vec2 a, vec2 b, float epsilon);
 float   v2mag(vec2 v);
 float   v2magsq(vec2 v);
 float   v2dist(vec2 P, vec2 Q);
@@ -264,6 +266,7 @@ vec2    v2limit(vec2 v, float max_length);
 vec2    v2clamp(vec2 v, float min_len, float max_len);
 float   v2dot(vec2 a, vec2 b);
 vec2    v2mul(vec2 a, vec2 b);
+vec2    v2div(vec2 a, vec2 b);
 float   v2cross(vec2 a, vec2 b);
 vec2    v2perp(vec2 v);
 vec2    v2reflect(vec2 v, vec2 mirror);
@@ -280,6 +283,8 @@ bool    v2ray_ray(vec2 R, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
 bool    v2ray_seg(vec2 R, vec2 v, vec2 S1, vec2 S2, float* t_out);
 bool    v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out);
 
+bool    v3eq(vec3 a, vec3 b);
+bool    v3about(vec3 a, vec3 b, float epsilon);
 float   v3mag(vec3 v);
 float   v3magsq(vec3 v);
 float   v3dist(vec3 P, vec3 Q);
@@ -295,12 +300,15 @@ vec3    v3limit(vec3 v, float max_length);
 vec3    v3clamp(vec3 v, float min_len, float max_len);
 float   v3dot(vec3 a, vec3 b);
 vec3    v3mul(vec3 a, vec3 b);
+vec3    v3div(vec3 a, vec3 b);
 vec3    v3cross(vec3 a, vec3 b);
 vec3    v3perp(vec3 v);
 vec3    v3reflect(vec3 v, vec3 n_mirror);
 float   v3angle(vec3 a, vec3 b);
 vec3    v3lerp(vec3 P, vec3 Q, float t);
 vec3    v3towards(vec3 P, vec3 Q, float max);
+vec2    v3oct(vec3 v);
+vec3    v3oct_decode(vec2 v);
 float   v3line_dist(vec3 L, vec3 v, vec3 P);
 bool    v3line_plane(vec3 L, vec3 v, vec3 P, vec3 n, float* t_out);
 bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);
@@ -349,6 +357,18 @@ static inline vec4 v4f(float x, float y, float z, float w) {
 
 // Convert dimensions with default new values where applicable
 
+static inline vec2 v12(float f) {
+  return (vec2) { .f = { f, f } };
+}
+
+static inline vec3 v13(float f) {
+  return (vec3) { .f = { f, f, f } };
+}
+
+static inline vec4 v14(float f) {
+  return (vec4) { .f = { f, f, f, f } };
+}
+
 static inline vec3 v23(vec2 v) {
   return v3f(v.x, v.y, 0);
 }
@@ -375,12 +395,24 @@ static inline vec3 v23xz(vec2 v) {
   return v3f(v.x, 0.f, v.y);
 }
 
+static inline vec3 v23xzf(vec2 v, float y) {
+  return v3f(v.x, y, v.y);
+}
+
 static inline vec4 v24xz(vec2 v) {
   return v4f(v.x, 0.f, v.y, 0.f);
 }
 
+static inline vec4 v24xzf(vec2 v, float y) {
+  return v4f(v.x, y, v.y, 0.f);
+}
+
 static inline vec4 p24xz(vec2 v) {
   return v4f(v.x, 0.f, v.y, 1.f);
+}
+
+static inline vec4 p24xzf(vec2 v, float y) {
+  return v4f(v.x, y, v.y, 1.f);
 }
 
 static inline vec2 v32xz(vec3 v) {
