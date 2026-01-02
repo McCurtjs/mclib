@@ -104,6 +104,14 @@ bool      smap_remove(SlotMap, slotkey_t);
 #define smap_foreach(VALUE, SMAP)                                             \
   smap_foreach_kv(VALUE, MACRO_CONCAT(_smkey_, __LINE__), (SMAP))             //
 
+#define smap_foreach_index(VALUE, ITER, SMAP)                                 \
+  VALUE = NULL; index_t ITER = 0;                                             \
+  for (                                                                       \
+    slotkey_t KEY = SK_NULL;                                                  \
+    VALUE = smap_next((SlotMap)(SMAP), &KEY), VALUE;                          \
+    ++ITER                                                                    \
+  )                                                                           //
+
 #endif
 
 #ifdef con_type
