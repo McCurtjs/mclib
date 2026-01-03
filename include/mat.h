@@ -51,9 +51,15 @@ typedef struct mat4 {
   };
 } mat4;
 
-#define m2floats 4
-#define m3floats 9
-#define m4floats 16
+// Size constants (generally for OpenGL functions)
+#define m2floats  4
+#define m3floats  9
+#define m4floats  16
+#define m2bytes   (sizeof(mat2))
+#define m3bytes   (sizeof(mat3))
+#define m4bytes   (sizeof(mat4))
+
+// Matrix constants
 
 #define m2identity ((mat2) {.f={  \
   1, 0,                           \
