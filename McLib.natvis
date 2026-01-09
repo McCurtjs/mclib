@@ -275,10 +275,13 @@
         <Variable Name="slot" InitialValue="map->begin"/>
         <Loop Condition="i &lt; size">
           <Exec>entry = &amp;(map->mapping[map->mapping[i].reverse])</Exec>
-          <Exec>slot = &amp;(map->begin[entry->index])</Exec>
-          <If Condition="element_size % sizeof(uint64_t) == 0">
-            <Item Name="[{entry->index}] : [{entry->unique}]">(uint64_t*)slot,[element_size/8]</Item>
+          <Exec>slot = &amp;(map->begin[entry->index * element_size])</Exec>
+          <If Condition="element_size == sizeof(mat4)">
+            <Item Name="[{entry->index}] : [{entry->unique}]">(mat4*)slot</Item>
           </If>
+          <Elseif Condition="element_size % sizeof(uint64_t) == 0">
+            <Item Name="[{entry->index}] : [{entry->unique}]">(uint64_t*)slot,[element_size/8]</Item>
+          </Elseif>
           <Elseif Condition="element_size % sizeof(uint32_t) == 0">
             <Item Name="[{entry->index}] : [{entry->unique}]">(uint32_t*)slot,[element_size/4]</Item>
           </Elseif>
@@ -288,7 +291,6 @@
           <Else>
             <Item Name="[{entry->index}] : [{entry->unique}]">(char*)slot,[element_size]</Item>
           </Else>
-          <Exec>entry += 1</Exec>
           <Exec>++i</Exec>
         </Loop>
       </CustomListItems>
