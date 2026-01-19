@@ -200,6 +200,8 @@ index_t           slice_index_of_last_char(slice_t str, slice_t targets);
 
 res_token_t       slice_token_str(slice_t str, slice_t delim, index_t* pos);
 res_token_t       slice_token_char(slice_t str, slice_t delims, index_t* pos);
+res_token_t       slice_token_space(slice_t str, index_t* pos);
+res_token_t       slice_token_line(slice_t str, index_t* pos);
 
 pair_slice_t      slice_split_at(slice_t str, index_t index);
 partition_slice_t slice_partition_str(slice_t str, slice_t delim);
@@ -211,6 +213,12 @@ partition_slice_t slice_partition_char(slice_t str, slice_t delims);
 slice_t           slice_substring(slice_t str, index_t start, index_t end);
 slice_t           slice_drop(slice_t str, index_t count);
 slice_t           slice_take(slice_t str, index_t count);
+slice_t           slice_until(slice_t str, slice_t delim);
+slice_t           slice_after(slice_t str, slice_t delim);
+slice_t           slice_until_last(slice_t str, slice_t delim);
+slice_t           slice_after_last(slice_t str, slice_t delim);
+slice_t           slice_between(slice_t str, slice_t left, slice_t right);
+slice_t           slice_between_outer(slice_t str, slice_t left, slice_t right);
 slice_t           slice_trim(slice_t str);
 slice_t           slice_trim_start(slice_t str);
 slice_t           slice_trim_end(slice_t str);

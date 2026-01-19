@@ -40,14 +40,14 @@
 # pragma warning ( disable : 28182 )
 #endif
 
-const char slice_constants[] = "\0true\0false\0 \r\n\t\v\f";
+const char slice_constants[] = "\0true\0false\0\r\n \t\v\f\0";
 
 const slice_t slice_empty = { .begin = &slice_constants[0], .size = 0 };
 const slice_t slice_true = { .begin = &slice_constants[1], .size = 4 };
 const slice_t slice_false = { .begin = &slice_constants[6], .size = 5 };
+const slice_t slice_newline = { .begin = &slice_constants[13], .size = 1 };
+const slice_t slice_space = { .begin = &slice_constants[14], .size = 1 };
 const slice_t slice_whitespace = { .begin = &slice_constants[12], .size = 6 };
-const slice_t slice_space = { .begin = &slice_constants[12], .size = 1 };
-const slice_t slice_newline = { .begin = &slice_constants[14], .size = 1 };
 const slice_t slice_tab = { .begin = &slice_constants[15], .size = 1 };
 
 #define SLICE_VALID(str)                                                      \
@@ -578,6 +578,90 @@ res_token_t slice_token_any(slice_t str, span_slice_t any, index_t* pos) {
   return ret;
 }
 
+// Get the next slice in the string that's delineated by whitespace, starting at
+//    the position of `pos`. The resulting delimiter returned will include _all_
+//    of the contiguous whitespace following the discovered token.
+//
+// \param pos - pointer to index representing starting position of the token.
+//              Value is updated to the start of the next token that follows the
+//              discovered block of whitespace (all whitespace is skipped).
+res_token_t slice_token_space(slice_t str, index_t* pos) {
+  SLICE_VALID(str);
+  assert(pos);
+  if (str.size <= *pos) return _token_result_empty;
+
+  res_token_t ret = (res_token_t) {
+    .token = slice_drop(str, *pos),
+    .delimiter = slice_empty,
+  };
+
+  index_t i;
+  for (i = 0; i < ret.token.size; ++i) {
+    if (isspace(ret.token.begin[i])) break;
+  }
+
+  if (i >= ret.token.size) {
+    *pos = str.size;
+    return ret;
+  }
+
+  index_t j;
+  for (j = i + 1; j < ret.token.size; ++j) {
+    if (!isspace(ret.token.begin[j])) break;
+  }
+
+  ret.token.size = i;
+  ret.delimiter.begin = ret.token.begin + i;
+  ret.delimiter.size = j - i;
+
+  *pos += i + ret.delimiter.size;
+  return ret;
+}
+
+// Get the remainder of the current line in the string, omitting any trailing
+//    whitespace, and moving the `pos` indicator to the beginning of the next
+//    line, as denoted by a \n character.
+//
+// \param pos - pointer to index representing starting position of the token.
+//              Value is updated to the start of the next line in the string.
+res_token_t slice_token_line(slice_t str, index_t* pos) {
+  SLICE_VALID(str);
+  assert(pos);
+  if (str.size <= *pos) return _token_result_empty;
+
+  res_token_t ret = (res_token_t){
+    .token = slice_drop(str, *pos),
+    .delimiter = slice_empty,
+  };
+
+  index_t i;
+  for (i = 0; i < ret.token.size; ++i) {
+    char c = ret.token.begin[i];
+    if (c == '\n' || c == '\r') break;
+  }
+
+  if (i >= ret.token.size) {
+    *pos = str.size;
+    return ret;
+  }
+
+  index_t j;
+  for (j = i; j < ret.token.size; ++j) {
+    if (ret.token.begin[j] == '\n') {
+      ++j;
+      break;
+    }
+    if (ret.token.begin[j] != '\r') break;
+  }
+
+  ret.token.size = i;
+  ret.delimiter.begin = ret.token.begin + i;
+  ret.delimiter.size = j - i;
+
+  *pos += i + ret.delimiter.size;
+  return ret;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Split
 ////////////////////////////////////////////////////////////////////////////////
@@ -813,6 +897,64 @@ slice_t slice_take(slice_t str, index_t count) {
   }
   str.size = count;
   return str;
+}
+
+// Gets the slice leading up to (but not inlcuding) the given delimiter
+slice_t slice_until(slice_t str, slice_t delim) {
+  index_t pos = slice_index_of_str(str, delim);
+  return (slice_t) {
+    .begin = str.begin,
+    .size = pos
+  };
+}
+
+// Gets the slice following (but not including) the given delimiter
+slice_t slice_after(slice_t str, slice_t delim) {
+  index_t pos = slice_index_of_str(str, delim);
+  if (pos == str.size) return slice_empty;
+  pos += delim.size;
+  return (slice_t) {
+    .begin = str.begin + pos,
+    .size = str.size - pos
+  };
+}
+
+// Gets the slice leading up to the last instance of the given delimiter
+slice_t slice_until_last(slice_t str, slice_t delim) {
+  index_t pos = slice_index_of_last_str(str, delim);
+  return (slice_t) {
+    .begin = str.begin,
+    .size = pos
+  };
+}
+
+// Gets the slice following the last instance of the given delimiter
+slice_t slice_after_last(slice_t str, slice_t delim) {
+  index_t pos = slice_index_of_last_str(str, delim);
+  if (pos == str.size) return slice_empty;
+  pos += delim.size;
+  return (slice_t) {
+    .begin = str.begin + pos,
+    .size = str.size - pos
+  };
+}
+
+// Gets the slice between the two given delimiters
+slice_t slice_between(slice_t str, slice_t left, slice_t right) {
+  index_t begin = slice_index_of_str(str, left);
+  if (begin == str.size) return slice_empty;
+  str = slice_drop(str, begin + left.size);
+  index_t end = slice_index_of_str(str, right);
+  return slice_take(str, end);
+}
+
+// Gets the slice between the two given delimiters (last instance of right)
+slice_t slice_between_outer(slice_t str, slice_t left, slice_t right) {
+  index_t begin = slice_index_of_str(str, left);
+  if (begin == str.size) return slice_empty;
+  str = slice_drop(str, begin + left.size);
+  index_t end = slice_index_of_last_str(str, right);
+  return slice_take(str, end);
 }
 
 // Trims leading and trailing whitespace from the slice.

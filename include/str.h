@@ -190,19 +190,45 @@ bool    str_is_null_or_empty(const String str);
 // \returns the index of the match, or str.size if it's not present.
 #define str_index_of_any(str, tgts) slice_index_of_any(_s2r(str), tgts)
 
-// \brief Gets a token as a substring of str described by the starting position
-//    pos that ends with (not including) any delimeter character in to_find.
+// \brief Gets a token as a substring of str between the starting position `pos`
+//    and the beginning of a delimiter matching the `delim` string.
 //
-// \brief The value of pos is updated to the index after the found delimeter.
-//    If no character was found in the string, the value is equal to str.size.
-//
-// \returns
-//    A slice containing the token
+// \returns a result object containing the token and delimiter. The value of
+//    `pos` is updated to the start of the next token following the delimiter.
 #define str_token(str, delim, pos)  slice_token_str(_s2r(str), _s2r(delim), pos)
 
+// \brief Gets a token as a substring of str between the starting position `pos`
+//    and any character matching one in the 'dels' string.
+//
+// \returns a result object containing the token and delimiter. The value of
+//    `pos` is updated to the start of the next token following the delimiter.
 #define str_token_char(s, dels, p)  slice_token_char(_s2r(s), _s2r(dels), p)
 
+// \brief Gets a token as a substring of str between the starting position `pos`
+//    and the beginning of any matching string in the 'any' span
+//
+// \returns a result object containing the token and delimiter. The value of
+//    `pos` is updated to the start of the next token following the delimiter.
 #define str_token_any(s, any, pos)  slice_token_any(_s2r(s), any, pos)
+
+// \brief Gets a token as a substring of str between the starting position `pos`
+//    and the next whitespace character. The delimiter in this case will include
+//    all contiguous whitespace between the end of the found token and the start
+//    of the next token, including spaces, tabs, and newlines.
+//
+// \returns a result object containing the token and delimiter. The value of
+//    `pos` is updated to the start of the next token following the delimiter.
+#define str_token_space(str, pos)   slice_token_space(_s2r(str), pos)
+
+// \brief Gets a token as a substring of str between the starting position `pos`
+//    and the next newline character.
+//
+// \brief When a file has mixed \r and \n line endings, \n is used and any
+//    leading \r are included in the delimiter.
+//
+// \returns a result object containing the token and delimiter. The value of
+//    `pos` is updated to the start of the next token following the delimiter.
+#define str_token_line(str, pos)    slice_token_line(_s2r(str), pos)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Substrings
@@ -239,6 +265,32 @@ bool    str_is_null_or_empty(const String str);
 // \brief Gets a substring of the first `count` characters of the start (if
 //    positive) or end (if negative) from the string.
 #define str_take(str, count)        slice_take(_s2r(str), count)
+
+// \returns the slice leading up to the first instance of the given delimiter
+//    (includes the whole string if the delimiter isn't found)
+#define str_until(str, delim)       slice_until(_s2r(str), _s2r(delim))
+
+// \returns the slice following the first instance of the given delimiter or an
+//    empty slice if the delimiter isn't found
+#define str_after(str, delim)       slice_after(_s2r(str), _s2r(delim))
+
+// \returns the slice leading up to the last instance of the given delimiter
+//    (includes the whole string if the delimiter isn't found)
+#define str_until_last(str, delim)  slice_until_last(_s2r(str), _s2r(delim))
+
+// \returns the slice following the last instance of the given delimiter or an
+//    empty slice if the delimiter isn't found
+#define str_after_last(str, delim)  slice_after_last(_s2r(str), _s2r(delim))
+
+// \returns the slice between L and the first occurrence of R that follows L.
+//    An empty string is returned if L is not in the string, and a missing R
+//    will include the remainder of the string
+#define str_between(S, L, R)        slice_between(_s2r(S), _s2r(L), _s2r(R))
+
+// \returns the slice between L and the last occurrence of R in the string. An
+//    empty string is returned if L is not found in the string, and a missing R
+//    will include the remainder of the string
+#define str_between_outer(S, L, R)  slice_between_outer(_s2r(S),_s2r(L),_s2r(R))
 
 // \brief Returns a slice with leading and trailing whitespace omitted.
 #define str_trim(str)               slice_trim(_s2r(str))
