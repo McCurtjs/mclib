@@ -970,7 +970,7 @@ slice_t slice_trim_start(slice_t str) {
   for (start = 0; start < str.size; ++start) {
     if (!isspace(str.begin[start])) break;
   }
-  if (start == end) return slice_empty;
+  if (start >= end) return slice_empty;
   return (slice_t) {
     .begin = str.begin + start,
     .size = end - start,

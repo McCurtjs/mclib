@@ -137,10 +137,6 @@ static inline slice_t slice_build(const char* c_str, index_t length) {
   return (slice_t) { .begin = c_str, .length = length };
 }
 
-// \brief Just a passthrough - takes a slice, returns the same slice.
-// \brief Used in _Generic statements.
-static inline slice_t slice_from_slice(slice_t s) { return s; }
-
 static inline index_t slice_size(slice_t s) { return s.size; }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -78,13 +78,29 @@ extern const String str_tab;
 // Helper tools for type coalescing and variadic formgat arguments
 ////////////////////////////////////////////////////////////////////////////////
 
+static inline slice_t _s2r_slice(slice_t slice, size_t _) {
+  UNUSED(_);
+  return slice;
+}
+
+static inline slice_t _s2r_str(String str, size_t _) {
+  UNUSED(_);
+  return str ? str->slice : slice_empty;
+}
+
+static inline slice_t _s2r_c_str(const char* str, size_t size) {
+  if (size == sizeof(void*) || size == 0)
+    return slice_from_c_str(str);
+  return slice_build(str, (index_t)size - 1);
+}
+
 // \brief Macro to coalesce a String, slice, or char* into a slice.
 #define _s2r(str) _Generic((str), \
-  slice_t:      slice_from_slice, \
-  String:       slice_from_str,   \
-  char*:        slice_from_c_str, \
-  const char*:  slice_from_c_str  \
-)(str)                            //
+  slice_t:      _s2r_slice,       \
+  String:       _s2r_str,         \
+  char*:        _s2r_c_str,       \
+  const char*:  _s2r_c_str        \
+)(str, sizeof(str))               //
 
 typedef enum _str_argtype_t {
   _str_arg_end,
@@ -137,13 +153,13 @@ String  str_from_float(float f);
 
 void    str_delete(String* str);
 
-static inline slice_t slice_from_str(String s) {
-  return s ? s->slice : slice_empty;
-}
-
 // \brief Returns size of a string. Equivalent to str->size, but can also be
 //    applied to slices and c-strings.
 #define str_size(str)               slice_size(_s2r(str))
+
+// \brief Gets a slice representing the input string, regardless of whether it's
+//    an actual String, a slice_t, or a null-terminated C-style string.
+#define slice_cast(str)             _s2r(str)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parsing and basic type comparisons
@@ -266,30 +282,30 @@ bool    str_is_null_or_empty(const String str);
 //    positive) or end (if negative) from the string.
 #define str_take(str, count)        slice_take(_s2r(str), count)
 
-// \returns the slice leading up to the first instance of the given delimiter
-//    (includes the whole string if the delimiter isn't found)
+// \brief Returns the slice leading up to the first instance of the given
+//    delimiter (includes the whole string if the delimiter isn't found)
 #define str_until(str, delim)       slice_until(_s2r(str), _s2r(delim))
 
-// \returns the slice following the first instance of the given delimiter or an
-//    empty slice if the delimiter isn't found
+// \brief Returns the slice following the first instance of the given
+//    delimiter or an empty slice if the delimiter isn't found
 #define str_after(str, delim)       slice_after(_s2r(str), _s2r(delim))
 
-// \returns the slice leading up to the last instance of the given delimiter
-//    (includes the whole string if the delimiter isn't found)
+// \brief Returns the slice leading up to the last instance of the given
+//    delimiter (includes the whole string if the delimiter isn't found)
 #define str_until_last(str, delim)  slice_until_last(_s2r(str), _s2r(delim))
 
-// \returns the slice following the last instance of the given delimiter or an
-//    empty slice if the delimiter isn't found
+// \brief Returns the slice following the last instance of the given delimiter
+//    or an empty slice if the delimiter isn't found
 #define str_after_last(str, delim)  slice_after_last(_s2r(str), _s2r(delim))
 
-// \returns the slice between L and the first occurrence of R that follows L.
-//    An empty string is returned if L is not in the string, and a missing R
-//    will include the remainder of the string
+// \brief Returns the slice of S between the substring L and the first
+//    occurrence of string R that follows L. An empty string is returned
+//    if L is not found. If R is not found, the remainder of S is included.
 #define str_between(S, L, R)        slice_between(_s2r(S), _s2r(L), _s2r(R))
 
-// \returns the slice between L and the last occurrence of R in the string. An
-//    empty string is returned if L is not found in the string, and a missing R
-//    will include the remainder of the string
+// \brief Returns the slice of S between the substring L and the last
+//    occurrence of string R. An empty string is returned if L is not found. If
+//    R is not found, the remainder of S is included.
 #define str_between_outer(S, L, R)  slice_between_outer(_s2r(S),_s2r(L),_s2r(R))
 
 // \brief Returns a slice with leading and trailing whitespace omitted.
@@ -313,7 +329,7 @@ bool    str_is_null_or_empty(const String str);
 //    string types (String, slice_t, char*) or single chars ('x'). The
 //    delimiters themselves are not included in the output.
 //
-// \returns An array of slices whose lifetimes are bound to str.
+// \returns an array of slices whose lifetimes are bound to str.
 //    The Array must be deleted by the user via arr_str_delete(&arr).
 #define str_split(str, ...) istr_split(_s2r(str),   \
   (_str_arg_t[]) { _va_exp(_spa, __VA_ARGS__) },    \
