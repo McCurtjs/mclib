@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -25,20 +25,6 @@
 #include "vec.h"
 
 #include <math.h>
-
-// Based on community post from:
-// https://community.khronos.org/t/quaternion-functions-for-glsl/50140/2
-vec3 qtransform(quat q, vec3 v) {
-  return v3add(
-    v, v3scale(
-      v3cross(
-        v3add(v3cross(v, q.ijk), v3scale(v, q.w)),
-        q.ijk
-      )
-    , 2)
-  );
-  //return v + 2.0*cross(cross(v, q.xyz ) + q.w*v, q.xyz);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Vector 2 (integer)
@@ -367,6 +353,13 @@ vec3 v3perp(vec3 v) {
     -copysignf((float)fabs(v.x) + (float)fabs(v.y), v.z)
     // or -copysignf(v.x, v.z) - copysignf(v.y, v.z)
   );
+}
+
+vec3 v3reflect(vec3 v, vec3 mirror_normal) {
+  vec3 n = v3norm(mirror_normal);
+  float proj = v3dot(v, n);
+  n = v3scale(n, -proj * 2.0f);
+  return v3add(v, n);
 }
 
 float v3angle(vec3 a, vec3 b) {

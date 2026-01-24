@@ -82,6 +82,8 @@ typedef hash_t  (*hash_fn)(const void* key, index_t size);
 typedef void    (*delete_fn)(void* to_delete);
 typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 
+#define CONST const
+
 #ifndef NULL
 # define NULL nullptr
 #endif

@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -64,74 +64,78 @@ typedef struct mat4 {
 #define m2identity ((mat2) {.f={  \
   1, 0,                           \
   0, 1,                           \
-}})                              //
+}})                               //
 
-#define m2zero ((mat2) {.f={  \
-  0, 0,                       \
-  0, 0,                       \
-}})                          //
+#define m2zero ((mat2) {.f={      \
+  0, 0,                           \
+  0, 0,                           \
+}})                               //
 
 #define m3identity ((mat3) {.f={  \
   1, 0, 0,                        \
   0, 1, 0,                        \
   0, 0, 1,                        \
-}})                              //
+}})                               //
 
-#define m3zero ((mat3) {.f={  \
-  0, 0, 0,                    \
-  0, 0, 0,                    \
-  0, 0, 0,                    \
-}})                          //
+#define m3zero ((mat3) {.f={      \
+  0, 0, 0,                        \
+  0, 0, 0,                        \
+  0, 0, 0,                        \
+}})                               //
 
 #define m4identity ((mat4) {.f={  \
   1, 0, 0, 0,                     \
   0, 1, 0, 0,                     \
   0, 0, 1, 0,                     \
   0, 0, 0, 1                      \
-}})                              //
+}})                               //
 
-#define m4zero ((mat4) {.f={  \
-  0, 0, 0, 0,                 \
-  0, 0, 0, 0,                 \
-  0, 0, 0, 0,                 \
-  0, 0, 0, 0                  \
-}})                          //
+#define m4zero ((mat4) {.f={      \
+  0, 0, 0, 0,                     \
+  0, 0, 0, 0,                     \
+  0, 0, 0, 0,                     \
+  0, 0, 0, 0                      \
+}})                               //
 
-mat3 m3mul(mat3 a, mat3 b);
-vec3 mv3mul(mat3 m, vec3 v);
-mat3 m3transpose(mat3 m);
+mat3  m3mul(mat3 a, mat3 b);
+float m3trace(mat3 m);
+float m3det(mat3 m);
+mat3  m3transpose(mat3 m);
+vec3  mv3mul(mat3 m, vec3 v);
 
-mat4 m4orthographic(
+mat4  m4orthographic(
   float left, float right, float top, float bottom, float near, float far);
-mat4 m4perspective(
+mat4  m4perspective(
   float fov_rads, float aspect, float near, float far);
 
-mat4 m4basis(vec3 x, vec3 y, vec3 z, vec3 origin);
-mat4 m4look(vec3 pos, vec3 target, vec3 up);
-mat4 m4translation(vec3 vec);
-mat4 m4rotation(vec3 axis, float angle);
-mat4 m4scalar(float scalar);
-mat4 m4vscalar(vec3 scalar);
-mat4 m4mul(mat4 a, mat4 b);
-vec4 mv4mul(mat4 m, vec4 v);
-mat4 m4transpose(mat4 mat);
-mat4 m4inverse(mat4 mat);
+mat4  m4basis(vec3 x, vec3 y, vec3 z, vec3 origin);
+float m4trace(mat4 m);
+float m4det(mat4 m);
+mat4  m4look(vec3 pos, vec3 target, vec3 up);
+mat4  m4translation(vec3 vec);
+mat4  m4rotation(vec3 axis, float angle);
+mat4  m4scalar(float scalar);
+mat4  m4vscalar(vec3 scalar);
+mat4  m4mul(mat4 a, mat4 b);
+vec4  mv4mul(mat4 m, vec4 v);
+mat4  m4transpose(mat4 mat);
+mat4  m4inverse(mat4 mat);
 
-mat4 m4trs(vec3 translation, vec3 axis, float angle, float uniform_scalar);
-mat4 m4trsv(vec3 translation, vec3 axis, float angle, vec3 non_uniform_scalar);
-mat4 m4trsq(vec3 translation, quat q, float uniform_scalar);
-mat4 m4trsqv(vec3 translation, quat q, vec3 non_uniform_scalar);
-mat4 m4ts(vec3 translation, float uniform_scalar);
-mat4 m4tsv(vec3 translation, vec3 non_uniform_scalar);
-mat4 m4tr(vec3 translation, vec3 axis, float angle);
-mat4 m4trq(vec3 translation, quat q);
-mat4 m4rs(vec3 axis, float angle, float uniform_scalar);
-mat4 m4rsv(vec3 axis, float angle, vec3 non_uniform_scalar);
-mat4 m4rsq(quat q, float uniform_scalar);
-mat4 m4rsqv(quat q, vec3 non_uniform_scalar);
+mat4  m4trs(vec3 translation, quat q, float uniform_scalar);
+mat4  m4trs_a(vec3 translation, vec3 axis, float angle, float uniform_scalar);
+mat4  m4trs_v(vec3 translation, quat q, vec3 non_uniform_scalar);
+mat4  m4trs_av(vec3 translation, vec3 axis, float angle, vec3 non_uniform_scalar);
+mat4  m4ts(vec3 translation, float uniform_scalar);
+mat4  m4ts_v(vec3 translation, vec3 non_uniform_scalar);
+mat4  m4tr(vec3 translation, quat q);
+mat4  m4tr_a(vec3 translation, vec3 axis, float angle);
+mat4  m4rs(quat q, float uniform_scalar);
+mat4  m4rs_a(vec3 axis, float angle, float uniform_scalar);
+mat4  m4rs_v(quat q, vec3 non_uniform_scalar);
+mat4  m4rs_av(vec3 axis, float angle, vec3 non_uniform_scalar);
 
-mat3 m3q(quat q);
-mat4 m4q(quat q);
+mat3  m3q(quat q);
+mat4  m4q(quat q);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Matrix type conversion shorthands

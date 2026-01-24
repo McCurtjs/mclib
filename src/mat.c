@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -44,16 +44,12 @@ mat3 m3mul(mat3 a, mat3 b) {
   return ret;
 }
 
-vec3 mv3mul(mat3 m, vec3 v) {
-  vec3 ret = v3zero;
+float m3trace(mat3 m) {
+  return m.col[0].x + m.col[1].y + m.col[2].z;
+}
 
-  for (int y = 0; y < 3; ++y) {
-    for (int x = 0; x < 3; ++x) {
-      ret.f[y] += m.m[x][y] * v.f[x];
-    }
-  }
-
-  return ret;
+float m3det(mat3 m) {
+  return v3dot(m.col[0], v3cross(m.col[1], m.col[2]));
 }
 
 mat3 m3transpose(mat3 m) {
@@ -80,10 +76,22 @@ mat3 m3q(quat q) {
   float wz = q.w * q.z;
 
   return (mat3) { .f = {
-    1.f - 2.f * (yy + zz) , 2.f * (xy + wz)       , 2.f * (xz - wy),
-    2.f * (xy - wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz + wx),
-    2.f * (xz + wy)       , 2.f * (yz - wx)       , 1.f - 2.f * (xx + yy)
+    1.f - 2.f * (yy + zz) , 2.f * (xy - wz)       , 2.f * (xz + wy),
+    2.f * (xy + wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz - wx),
+    2.f * (xz - wy)       , 2.f * (yz + wx)       , 1.f - 2.f * (xx + yy)
   }};
+}
+
+vec3 mv3mul(mat3 m, vec3 v) {
+  vec3 ret = v3zero;
+
+  for (int y = 0; y < 3; ++y) {
+    for (int x = 0; x < 3; ++x) {
+      ret.f[y] += m.m[x][y] * v.f[x];
+    }
+  }
+
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -130,6 +138,14 @@ mat4 m4basis(vec3 x, vec3 y, vec3 z, vec3 origin) {
     x.z, y.z, z.z, 0,
     -v3dot(x, origin), -v3dot(y, origin), -v3dot(z, origin), 1
   }};
+}
+
+float m4trace(mat4 m) {
+  return m.col[0].x + m.col[1].y + m.col[2].z + m.col[3].w;
+}
+
+float m4det(mat4 m) {
+  return v3dot(m.col[0].xyz, v3cross(m.col[1].xyz, m.col[2].xyz));
 }
 
 mat4 m4look(vec3 pos, vec3 target, vec3 up) {
@@ -185,9 +201,9 @@ mat4 m4q(quat q) {
   float wz = q.w * q.z;
 
   return (mat4) {.f = {
-    1.f - 2.f * (yy + zz) , 2.f * (xy + wz)       , 2.f * (xz - wy)       , 0,
-    2.f * (xy - wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz + wx)       , 0,
-    2.f * (xz + wy)       , 2.f * (yz - wx)       , 1.f - 2.f * (xx + yy) , 0,
+    1.f - 2.f * (yy + zz) , 2.f * (xy - wz)       , 2.f * (xz + wy)       , 0,
+    2.f * (xy + wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz - wx)       , 0,
+    2.f * (xz - wy)       , 2.f * (yz + wx)       , 1.f - 2.f * (xx + yy) , 0,
     0                     , 0                     , 0                     , 1
   }};
 }
@@ -318,26 +334,26 @@ mat4 m4inverse(mat4 m) {
 // Transform shorthand
 ////////////////////////////////////////////////////////////////////////////////
 
-mat4 m4trs(vec3 translation, vec3 axis, float angle, float uniform_scalar) {
-  mat4 ret = m4rs(axis, angle, uniform_scalar);
+mat4 m4trs(vec3 translation, quat q, float uniform_scalar) {
+  mat4 ret = m4rs(q, uniform_scalar);
   ret.col[3].xyz = translation;
   return ret;
 }
 
-mat4 m4trsv(vec3 translation, vec3 axis, float angle, vec3 non_uniform_scalar) {
-  mat4 ret = m4rsv(axis, angle, non_uniform_scalar);
+mat4 m4trs_a(vec3 translation, vec3 axis, float angle, float uniform_scalar) {
+  mat4 ret = m4rs_a(axis, angle, uniform_scalar);
   ret.col[3].xyz = translation;
   return ret;
 }
 
-mat4 m4trsq(vec3 translation, quat q, float uniform_scalar) {
-  mat4 ret = m4rsq(q, uniform_scalar);
+mat4 m4trs_v(vec3 translation, quat q, vec3 non_uniform_scalar) {
+  mat4 ret = m4rs_v(q, non_uniform_scalar);
   ret.col[3].xyz = translation;
   return ret;
 }
 
-mat4 m4trsqv(vec3 translation, quat q, vec3 non_uniform_scalar) {
-  mat4 ret = m4rsqv(q, non_uniform_scalar);
+mat4 m4trs_av(vec3 translation, vec3 axis, float angle, vec3 n_uniform_scalar) {
+  mat4 ret = m4rs_av(axis, angle, n_uniform_scalar);
   ret.col[3].xyz = translation;
   return ret;
 }
@@ -346,27 +362,27 @@ mat4 m4ts(vec3 translation, float uniform_scalar) {
   return m4mul(m4translation(translation), m4scalar(uniform_scalar));
 }
 
-mat4 m4tsv(vec3 translation, vec3 non_uniform_scalar) {
+mat4 m4ts_v(vec3 translation, vec3 non_uniform_scalar) {
   return m4mul(m4translation(translation), m4vscalar(non_uniform_scalar));
 }
 
-mat4 m4tr(vec3 translation, vec3 axis, float angle) {
+mat4 m4tr_a(vec3 translation, vec3 axis, float angle) {
   mat4 ret = m4rotation(axis, angle);
   ret.col[3].xyz = translation;
   return ret;
 }
 
-mat4 m4trq(vec3 translation, quat q) {
+mat4 m4tr(vec3 translation, quat q) {
   mat4 ret = m4q(q);
   ret.col[3].xyz = translation;
   return ret;
 }
 
-mat4 m4rs(vec3 axis, float angle, float scale) {
-  return m4rsv(axis, angle, v3f(scale, scale, scale));
+mat4 m4rs_a(vec3 axis, float angle, float scale) {
+  return m4rs_av(axis, angle, v3f(scale, scale, scale));
 }
 
-mat4 m4rsv(vec3 axis, float angle, vec3 scale) {
+mat4 m4rs_av(vec3 axis, float angle, vec3 scale) {
   mat4 ret = m4rotation(axis, angle);
   ret.m[0][0] *= scale.x;
   ret.m[0][1] *= scale.x;
@@ -380,20 +396,20 @@ mat4 m4rsv(vec3 axis, float angle, vec3 scale) {
   return ret;
 }
 
-mat4 m4rsq(quat q, float scale) {
-  return m4rsqv(q, v3f(scale, scale, scale));
+mat4 m4rs(quat q, float scale) {
+  return m4rs_v(q, v3f(scale, scale, scale));
 }
 
-mat4 m4rsqv(quat q, vec3 scale) {
+mat4 m4rs_v(quat q, vec3 scale) {
   mat4 ret = m4q(q);
-  ret.m[0][0] *= scale.x;
-  ret.m[0][1] *= scale.x;
-  ret.m[0][2] *= scale.x;
-  ret.m[1][0] *= scale.y;
-  ret.m[1][1] *= scale.y;
-  ret.m[1][2] *= scale.y;
-  ret.m[2][0] *= scale.z;
-  ret.m[2][1] *= scale.z;
-  ret.m[2][2] *= scale.z;
+  ret.f[ 0] *= scale.x;
+  ret.f[ 1] *= scale.x;
+  ret.f[ 2] *= scale.x;
+  ret.f[ 4] *= scale.y;
+  ret.f[ 5] *= scale.y;
+  ret.f[ 6] *= scale.y;
+  ret.f[ 8] *= scale.z;
+  ret.f[ 9] *= scale.z;
+  ret.f[10] *= scale.z;
   return ret;
 }

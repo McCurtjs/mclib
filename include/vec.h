@@ -115,6 +115,7 @@ typedef vec3 color3;
 
 typedef struct quat {
   union {
+    float f[4];
     struct {
       float i, j, k, w;
     };
