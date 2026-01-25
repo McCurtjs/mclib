@@ -357,9 +357,7 @@ vec3 v3perp(vec3 v) {
 
 vec3 v3reflect(vec3 v, vec3 mirror_normal) {
   vec3 n = v3norm(mirror_normal);
-  float proj = v3dot(v, n);
-  n = v3scale(n, -proj * 2.0f);
-  return v3add(v, n);
+  return v3sub(v, v3scale(n, 2.0f * v3dot(v, n)));
 }
 
 float v3angle(vec3 a, vec3 b) {

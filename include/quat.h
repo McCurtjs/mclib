@@ -30,8 +30,11 @@
 #include "vec.h"
 #include "mat.h"
 
-#define q4zero       ((quat){.f={ 0, 0, 0, 0 } })
-#define q4identity   ((quat){.f={ 0, 0, 0, 1 } })
+#define q4floats    4
+#define q4bytes     (sizeof(quat))
+
+#define q4zero      ((quat){.f={ 0, 0, 0, 0 } })
+#define q4identity  ((quat){.f={ 0, 0, 0, 1 } })
 
 float q4magsq(quat q);
 float q4mag(quat q);
@@ -44,11 +47,13 @@ quat  q4mul(quat a, quat b);
 quat  q4lerp(quat a, quat b, float t);
 quat  q4nlerp(quat a, quat b, float t);
 quat  q4slerp(quat a, quat b, float t);
-quat  q4axis(vec3 axis, float angle);
+quat  q4axang(vec3 axis, float angle);
 quat  q4euler(vec3 euler);
 quat  q3rotation(vec3 from, vec3 to);
 quat  q3look(vec3 forward, vec3 up);
 quat  q4m(mat3 matrix);
+float q4angle(quat q);
+vec3  q4axis(quat q);
 
 vec3  v3rotate(vec3 v, quat q);
 

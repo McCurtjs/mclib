@@ -112,7 +112,7 @@ quat q4slerp(quat a, quat b, float t) {
   return q4norm(ret);
 }
 
-quat q4axis(vec3 axis, float angle) {
+quat q4axang(vec3 axis, float angle) {
   axis = v3norm(axis);
   float half = 0.5f * angle;
   float s = sinf(half);
@@ -122,9 +122,9 @@ quat q4axis(vec3 axis, float angle) {
 
 quat q4euler(vec3 euler) {
   // yaw, pitch, roll
-  quat qy = q4axis(v3up, euler.y);
-  quat qx = q4axis(v3right, euler.x);
-  quat qz = q4axis(v3front, euler.z);
+  quat qy = q4axang(v3up, euler.y);
+  quat qx = q4axang(v3right, euler.x);
+  quat qz = q4axang(v3front, euler.z);
   return q4norm(q4mul(q4mul(qy, qx), qz));
 }
 
@@ -137,7 +137,7 @@ quat q3rotation(vec3 from, vec3 to) {
 
   // if vectors are nearly opposite, pick some orthogonal axis
   if (d < -1.0f + epsilon) {
-    return q4axis(v3perp(from), PI);
+    return q4axang(v3perp(from), PI);
   }
 
   vec3 axis = v3cross(from, to);
@@ -209,6 +209,18 @@ quat q4m(mat3 m) {
   }
 
   return q4canon(q4norm(q));
+}
+
+float q4angle(quat q) {
+  return 2.0f * acosf(q.w);
+}
+
+vec3 q4axis(quat q) {
+  q = q4norm(q);
+  float s = sqrtf(1.0f - q.w*q.w);
+  if (s < epsilon)
+    return v3right;
+  return v3scale(q.ijk, s);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
