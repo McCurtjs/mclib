@@ -227,9 +227,24 @@ void* pmap_ref(PackedMap pm_in, slotkey_t key) {
   return _get_data(pm, mapping.index);
 }
 
+void* pmap_ref_index(PackedMap pm_in, index_t index) {
+  PACKEDMAP_INTERNAL;
+  if (index < 0 || index >= pm->capacity) return NULL;
+  entry_t mapping = pm->mapping[index];
+  return _get_data(pm, mapping.index);
+}
+
 bool pmap_read(PackedMap pm_in, slotkey_t key, void* out_element) {
   assert(out_element);
   const void* ref = pmap_ref(pm_in, key);
+  if (!ref) return false;
+  memcpy(out_element, ref, pm_in->element_size);
+  return true;
+}
+
+bool pmap_read_index(PackedMap pm_in, index_t index, void* out_element) {
+  assert(out_element);
+  const void* ref = pmap_ref_index(pm_in, index);
   if (!ref) return false;
   memcpy(out_element, ref, pm_in->element_size);
   return true;

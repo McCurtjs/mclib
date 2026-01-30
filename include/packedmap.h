@@ -113,7 +113,9 @@ void*       pmap_emplace(PackedMap, slotkey_t* out_key);
 slotkey_t   pmap_insert(PackedMap, const void* element);
 slotkey_t   pmap_key(PackedMap, index_t index);
 void*       pmap_ref(PackedMap, slotkey_t);
+void*       pmap_ref_index(PackedMap, index_t index);
 bool        pmap_read(PackedMap, slotkey_t, void* out_element);
+bool        pmap_read_index(PackedMap, index_t index);
 bool        pmap_contains(PackedMap, slotkey_t);
 bool        pmap_remove(PackedMap, slotkey_t);
 
@@ -234,14 +236,31 @@ static inline con_type _prefix(_get)
   return *ret;
 }
 
+static inline con_type _prefix(_get_index)
+(_map_type map, index_t index) {
+  assert(index >= 0 && index < map->size);
+  return *map->begin + index;
+}
+
 static inline con_type* _prefix(_ref)
 (_map_type map, slotkey_t key) {
   return pmap_ref((PackedMap)map, key);
 }
 
+static inline con_type* _prefix(_ref_index)
+(_map_type map, index_t index) {
+  if (index < 0 || index >= map->size) return NULL;
+  return map->begin + index;
+}
+
 static inline bool _prefix(_read)
 (_map_type map, slotkey_t key, con_type* out) {
   return pmap_read((PackedMap)map, key, out);
+}
+
+static inline bool _prefix(_read_index)
+(_map_type map, index_t index, con_type* out) {
+  return pmap_read((PackedMap)map, index, out);
 }
 
 static inline bool _prefix(_remove)
