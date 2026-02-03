@@ -226,8 +226,6 @@ vec3 q4axis(quat q) {
 ////////////////////////////////////////////////////////////////////////////////
 
 vec3 v3rotate(vec3 v, quat q) {
-  float v_mag = v3mag(v);
-
   // t = 2 * (qv x v)
   vec3 t = v3cross(q.ijk, v);
 

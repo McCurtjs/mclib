@@ -115,7 +115,7 @@ slotkey_t   pmap_key(PackedMap, index_t index);
 void*       pmap_ref(PackedMap, slotkey_t);
 void*       pmap_ref_index(PackedMap, index_t index);
 bool        pmap_read(PackedMap, slotkey_t, void* out_element);
-bool        pmap_read_index(PackedMap, index_t index);
+bool        pmap_read_index(PackedMap, index_t index, void* out_element);
 bool        pmap_contains(PackedMap, slotkey_t);
 bool        pmap_remove(PackedMap, slotkey_t);
 
@@ -261,6 +261,11 @@ static inline bool _prefix(_read)
 static inline bool _prefix(_read_index)
 (_map_type map, index_t index, con_type* out) {
   return pmap_read((PackedMap)map, index, out);
+}
+
+static inline bool _prefix(_contains)
+(_map_type map, slotkey_t key) {
+  return pmap_contains((PackedMap)map, key);
 }
 
 static inline bool _prefix(_remove)

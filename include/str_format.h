@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2025 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -60,6 +60,12 @@ static inline _str_arg_t _sarg_c_str(const char* c_str) {
   if (!c_str) c_str = slice_empty.begin;
   return (_str_arg_t) {
     .type = _str_arg_slice, .slice = slice_from_c_str(c_str)
+  };
+}
+
+static inline _str_arg_t _sarg_bool(bool b) {
+  return (_str_arg_t) {
+    .type = _str_arg_slice, .slice = b ? slice_true : slice_false
   };
 }
 
@@ -156,6 +162,7 @@ static inline _str_arg_t _sarg_vec3i(vec3i v) {
   const slice_t*:     _sarg_slice_ptr,  \
   char*:              _sarg_c_str,      \
   const char*:        _sarg_c_str,      \
+  bool:               _sarg_bool,       \
   int:                _sarg_int,        \
   long:               _sarg_int,        \
   long long:          _sarg_int,        \
