@@ -114,7 +114,7 @@ typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 #define d2r(DEG)  ((DEG) * PI / 180.0f)
 
 // True if an integer value is a power of 2
-#define isPow2(n) ((n & (n-1)) == 0)
+#define is_pow2(n) ((n & (n-1)) == 0)
 
 // Allows writing loops in the form:
 //    loop {
