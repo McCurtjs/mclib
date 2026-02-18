@@ -82,7 +82,11 @@ typedef hash_t  (*hash_fn)(const void* key, index_t size);
 typedef void    (*delete_fn)(void* to_delete);
 typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 
-#define CONST const
+#ifndef MCLIB_INTERNAL_IMPL
+# define CONST const
+#else
+# define CONST
+#endif
 
 #ifndef NULL
 # define NULL nullptr

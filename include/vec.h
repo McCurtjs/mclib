@@ -253,6 +253,7 @@ typedef vec4 color4;
 #define c4magenta   ((vec4) {.f={ 1, 0, 1, 1 } })
 #define c4white     ((vec4) {.f={ 1, 1, 1, 1 } })
 #define c4gray      ((vec4) {.f={.5,.5,.5, 1 } })
+#define c4normal    ((vec4) {.f={.5,.5, 1, 1 } })
 #define b4black     ((vec4b){.i={   0,   0,   0, 255 } })
 #define b4red       ((vec4b){.i={ 255,   0,   0, 255 } })
 #define b4green     ((vec4b){.i={   0, 255,   0, 255 } })
@@ -262,6 +263,7 @@ typedef vec4 color4;
 #define b4magenta   ((vec4b){.i={ 255,   0, 255, 255 } })
 #define b4white     ((vec4b){.i={ 255, 255, 255, 255 } })
 #define b4gray      ((vec4b){.i={ 128, 128, 128, 255 } })
+#define b4normal    ((vec4b){.i={ 128, 128, 255, 255 } })
 
 float   i2aspect(vec2i v);
 vec2i   i2zcurve(size_t i);
@@ -490,11 +492,29 @@ static inline vec3b v3bv(vec3 v) {
 }
 
 static inline vec3 v3vc(vec3b c) {
-  return v3f((float)c.x / 255.f, (float)c.g / 255.f, (float)c.b / 255.f);
+  return v3f((float)c.r / 255.f, (float)c.g / 255.f, (float)c.b / 255.f);
 }
 
 static inline vec3b v3cv(vec3 c) {
-  return v3b((byte)(c.x * 255.f), (byte)(c.g * 255.f), (byte)(c.b * 255.f));
+  return v3b((byte)(c.r * 255.f), (byte)(c.g * 255.f), (byte)(c.b * 255.f));
+}
+
+static inline vec4 v4vc(vec4b c) {
+  return v4f
+  ( (float)c.r / 255.f
+  , (float)c.g / 255.f
+  , (float)c.b / 255.f
+  , (float)c.a / 255.f
+  );
+}
+
+static inline vec4b v4cv(vec4 c) {
+  return v4b
+  ( (byte)(c.r * 255.f)
+  , (byte)(c.g * 255.f)
+  , (byte)(c.b * 255.f)
+  , (byte)(c.a * 255.f)
+  );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
