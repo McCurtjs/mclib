@@ -35,7 +35,8 @@
 #ifndef MCLIB_STR_FORMAT_STRING_
 #define MCLIB_STR_FORMAT_STRING_
 
-static inline _str_arg_t _sarg_str(const String s) {
+static inline _str_arg_t _sarg_str(String s) {
+  if (!s) s = str_empty;
   return (_str_arg_t) { .type = _str_arg_slice, .slice = s->slice };
 }
 
