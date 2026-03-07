@@ -60,6 +60,22 @@ size_t i2zindex(vec2i v) {
   return ret;
 }
 
+vec2i i2add(vec2i a, vec2i b) {
+  return (vec2i) { a.x + b.x, a.y + b.y };
+}
+
+vec2i i2sub(vec2i a, vec2i b) {
+  return (vec2i) { a.x - b.x, a.y - b.y };
+}
+
+vec2i i2mul(vec2i a, vec2i b) {
+  return (vec2i) { a.x * b.x, a.y * b.y };
+}
+
+vec2i i2div(vec2i a, vec2i b) {
+  return (vec2i) { a.x / b.x, a.y / b.y };
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Vector 2 (float)
 ////////////////////////////////////////////////////////////////////////////////
@@ -431,4 +447,20 @@ bool v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out) {
   if (t < 0) return false;
   if (t_out) *t_out = t;
   return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Color helpers
+////////////////////////////////////////////////////////////////////////////////
+
+float c4lum(color4 c) {
+  return c.r * 0.299f + c.g * 0.587f + c.b * 0.114f;
+}
+
+byte b4lum(color4b c) {
+  return (byte) (
+  ( ((float)c.r / 255.f) * 0.299f
+  + ((float)c.g / 255.f) * 0.587f
+  + ((float)c.b / 255.f) * 0.114f
+  ) * 255.f);
 }

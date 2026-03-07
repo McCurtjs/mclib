@@ -268,6 +268,10 @@ typedef vec4 color4;
 float   i2aspect(vec2i v);
 vec2i   i2zcurve(size_t i);
 size_t  i2zindex(vec2i v);
+vec2i   i2add(vec2i a, vec2i b);
+vec2i   i2sub(vec2i a, vec2i b);
+vec2i   i2mul(vec2i a, vec2i b);
+vec2i   i2div(vec2i a, vec2i b);
 
 bool    v2eq(vec2 a, vec2 b);
 bool    v2about(vec2 a, vec2 b, float epsilon);
@@ -336,6 +340,14 @@ bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);
 //vec2  v2orbit(vec2 a, vec2 center, float theta);
 //vec3  v3reflect(vec3 v, vec3 axis);
 //vec3  v3rot(vec3 v, vec3 axis, float theta);
+
+////////////////////////////////////////////////////////////////////////////////
+// Vector type conversion shorthands
+////////////////////////////////////////////////////////////////////////////////
+
+float c4lum(color4 c);
+
+byte b4lum(color4b c);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Vector type conversion shorthands
