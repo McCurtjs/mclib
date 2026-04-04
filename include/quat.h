@@ -62,7 +62,7 @@ static inline quat q4f(float i, float j, float k, float w) {
 }
 
 static inline quat qv34f(vec3 ijk, float w) {
-  return (quat) { ijk.x, ijk.y, ijk.z, w };
+  return (quat) { .i = ijk.x, .j = ijk.y, .k = ijk.z, .w = w };
 }
 
 #endif
