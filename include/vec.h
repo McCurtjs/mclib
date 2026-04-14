@@ -272,6 +272,7 @@ vec2i   i2add(vec2i a, vec2i b);
 vec2i   i2sub(vec2i a, vec2i b);
 vec2i   i2mul(vec2i a, vec2i b);
 vec2i   i2div(vec2i a, vec2i b);
+vec2    i2ndc(vec2i screen_pos, vec2i screen_dimension);
 
 bool    v2eq(vec2 a, vec2 b);
 bool    v2about(vec2 a, vec2 b, float epsilon);
@@ -280,6 +281,7 @@ float   v2magsq(vec2 v);
 float   v2dist(vec2 P, vec2 Q);
 float   v2distsq(vec2 P, vec2 Q);
 vec2    v2norm(vec2 v);
+vec2    v2mid(vec2 P, vec2 Q);
 vec2    v2neg(vec2 v);
 vec2    v2add(vec2 a, vec2 b);
 vec2    v2sub(vec2 a, vec2 b);
@@ -299,6 +301,8 @@ vec2    v2heading(float theta);
 vec2    v2rot(vec2 v, float theta);
 vec2    v2lerp(vec2 P, vec2 Q, float t);
 vec2    v2towards(vec2 P, vec2 Q, float max);
+float   v2aspect(vec2 dim);
+vec2    v2ndc(vec2 screen_pos, vec2i screen_dimension);
 float   v2line_dist(vec2 L, vec2 v, vec2 P);
 float   v2line_closest(vec2 L, vec2 v, vec2 P, vec2* R_out);
 bool    v2line_line(vec2 L, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
@@ -314,6 +318,7 @@ float   v3magsq(vec3 v);
 float   v3dist(vec3 P, vec3 Q);
 float   v3distsq(vec3 P, vec3 Q);
 vec3    v3norm(vec3 v);
+vec3    v3mid(vec3 P, vec3 Q);
 vec3    v3neg(vec3 v);
 vec3    v3add(vec3 a, vec3 b);
 vec3    v3sub(vec3 a, vec3 b);
@@ -388,6 +393,30 @@ static inline vec4 v4f(float x, float y, float z, float w) {
 }
 
 // Convert dimensions with default new values where applicable
+
+static inline vec3b b13(byte b) {
+  return (vec3b) { .i = { b, b, b } };
+}
+
+static inline vec4b b14(byte b) {
+  return (vec4b) { .i = { b, b, b, b } };
+}
+
+static inline vec4b b34(vec3b v) {
+  return v4b(v.r, v.g, v.b, 255);
+}
+
+static inline vec2i i12(int i) {
+  return (vec2i) { .i = { i, i } };
+}
+
+static inline vec3i i13(int i) {
+  return (vec3i) { .i = { i, i, i } };
+}
+
+static inline vec3i i23(vec2i v) {
+  return v3i(v.x, v.y, 0);
+}
 
 static inline vec2 v12(float f) {
   return (vec2) { .f = { f, f } };

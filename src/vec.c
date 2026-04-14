@@ -76,6 +76,13 @@ vec2i i2div(vec2i a, vec2i b) {
   return (vec2i) { a.x / b.x, a.y / b.y };
 }
 
+vec2 i2ndc(vec2i sp, vec2i scr_wh) {
+  return (vec2) {
+    .x = (    ((float)sp.x / (float)scr_wh.w) - 0.5f) * 2,
+    .y = (1 - ((float)sp.y / (float)scr_wh.h) - 0.5f) * 2,
+  };
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Vector 2 (float)
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,6 +115,10 @@ float v2distsq(vec2 P, vec2 Q) {
 vec2 v2norm(vec2 v) {
   float mag = v2mag(v);
   return v2f(v.x / mag, v.y / mag);
+}
+
+vec2 v2mid(vec2 P, vec2 Q) {
+  return v2scale(v2add(P, Q), 0.5f);
 }
 
 vec2 v2neg(vec2 v) {
@@ -205,6 +216,17 @@ vec2 v2towards(vec2 P, vec2 Q, float max) {
   return v2add(P, v2scale(v, max / mag));
 }
 
+float v2aspect(vec2 dim) {
+  return dim.w / dim.h;
+}
+
+vec2 v2ndc(vec2 screen_pos, vec2i scr_wh) {
+  return (vec2) {
+    .x = (    (screen_pos.x / (float)scr_wh.w) - 0.5f) * 2,
+    .y = (1 - (screen_pos.y / (float)scr_wh.h) - 0.5f) * 2,
+  };
+}
+
 float v2line_dist(vec2 L, vec2 v, vec2 P) {
   return v2cross(v2sub(P, L), v) / v2mag(v);
 }
@@ -298,6 +320,10 @@ float v3distsq(vec3 P, vec3 Q) {
 vec3 v3norm(vec3 v) {
   float mag = v3mag(v);
   return v3f( v.x / mag, v.y / mag, v.z / mag );
+}
+
+vec3 v3mid(vec3 P, vec3 Q) {
+  return v3scale(v3add(P, Q), 0.5f);
 }
 
 vec3 v3neg(vec3 v) {
