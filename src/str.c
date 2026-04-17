@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2025 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -422,4 +422,37 @@ String istr_append(slice_t str, index_t length, char c) {
   memcpy(ret->begin, str.begin, str.size);
   memset(ret->begin + str.size, c, length);
   return str_terminate(ret);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// String building functions for Array_byte
+////////////////////////////////////////////////////////////////////////////////
+
+Array_byte arr_byte_new_str(void) {
+  Array_byte ret = arr_byte_new_reserve(sizeof(String_Internal));
+  assert(ret->begin);
+  String_Internal* str = (String_Internal*)ret->begin;
+  str->slice = slice_empty;
+  return ret;
+}
+
+Array_byte arr_byte_new_reserve_str(index_t length) {
+  Array_byte ret = arr_byte_new_reserve(sizeof(String_Internal) + length + 1);
+  assert(ret->begin);
+  String_Internal* str = (String_Internal*)ret->begin;
+  str->slice = slice_empty;
+  return ret;
+}
+
+String arr_byte_release_str(Array_byte* arr) {
+  assert(arr);
+  if ((*arr)->size < sizeof(String_Internal)) {
+    arr_byte_reserve(*arr, sizeof(String_Internal));
+  }
+  assert((*arr)->size > sizeof(String_Internal));
+  index_t str_len = (*arr)->size - sizeof(String_Internal);
+  String_Internal* ret = (String_Internal*)arr_byte_release(arr).begin;
+  ret->begin = ret->head;
+  ret->length = str_len;
+  return (String)ret;
 }

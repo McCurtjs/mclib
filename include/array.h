@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2025 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -184,6 +184,7 @@ Array       arr_new_copy(view_t to_copy, index_t element_size);
 void        arr_reserve(Array, index_t capacity);
 void        arr_truncate(Array, index_t capacity);
 void        arr_trim(Array);
+void        arr_resize(Array, index_t new_size);
 void        arr_clear(Array);
 void        arr_free(Array);
 void        arr_delete(Array* array);
@@ -194,10 +195,11 @@ span_t      arr_emplace_range(Array, index_t position, index_t count);
 span_t      arr_emplace_back_range(Array, index_t count);
 void        arr_insert(Array, index_t position, const void* in_element);
 void        arr_insert_back(Array, const void* in_element);
-void        arr_insert_range(Array, index_t position, span_t range);
-void        arr_insert_back_range(Array, span_t range);
+void        arr_insert_range(Array, index_t position, view_t range);
+void        arr_insert_back_range(Array, view_t range);
 void        arr_write(Array, index_t index, const void* in_element);
 SI void     arr_write_back(Array, const void* in_element);
+SI void     arr_write_back_range(Array, view_t range);
 bool        arr_remove(Array, index_t position);
 bool        arr_remove_unstable(Array, index_t position);
 bool        arr_remove_range(Array, index_t position, index_t count);
@@ -279,7 +281,7 @@ SI void*    arr_search_ref(Array, const void* item, compare_nosize_fn);
 // TODO: would it be better to also track an offset rather than multiply?
 
 ////////////////////////////////////////////////////////////////////////////////
-// Inlining
+// Inlining functions borrowed from spans
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _DEBUG
@@ -298,6 +300,12 @@ static inline void arr_write_back(
   Array array, const void* in_element
 ) {
   arr_insert_back(array, in_element);
+}
+
+static inline void arr_write_back_range(
+  Array array, view_t range
+) {
+  arr_insert_back_range(array, range);
 }
 
 static inline void* arr_ref(
@@ -718,6 +726,16 @@ static inline _arr_local_type _prefix(_build_reserve)
   return *(_arr_local_type*)(&ret);
 }
 
+// \brief Creates a new array as a SHALLOW COPY of the given array.
+//
+// \param to_copy - the other array to copy elements from
+static inline _arr_type _prefix(_copy)
+(_arr_type to_copy) {
+  _arr_type ret = (_arr_type)arr_copy((Array)to_copy);
+  assert(to_copy->element_size == sizeof(con_type));
+  return ret;
+}
+
 // \brief Reserves space in the array so that it can contain at least N
 //    elements. This will not reserve space for N _additional_ elements, any
 //    items already in the array will still count towards the final capacity.
@@ -740,6 +758,14 @@ static inline void _prefix(_reserve)
 static inline void _prefix(_truncate)
 (_arr_type arr, index_t capacity) {
   arr_truncate((Array)arr, capacity);
+}
+
+// \brief Resizes the array to contain the exact given number of elements.
+//
+// \param new_size - the new number of elements the array should contain
+static inline void _prefix(_resize)
+(_arr_type arr, index_t new_size) {
+  arr_resize((Array)arr, new_size);
 }
 
 // \brief Performs a soft-delete of the array contents without changing
@@ -833,15 +859,15 @@ static inline void _prefix(_insert_back)
 }
 
 static inline void _prefix(_insert_range)
-(_arr_type arr, index_t position, _span_type range) {
-  span_t span_base = *(span_t*)&range;
-  arr_insert_range((Array)arr, position, span_base);
+(_arr_type arr, index_t position, _view_type range) {
+  view_t view_base = *(view_t*)&range;
+  arr_insert_range((Array)arr, position, view_base);
 }
 
 static inline void _prefix(_insert_back_range)
-(_arr_type arr, _span_type range) {
-  span_t span_base = *(span_t*)&range;
-  arr_insert_back_range((Array)arr, span_base);
+(_arr_type arr, _view_type range) {
+  view_t view_base = *(view_t*)&range;
+  arr_insert_back_range((Array)arr, view_base);
 }
 
 // \brief Copies the given element into the array at the given index.
@@ -863,6 +889,15 @@ static inline void _prefix(_write)
 static inline void _prefix(_write_back)
 (_arr_type arr, const con_type* element) {
   arr_write_back((Array)arr, element);
+}
+
+// \brief Copies a given range to the back of the array.
+//
+// \param range - a range of elements of the same type to copy directly
+static inline void _prefix(_write_back_range)
+(_arr_type arr, _view_type range) {
+  view_t view_base = *(view_t*)&range;
+  arr_write_back_range((Array)arr, view_base);
 }
 
 // \brief Inserts a copy of the given element into the given position in the

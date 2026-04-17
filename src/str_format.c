@@ -517,7 +517,7 @@ static void _format_print_arg(
 
 }
 
-void arr_byte_append_format(
+void iarr_byte_append_format(
   Array_byte output, slice_t fmt, _str_arg_t args[], index_t argc
 ) {
   // Process the format string
@@ -592,7 +592,7 @@ String istr_format(slice_t fmt, _str_arg_t args[], index_t arg_count) {
   arr_byte_emplace_back_range(output, sizeof(slice_t));
 
   // process the format string
-  arr_byte_append_format(output, fmt, args, arg_count);
+  iarr_byte_append_format(output, fmt, args, arg_count);
 
   // include the null-terminator
   arr_byte_push_back(output, '\0');

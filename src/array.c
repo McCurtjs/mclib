@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2025 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -177,6 +177,17 @@ void arr_trim(Array a_in) {
   a->capacity = a->size;
 }
 
+void arr_resize(Array a_in, index_t new_size) {
+  DARRAY_INTERNAL;
+  if (a->size > new_size) {
+    arr_truncate(a_in, new_size);
+  }
+  else if (a->size < new_size) {
+    index_t diff = new_size - a->size;
+    span_t span = arr_emplace_back_range(a_in, diff);
+  }
+}
+
 void arr_clear(Array a_in) {
   DARRAY_INTERNAL;
   a->size = 0;
@@ -294,17 +305,17 @@ void arr_insert_back(Array a, const void* element) {
   memcpy(data, element, a->element_size);
 }
 
-void arr_insert_range(Array a, index_t position, span_t range) {
+void arr_insert_range(Array a, index_t position, view_t range) {
   assert(a->begin > range.end || a->end <= range.begin);
-  index_t element_count = span_size_bytes(range) / a->element_size;
+  index_t element_count = view_size_bytes(range) / a->element_size;
   assert(element_count > 0);
   span_t data = arr_emplace_range(a, position, element_count);
   memcpy(data.begin, range.begin, element_count * a->element_size);
 }
 
-void arr_insert_back_range(Array a, span_t range) {
+void arr_insert_back_range(Array a, view_t range) {
   assert(a->begin > range.end || a->end <= range.begin);
-  index_t element_count = span_size_bytes(range) / a->element_size;
+  index_t element_count = view_size_bytes(range) / a->element_size;
   assert(element_count > 0);
   span_t data = arr_emplace_back_range(a, element_count);
   memcpy(data.begin, range.begin, element_count * a->element_size);
@@ -437,12 +448,6 @@ bool arr_pop_last(Array a_in, index_t count) {
 #include "array_byte.h"
 #include "slice.h"
 
-span_byte_t iarr_byte_append(Array_byte arr, slice_t slice) {
-  span_byte_t ret = arr_byte_emplace_back_range(arr, slice.size);
-  memcpy(ret.begin, slice.begin, slice.size);
-  return ret;
-}
-
 span_byte_t arr_byte_append_int(Array_byte arr, long long int i) {
   index_t origin = arr->size;
   if (i < 0) {
@@ -513,4 +518,10 @@ span_byte_t arr_byte_append_float(Array_byte arr, double f_in, int precision) {
   }
 
   return span_byte_build(arr->begin + origin, arr->end);
+}
+
+span_byte_t iarr_byte_append(Array_byte arr, slice_t slice) {
+  span_byte_t ret = arr_byte_emplace_back_range(arr, slice.size);
+  memcpy(ret.begin, slice.begin, slice.size);
+  return ret;
 }
