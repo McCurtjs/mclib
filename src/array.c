@@ -184,7 +184,7 @@ void arr_resize(Array a_in, index_t new_size) {
   }
   else if (a->size < new_size) {
     index_t diff = new_size - a->size;
-    span_t span = arr_emplace_back_range(a_in, diff);
+    arr_emplace_back_range(a_in, diff);
   }
 }
 

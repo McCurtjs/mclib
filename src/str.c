@@ -445,12 +445,13 @@ Array_byte arr_byte_new_reserve_str(index_t length) {
 }
 
 String arr_byte_release_str(Array_byte* arr) {
+  const index_t header_size = (index_t)sizeof(String_Internal);
   assert(arr);
-  if ((*arr)->size < sizeof(String_Internal)) {
-    arr_byte_reserve(*arr, sizeof(String_Internal));
+  if ((*arr)->size < header_size) {
+    arr_byte_reserve(*arr, header_size);
   }
-  assert((*arr)->size > sizeof(String_Internal));
-  index_t str_len = (*arr)->size - sizeof(String_Internal);
+  assert((*arr)->size > header_size);
+  index_t str_len = (*arr)->size - header_size;
   String_Internal* ret = (String_Internal*)arr_byte_release(arr).begin;
   ret->begin = ret->head;
   ret->length = str_len;
