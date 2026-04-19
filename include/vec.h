@@ -272,6 +272,8 @@ vec2i   i2add(vec2i a, vec2i b);
 vec2i   i2sub(vec2i a, vec2i b);
 vec2i   i2mul(vec2i a, vec2i b);
 vec2i   i2div(vec2i a, vec2i b);
+vec2i   i2scale(vec2i a, float factor);
+vec2i   i2rescale(vec2i a, float length);
 vec2    i2ndc(vec2i screen_pos, vec2i screen_dimension);
 
 bool    v2eq(vec2 a, vec2 b);

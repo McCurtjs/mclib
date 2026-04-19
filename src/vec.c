@@ -76,6 +76,14 @@ vec2i i2div(vec2i a, vec2i b) {
   return (vec2i) { a.x / b.x, a.y / b.y };
 }
 
+vec2i i2scale(vec2i a, float factor) {
+  return (vec2i) { (int)((float)a.x * factor), (int)((float)a.y * factor) };
+}
+
+vec2i i2rescale(vec2i a, float length) {
+  return v2iv(v2rescale(v2vi(a), length));
+}
+
 vec2 i2ndc(vec2i sp, vec2i scr_wh) {
   return (vec2) {
     .x = (    ((float)sp.x / (float)scr_wh.w) - 0.5f) * 2,
