@@ -50,10 +50,6 @@ const slice_t slice_space = { .begin = &slice_constants[14], .size = 1 };
 const slice_t slice_whitespace = { .begin = &slice_constants[12], .size = 6 };
 const slice_t slice_tab = { .begin = &slice_constants[15], .size = 1 };
 
-#define SLICE_VALID(str)                                                      \
-  assert((str).size >= 0);                                                    \
-  assert((str).begin != NULL || (str).size == 0)                              //
-
 // Builds a slice from a null-terminated c-style string.
 slice_t slice_from_c_str(const char* c_str) {
   if (c_str == NULL) return slice_empty;
@@ -80,7 +76,7 @@ static inline bool _slice_span_is_valid(span_slice_t span) {
 // \returns whether or not the parse is successful, not the value of the parsed
 //    boolean. The parse result is written to the `out` parameter on success.
 bool slice_to_bool(slice_t str, bool* out) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(out);
   if (str.size < 4) return false;
   if (tolower(str.begin[0]) == 't') {
@@ -102,7 +98,7 @@ bool slice_to_bool(slice_t str, bool* out) {
 
 // Parses the string slice into a signed integer value.
 bool slice_to_int(slice_t str, int* out) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(out);
   index_t long_out;
   bool ret = slice_to_long(str, &long_out);
@@ -112,7 +108,7 @@ bool slice_to_int(slice_t str, int* out) {
 
 // Parses the string slice into a signed integer value.
 bool slice_to_long(slice_t str, index_t* out) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(out);
   if (!out || str.size == 0) return false;
   index_t sign = 1;
@@ -145,7 +141,7 @@ bool slice_to_long(slice_t str, index_t* out) {
 
 // Parses the string slice into a single-precision floating point value.
 bool slice_to_float(slice_t str, float* out) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(out);
   double long_out;
   bool ret = slice_to_double(str, &long_out);
@@ -155,7 +151,7 @@ bool slice_to_float(slice_t str, float* out) {
 
 // Parses the string slice into a double-precision floating point value.
 bool slice_to_double(slice_t str, double* out) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(out);
 
   index_t i = 0;
@@ -208,8 +204,8 @@ bool slice_to_double(slice_t str, double* out) {
 // Compares two slices returning 0 if equivalent, or -1 or 1 if the left slice
 // is lexicographically less than or greater than the right slice.
 int slice_compare(slice_t lhs, slice_t rhs) {
-  SLICE_VALID(lhs);
-  SLICE_VALID(rhs);
+  assert(slice_is_valid(lhs));
+  assert(slice_is_valid(rhs));
   if (lhs.size != rhs.size) return (lhs.size < rhs.size) ? -1 : 1;
   return memcmp(lhs.begin, rhs.begin, (size_t)lhs.size);
 }
@@ -222,16 +218,16 @@ bool slice_eq(slice_t lhs, slice_t rhs) {
 
 // True if the slice starts with the given string, false otherwise.
 bool slice_starts_with(slice_t str, slice_t starts) {
-  SLICE_VALID(str);
-  SLICE_VALID(starts);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(starts));
   if (starts.size > str.size) return FALSE;
   return memcmp(str.begin, starts.begin, (size_t)starts.size) == 0;
 }
 
 // True if the slice ends with the given string, false otherwise.
 bool slice_ends_with(slice_t str, slice_t ends) {
-  SLICE_VALID(str);
-  SLICE_VALID(ends);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(ends));
   if (ends.size > str.size) return FALSE;
   return memcmp(
     str.begin + str.size - ends.size, ends.begin, (size_t)ends.size
@@ -255,7 +251,7 @@ bool slice_contains_any(slice_t str, span_slice_t any) {
 
 // True if the slice contains only whitespace, false otherwise.
 bool slice_is_empty(slice_t str) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   if (str.size == 0) return true;
   for (index_t i = 0; i < str.size; ++i) {
     if (!isspace(str.begin[i])) {
@@ -309,8 +305,8 @@ bool slice_find_any(slice_t str, span_slice_t any, slice_t* opt_out_slice) {
 // Returns true if the string contains the target string, false otherwise.
 // If the target is found, an optional output can be set to the found result.
 bool slice_find_last_str(slice_t str, slice_t target, slice_t* out_opt_slice) {
-  SLICE_VALID(str);
-  SLICE_VALID(target);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(target));
   index_t index = slice_index_of_last_str(str, target);
   if (index == str.size) return false;
   if (out_opt_slice) {
@@ -333,7 +329,7 @@ bool slice_find_last_char(slice_t str, slice_t targets, slice_t* out_slice) {
 }
 
 bool slice_find_last_any(slice_t str, span_slice_t any, slice_t* out_slice) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   index_t span_size = span_slice_size(any);
   assert(_slice_span_is_valid(any));
   if (str.size <= 0) return false;
@@ -374,8 +370,8 @@ bool slice_find_last_any(slice_t str, span_slice_t any, slice_t* out_slice) {
 //
 // \returns the index of the substring, or str.size if not found.
 index_t slice_index_of_str(slice_t str, slice_t target) {
-  SLICE_VALID(str);
-  SLICE_VALID(target);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(target));
   assert(target.size > 0);
   if (str.size < target.size) return str.size;
   index_t sublength = str.size - target.size;
@@ -392,8 +388,8 @@ index_t slice_index_of_str(slice_t str, slice_t target) {
 //
 // \returns the index of the character, or str.size if not found.
 index_t slice_index_of_char(slice_t str, slice_t targets) {
-  SLICE_VALID(str);
-  SLICE_VALID(targets);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(targets));
   assert(targets.size > 0);
   for (index_t i = 0; i < str.size; ++i) {
     for (index_t j = 0; j < targets.size; ++j) {
@@ -420,8 +416,8 @@ index_t slice_index_of_any(slice_t str, span_slice_t any) {
 //
 // \returns the index of the substring, or str.size if not found.
 index_t slice_index_of_last_str(slice_t str, slice_t target) {
-  SLICE_VALID(str);
-  SLICE_VALID(target);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(target));
   assert(target.size > 0);
   if (str.size < target.size) return str.size;
   for (index_t i = str.size - target.size; i >= 0; --i) {
@@ -438,8 +434,8 @@ index_t slice_index_of_last_str(slice_t str, slice_t target) {
 //
 // \returns the index of the character, or str.size if not found.
 index_t slice_index_of_last_char(slice_t str, slice_t targets) {
-  SLICE_VALID(str);
-  SLICE_VALID(targets);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(targets));
   assert(targets.size > 0);
   for (index_t i = str.size - 1; i >= 0; --i) {
     for (index_t j = 0; j < targets.size; ++j) {
@@ -478,8 +474,8 @@ index_t slice_index_of_last_any(slice_t str, span_slice_t any) {
 //              delimiter, and can be re-passed in with the same underlying
 //              string to continue reading the next token.
 res_token_t slice_token_str(slice_t str, slice_t delim, index_t* pos) {
-  SLICE_VALID(str);
-  SLICE_VALID(delim);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(delim));
   assert(pos != NULL);
   assert(delim.size > 0);
   if (str.size <= *pos) return _token_result_empty;
@@ -505,8 +501,8 @@ res_token_t slice_token_str(slice_t str, slice_t delim, index_t* pos) {
 // \param pos - pointer to index representing starting position of the token.
 //              Value is updated to the start of the next token.
 res_token_t slice_token_char(slice_t str, slice_t delims, index_t* pos) {
-  SLICE_VALID(str);
-  SLICE_VALID(delims);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(delims));
   assert(pos != NULL);
   assert(delims.size > 0);
   if (str.size <= *pos) return _token_result_empty;
@@ -539,7 +535,7 @@ res_token_t slice_token_char(slice_t str, slice_t delims, index_t* pos) {
 // \param pos - pointer to index representing starting position of the token.
 //              Value is updated to the start of the next token.
 res_token_t slice_token_any(slice_t str, span_slice_t any, index_t* pos) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(pos);
   index_t span_size = span_slice_size(any);
   assert(_slice_span_is_valid(any));
@@ -586,7 +582,7 @@ res_token_t slice_token_any(slice_t str, span_slice_t any, index_t* pos) {
 //              Value is updated to the start of the next token that follows the
 //              discovered block of whitespace (all whitespace is skipped).
 res_token_t slice_token_space(slice_t str, index_t* pos) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(pos);
   if (str.size <= *pos) return _token_result_empty;
 
@@ -625,7 +621,7 @@ res_token_t slice_token_space(slice_t str, index_t* pos) {
 // \param pos - pointer to index representing starting position of the token.
 //              Value is updated to the start of the next line in the string.
 res_token_t slice_token_line(slice_t str, index_t* pos) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   assert(pos);
   if (str.size <= *pos) return _token_result_empty;
 
@@ -680,7 +676,7 @@ static Array_slice _slice_split_all_chars(slice_t str) {
 
 // Splits a slice into two segments before and after the split index.
 pair_slice_t slice_split_at(slice_t str, index_t index) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   if (index >= str.size) return (pair_slice_t) { str, slice_empty };
   if (index < 0) index = str.size + index;
   if (index <= 0) return (pair_slice_t) { .left = slice_empty, .right = str };
@@ -692,8 +688,8 @@ pair_slice_t slice_split_at(slice_t str, index_t index) {
 
 // Splits a string slice into an array of slices based on a delimiter.
 Array_slice slice_split_str(slice_t str, slice_t delim) {
-  SLICE_VALID(str);
-  SLICE_VALID(delim);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(delim));
   if (delim.size <= 0) return _slice_split_all_chars(str);
   Array_slice ret = arr_slice_new();
 
@@ -710,8 +706,8 @@ Array_slice slice_split_str(slice_t str, slice_t delim) {
 
 // Splits a string slice into an array of slices on a set of char delimiters.
 Array_slice slice_split_char(slice_t str, slice_t delims) {
-  SLICE_VALID(str);
-  SLICE_VALID(delims);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(delims));
   if (delims.size <= 0) return _slice_split_all_chars(str);
   Array_slice ret = arr_slice_new();
 
@@ -728,7 +724,7 @@ Array_slice slice_split_char(slice_t str, slice_t delims) {
 
 // Splits a string slice into an array of slices based on a set of delimiters.
 Array_slice slice_split_any(slice_t str, span_slice_t delims) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   if (!_slice_span_is_valid(delims)) return _slice_split_all_chars(str);
   Array_slice ret = arr_slice_new();
 
@@ -746,8 +742,8 @@ Array_slice slice_split_any(slice_t str, span_slice_t delims) {
 // Splits a string slice into an array of slices based on a delimiter string.
 // The resulting array includes the delimiters.
 Array_slice slice_tokenize_str(slice_t str, slice_t delim) {
-  SLICE_VALID(str);
-  SLICE_VALID(delim);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(delim));
   if (delim.size <= 0) return _slice_split_all_chars(str);
   Array_slice ret = arr_slice_new();
 
@@ -766,8 +762,8 @@ Array_slice slice_tokenize_str(slice_t str, slice_t delim) {
 // Splits a string slice into an array of slices based on a delimiter set.
 // The resulting array includes the delimiters.
 Array_slice slice_tokenize_char(slice_t str, slice_t delims) {
-  SLICE_VALID(str);
-  SLICE_VALID(delims);
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(delims));
   if (delims.size <= 0) return _slice_split_all_chars(str);
   Array_slice ret = arr_slice_new();
 
@@ -786,7 +782,7 @@ Array_slice slice_tokenize_char(slice_t str, slice_t delims) {
 // Splits a string slice into an array of slices based on a delimiter set.
 // The resulting array includes the delimiters.
 Array_slice slice_tokenize_any(slice_t str, span_slice_t delims) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   if (!_slice_span_is_valid(delims)) return _slice_split_all_chars(str);
 
   Array_slice ret = arr_slice_new();
@@ -848,7 +844,7 @@ partition_slice_t slice_partition_any(slice_t str, span_slice_t delims) {
 // If start or end position are negative, they are treated as representing that
 //    many characters from the end of the string.
 slice_t slice_substring(slice_t str, index_t start, index_t end) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   if (start == end) return slice_empty;
   if (start >= str.size) return slice_empty;
   if (start < 0) start += str.size;
@@ -868,7 +864,7 @@ slice_t slice_substring(slice_t str, index_t start, index_t end) {
 //    1. `str_substring(s, count, s.size)` when count >= 0
 //    2. `str_substring(s, 0, s.size - |count|)` when count < 0
 slice_t slice_drop(slice_t str, index_t count) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   if (count >= 0) {
     if (count >= str.size) return slice_empty;
     str.begin += count;
@@ -886,7 +882,7 @@ slice_t slice_drop(slice_t str, index_t count) {
 //    1. `str_substring(s, 0, count)` when count >= 0
 //    2. `str_substring(s, count, s.size)` when count < 0
 slice_t slice_take(slice_t str, index_t count) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   if (count >= 0) {
     if (count >= str.size) return str;
     // only need to set the count here
@@ -965,7 +961,7 @@ slice_t slice_trim(slice_t str) {
 
 // Trims leading whitespace from the slice.
 slice_t slice_trim_start(slice_t str) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   index_t start, end = str.size;
   for (start = 0; start < str.size; ++start) {
     if (!isspace(str.begin[start])) break;
@@ -979,7 +975,7 @@ slice_t slice_trim_start(slice_t str) {
 
 // Trims trailing whitespace from the slice.
 slice_t slice_trim_end(slice_t str) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   index_t end = str.size;
   while (end > 0) {
     if (isspace(str.begin[end - 1])) --end;
@@ -998,7 +994,7 @@ slice_t slice_trim_end(slice_t str) {
 
 // Returns a hash value representing the slice.
 hash_t slice_hash(slice_t str) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   return hash(str.begin, str.size);
 }
 
@@ -1071,7 +1067,7 @@ static void _slice_write_default(slice_t str) {
 
 // Default output method for printing string slices with printf.
 static void _slice_write_default(slice_t str) {
-  SLICE_VALID(str);
+  assert(slice_is_valid(str));
   uint length = (uint)str.size;
   printf("%.*s\n", length, str.begin);
   fflush(stdout); // SDL Window blocks console output for some reason

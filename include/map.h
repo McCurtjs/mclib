@@ -150,7 +150,7 @@ bool          map_remove(HMap map, const void* key);
 #   define _prefix(_FN) MACRO_CONCAT5(map_, key_type, _, con_type, _FN)
 #   define _pair_type MACRO_CONCAT5(pair_kv_, key_type, _, con_type, _t)
 # else
-#   define _map_type MACRO_COMCAT(HMap_, con_type)
+#   define _map_type MACRO_CONCAT(HMap_, con_type)
 #   define _prefix(_FN) MACRO_CONCAT3(map_, con_type, _FN)
 #   define _pair_type MACRO_CONCAT3(pair_kv_, con_type, _t)
 # endif

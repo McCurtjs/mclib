@@ -64,13 +64,13 @@
 // void       arr_v_clear(Array_V);
 // void       arr_v_free(Array_V);
 // void       arr_v_delete(Array_V*);
-// T*         arr_v_release(Array_V*);
+// span_v_t   arr_v_release(Array_V*);
 //
 // // Item Addition
 // V*         arr_v_emplace(Array_V, index_t position);
 // V*         arr_v_emplace_back(Array_V);
-// slice_v_t  arr_v_emplace_range(Array_V, index_t position, index_t count);
-// slice_v_t  arr_v_emplace_back_range(Array_V, index_t count);
+// span_v_t   arr_v_emplace_range(Array_V, index_t position, index_t count);
+// span_v_t   arr_v_emplace_back_range(Array_V, index_t count);
 // void       arr_v_insert(Array_V, index_t position, V* element);
 // void       arr_v_insert_back(Array_V, V* element);
 // void       arr_v_insert_range(Array_V, index_t position, span_t range);
@@ -1106,7 +1106,7 @@ static inline bool _prefix(_read_front)
 (const _arr_type arr, con_type* out_element) {
   assert(out_element);
   const con_type* ptr = arr_ref_front((Array)arr);
-  if (ptr) return false;
+  if (!ptr) return false;
   *out_element = *ptr;
   return true;
 }

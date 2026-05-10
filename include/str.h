@@ -104,6 +104,7 @@ static inline slice_t _s2r_c_str(const char* str, size_t size) {
 
 typedef enum _str_argtype_t {
   _str_arg_end,
+  _str_arg_ptr,
   _str_arg_slice,
   _str_arg_span,
   _str_arg_int,
@@ -156,6 +157,9 @@ void    str_delete(String* str);
 // \brief Returns size of a string. Equivalent to str->size, but can also be
 //    applied to slices and c-strings.
 #define str_size(str)               slice_size(_s2r(str))
+
+// \brief Returns true if the string is non-null and references a valid string
+#define str_is_valid(str)           ((str) && slice_is_valid(_s2r(str)))
 
 // \brief Gets a slice representing the input string, regardless of whether it's
 //    an actual String, a slice_t, or a null-terminated C-style string.

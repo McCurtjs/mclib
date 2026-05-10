@@ -433,6 +433,16 @@ static void _format_print_arg(
 
     } break;
 
+    case _str_arg_ptr: {
+
+      iarr_byte_append(out, S("0x"));
+      spec.representation = _fmt_rep_hex;
+      spec.width = sizeof(void*);
+      spec.padding = '0';
+      spec.sign = false;
+
+    } SWITCH_FALLTHROUGH
+
     case _str_arg_int: {
 
       ptrdiff_t i = arg->i;

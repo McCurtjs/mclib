@@ -35,6 +35,10 @@
 #ifndef MCLIB_STR_FORMAT_STRING_
 #define MCLIB_STR_FORMAT_STRING_
 
+static inline _str_arg_t _sarg_ptr(const void* ptr) {
+  return (_str_arg_t) { .type = _str_arg_ptr, .i = (ptrdiff_t)ptr };
+}
+
 static inline _str_arg_t _sarg_str(String s) {
   if (!s) s = str_empty;
   return (_str_arg_t) { .type = _str_arg_slice, .slice = s->slice };
@@ -157,6 +161,8 @@ static inline _str_arg_t _sarg_vec3i(vec3i v) {
 
 // \brief str_format argument macro
 #define _sfa(arg) _Generic((arg),       \
+  void*:              _sarg_ptr,        \
+  const void*:        _sarg_ptr,        \
   slice_t:            _sarg_slice,      \
   String:             _sarg_str,        \
   slice_t*:           _sarg_slice_ptr,  \

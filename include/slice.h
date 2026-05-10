@@ -139,6 +139,13 @@ static inline slice_t slice_build(const char* c_str, index_t length) {
 
 static inline index_t slice_size(slice_t s) { return s.size; }
 
+// \brief Validates the correctness of a given slice. This can be used as a
+//    clear assertion (`assert(slice_is_valid(s))`) to make sure a slice has
+//    a valid size relative to its starting pointer.
+static inline bool slice_is_valid(slice_t s) {
+  return s.size >= 0 && (s.begin || !s.size);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Return result tuples
 ////////////////////////////////////////////////////////////////////////////////

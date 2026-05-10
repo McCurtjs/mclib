@@ -292,6 +292,8 @@ static int _con_cmp(const void* lhs, const void* rhs) {
 }
 #endif
 
+static _span_type _prefix(_empty) = { .begin = NULL, .end = NULL };
+
 ////////////////////////////////////////////////////////////////////////////////
 
 static inline _span_type _prefix(_build)
@@ -332,7 +334,7 @@ static inline bool _prefix(_eq)
   return span_eq(lhs.base, rhs.base);
 }
 
-static inline bool _prefix(_empty)
+static inline bool _prefix(_is_empty)
 (_span_type span) {
   return span_is_empty(span.base);
 }
