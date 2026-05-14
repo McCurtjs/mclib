@@ -103,6 +103,17 @@ describe(slice_basic) {
   expect(malloc_count, == , 0);
 }
 
+describe(slice_default) {
+
+  it("returns the provided string if it's present and non-empty") {
+    expect(slice_default to match(S("given")) given(S("given"), S("default")));
+    expect(slice_default to match(S("default")) given(S(""), S("default")));
+    expect(slice_default to match(S("default")) given(S("  "), S("default")));
+    expect(slice_default to match(S("xyz")) given(slice_empty, S("xyz")));
+  }
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Parsing for basic types
 ////////////////////////////////////////////////////////////////////////////////
@@ -1707,6 +1718,216 @@ describe(slice_take) {
 
 }
 
+describe(slice_until) {
+
+  slice_t base = S("This is a string");
+
+  it("gets a substring from the beginning until a matching sequence") {
+    expect(slice_until to match(S("Th")) given(base, S("is")));
+    expect(slice_until to match(S("This is ")) given(base, S("a")));
+    expect(slice_until to match(S("This is a ")) given(base, S("str")));
+    expect(slice_until to match(slice_empty) given(base, S("This")));
+  }
+
+  it("returns the full string if the substring isn't present") {
+    expect(slice_until to match(base) given(base, S("q")));
+  }
+
+}
+
+describe(slice_after) {
+
+  slice_t base = S("This is a string");
+
+  it("gets a substring starting with the found token until the end") {
+    expect(slice_after to match(S(" is a string")) given(base, S("This")));
+    expect(slice_after to match(S(" is a string")) given(base, S("s")));
+    expect(slice_after to match(slice_empty) given(base, S("string")));
+  }
+
+  it("returns the full string if the search string isn't found") {
+    expect(slice_until to match(base) given(base, S("q")));
+  }
+
+}
+
+describe(slice_until_last) {
+
+  slice_t base = S("This is a string");
+
+  it("gets a substring starting with the last instance of the found token") {
+    expect(slice_until_last to match(S("This ")) given(base, S("is")));
+    expect(slice_until_last to match(S("This is a ")) given(base, S("s")));
+    expect(slice_until_last to match(slice_empty) given(base, S("This")));
+  }
+
+  it("returns the full string if the search token isn't found") {
+    expect(slice_until_last to match(base) given(base, S("q")));
+  }
+
+}
+
+describe(slice_after_last) {
+
+  slice_t base = S("This is a string");
+
+  it("gets a substring starting with the last instance of the found token") {
+    expect(slice_after_last to match(S(" is a string")) given(base, S("This")));
+    expect(slice_after_last to match(S("tring")) given(base, S("s")));
+    expect(slice_after_last to match(slice_empty) given(base, S("string")));
+  }
+
+  it("returns the full string if the search token isn't found") {
+    expect(slice_after_last to match(base) given(base, S("q")));
+  }
+
+}
+
+describe(slice_between) {
+
+  slice_t base = S("This is a string");
+
+  it("gets the substring between the first instances of two identifiers") {
+    expect(
+      slice_between to match(S(" is a ")) given(base, S("This"), S("string"))
+    );
+    expect(slice_between to match(S(" ")) given(base, S("s"), S("i")));
+  }
+
+  it("works when the identifiers given are the same") {
+    expect(slice_between to match(S("s ")) given(base, S("i"), S("i")));
+    expect(slice_between to match(S("is")) given(base, S(" "), S(" ")));
+  }
+
+  it("will return the full string if neither identifier is found") {
+    expect(slice_between to match(base) given(base, S("x"), S("q")));
+  }
+
+  it("will return to the end if the second identifier isn't found") {
+    expect(slice_between to match(S("is a string"))
+                                  given(base, S(" "), S("q")));
+    expect(slice_between to match(S("s is a string"))
+                                  given(base, S("i"), S("q")));
+  }
+
+  it("will return from the beginning if the first identifier isn't found") {
+    expect(slice_between to match(S("Thi")) given(base, S("x"), S("s")));
+    expect(slice_between to match(S("Th")) given(base, S("x"), S("i")));
+  }
+
+}
+
+describe(slice_between_outer) {
+
+  slice_t base = S("This is a string");
+
+  it("gets the substring between the first instances of two identifiers") {
+    expect(slice_between_outer to match(S(" is a "))
+                                  given(base, S("This"), S("string")));
+    expect(slice_between_outer to match(S(" is a str"))
+                                  given(base, S("s"), S("i")));
+  }
+
+  it("works when the identifiers given are the same") {
+    expect(slice_between_outer to match(S("s is a str"))
+                                  given(base, S("i"), S("i")));
+    expect(slice_between_outer to match(S("is a"))
+                                  given(base, S(" "), S(" ")));
+  }
+
+  it("will return the full string if neither identifier is found") {
+    expect(slice_between_outer to match(base) given(base, S("x"), S("q")));
+  }
+
+  it("will return to the end if the second identifier isn't found") {
+    expect(slice_between_outer to match(S("is a string"))
+                                  given(base, S(" "), S("q")));
+    expect(slice_between_outer to match(S("s is a string"))
+                                  given(base, S("i"), S("q")));
+  }
+
+  it("will return from the beginning if the first identifier isn't found") {
+    expect(slice_between_outer to match(S("This is "))
+                                  given(base, S("x"), S("a")));
+    expect(slice_between_outer to match(S("This is a str"))
+                                  given(base, S("x"), S("i")));
+  }
+
+  it("can be used to easily extract groups within parens") {
+    slice_t l = S("(");
+    slice_t r = S(")");
+    expect(slice_between_outer to match(S("hello"))
+                                  given(S("(hello)"), l, r));
+    expect(slice_between_outer to match(S("hello"))
+                                  given(S("asdf (hello) ghkl"), l, r));
+    expect(slice_between_outer to match(S("hello (world)"))
+                                  given(S("(hello (world))"), l, r));
+    expect(slice_between_outer to match(S("hello (world)"))
+                                  given(S(")asdf (hello (world)) ghkl"), l, r));
+    expect(slice_between_outer to match(S("hello"))
+                                  given(S("(hello)"), l, r));
+    expect(slice_between_outer to match(S("3 + 5"))
+                                  given(S("2 * (3 + 5)"), l, r));
+    expect(slice_between_outer to match(S("3 + 5"))
+                                  given(S("2 * (3 + 5"), l, r));
+    expect(slice_between_outer to match(S("2 * 3 + 5"))
+                                  given(S("2 * 3 + 5)"), l, r));
+  }
+
+}
+
+describe(slice_between_last) {
+
+  slice_t base = S("This is a string");
+
+  it("gets the substring between the first instances of two identifiers") {
+    expect(slice_between_last to match(S(" is a "))
+                                 given(base, S("This"), S("string")));
+    expect(slice_between_last to match(S("tr"))
+                                 given(base, S("s"), S("i")));
+  }
+
+  it("works when the identifiers given are the same") {
+    expect(slice_between_last to match(S("ng"))
+                                 given(base, S("i"), S("i")));
+    expect(slice_between_last to match(S("string"))
+                                 given(base, S(" "), S(" ")));
+  }
+
+  it("will return the full string if neither identifier is found") {
+    expect(slice_between_last to match(base) given(base, S("x"), S("q")));
+  }
+
+  it("will return to the end if the second identifier isn't found") {
+    expect(slice_between_last to match(S("string"))
+                                 given(base, S(" "), S("q")));
+    expect(slice_between_last to match(S("ng"))
+                                 given(base, S("i"), S("q")));
+  }
+
+  it("will return from the beginning if the first identifier isn't found") {
+    expect(slice_between_last to match(S("This is a "))
+                                 given(base, S("x"), S("s")));
+    expect(slice_between_last to match(S("This is a str"))
+                                 given(base, S("x"), S("i")));
+  }
+
+  it("can be used to easily extract a file name from a path") {
+    slice_t f = S("file");
+    slice_t s = S("/");
+    slice_t d = S(".");
+    expect(slice_between_last to match(f) given(S("file"), s, d));
+    expect(slice_between_last to match(f) given(S("file.txt"), s, d));
+    expect(slice_between_last to match(f) given(S("/file.txt"), s, d));
+    expect(slice_between_last to match(f) given(S("./file.txt"), s, d));
+    expect(slice_between_last to match(f) given(S("./my/file.txt"), s, d));
+
+    f = S("file.2");
+    expect(slice_between_last to match(f) given(S("./my/file.2.txt"), s, d));
+  }
+
+}
+
 describe(slice_trim) {
 
   slice_t slice = S("\t  String with extra spaces   \n");
@@ -1777,6 +1998,7 @@ describe(slice_conversion) {
 
 test_suite(tests_slice) {
   test_group(slice_basic),
+  test_group(slice_default),
   test_group(slice_to_bool),
   test_group(slice_to_int),
   test_group(slice_to_long),
@@ -1818,6 +2040,13 @@ test_suite(tests_slice) {
   test_group(slice_substring),
   test_group(slice_drop),
   test_group(slice_take),
+  test_group(slice_until),
+  test_group(slice_after),
+  test_group(slice_until_last),
+  test_group(slice_after_last),
+  test_group(slice_between),
+  test_group(slice_between_outer),
+  test_group(slice_between_last),
   test_group(slice_trim),
   test_group(slice_hash),
   test_group(slice_compare_vptr),

@@ -130,6 +130,9 @@ extern void (*slice_write)(slice_t str);
 // \brief In general, prefer the S("str") macro to avoid use of strlen.
 slice_t slice_from_c_str(const char* c_str);
 
+// \brief Returns true if the slice is empty or contains only spaces
+bool slice_is_empty(slice_t str);
+
 // \brief Builds a slice from a c_string using the given length.
 static inline slice_t slice_build(const char* c_str, index_t length) {
   assert(length >= 0);
@@ -137,6 +140,7 @@ static inline slice_t slice_build(const char* c_str, index_t length) {
   return (slice_t) { .begin = c_str, .length = length };
 }
 
+// \brief Just returns the slice size as an inline function for macros.
 static inline index_t slice_size(slice_t s) { return s.size; }
 
 // \brief Validates the correctness of a given slice. This can be used as a
@@ -144,6 +148,14 @@ static inline index_t slice_size(slice_t s) { return s.size; }
 //    a valid size relative to its starting pointer.
 static inline bool slice_is_valid(slice_t s) {
   return s.size >= 0 && (s.begin || !s.size);
+}
+
+// \brief Returns the string if it contains something (other than spaces),
+//    otherwise the fallback.
+static inline slice_t slice_default(slice_t str, slice_t fallback) {
+  assert(slice_is_valid(str));
+  assert(slice_is_valid(fallback));
+  return slice_is_empty(str) ? fallback : str;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -185,7 +197,6 @@ bool              slice_starts_with(slice_t str, slice_t beginning);
 bool              slice_ends_with(slice_t str, slice_t ending);
 bool              slice_contains(slice_t str, slice_t target);
 bool              slice_contains_char(slice_t str, slice_t targets);
-bool              slice_is_empty(slice_t str);
 //bool            slice_is_alpha(slice_t str);
 //bool            slice_is_decimal(slice_t str);
 //bool            slice_is_integer(slice_t str);
@@ -222,6 +233,7 @@ slice_t           slice_until_last(slice_t str, slice_t delim);
 slice_t           slice_after_last(slice_t str, slice_t delim);
 slice_t           slice_between(slice_t str, slice_t left, slice_t right);
 slice_t           slice_between_outer(slice_t str, slice_t left, slice_t right);
+slice_t           slice_between_last(slice_t str, slice_t left, slice_t right);
 slice_t           slice_trim(slice_t str);
 slice_t           slice_trim_start(slice_t str);
 slice_t           slice_trim_end(slice_t str);

@@ -154,6 +154,10 @@ String  str_from_float(float f);
 
 void    str_delete(String* str);
 
+// \brief Returns the string if it's non-null and contains content, or the
+//    fallback if the string is null, empty, or only contains spaces.
+#define str_default(str, fallback)  slice_default(_s2r(str), _s2r(fallback))
+
 // \brief Returns size of a string. Equivalent to str->size, but can also be
 //    applied to slices and c-strings.
 #define str_size(str)               slice_size(_s2r(str))
@@ -287,30 +291,35 @@ bool    str_is_null_or_empty(const String str);
 #define str_take(str, count)        slice_take(_s2r(str), count)
 
 // \brief Returns the slice leading up to the first instance of the given
-//    delimiter (includes the whole string if the delimiter isn't found)
+//    delimiter (includes the full string if the delimiter isn't found).
 #define str_until(str, delim)       slice_until(_s2r(str), _s2r(delim))
 
 // \brief Returns the slice following the first instance of the given
-//    delimiter or an empty slice if the delimiter isn't found
+//    delimiter (returns the full string if the delimiter isn't found).
 #define str_after(str, delim)       slice_after(_s2r(str), _s2r(delim))
 
 // \brief Returns the slice leading up to the last instance of the given
-//    delimiter (includes the whole string if the delimiter isn't found)
+//    delimiter (includes the full string if the delimiter isn't found).
 #define str_until_last(str, delim)  slice_until_last(_s2r(str), _s2r(delim))
 
-// \brief Returns the slice following the last instance of the given delimiter
-//    or an empty slice if the delimiter isn't found
+// \brief Returns the slice following the last instance of the given
+//    delimiter (includes the full string if the delimiter isn't found).
 #define str_after_last(str, delim)  slice_after_last(_s2r(str), _s2r(delim))
 
 // \brief Returns the slice of S between the substring L and the first
-//    occurrence of string R that follows L. An empty string is returned
-//    if L is not found. If R is not found, the remainder of S is included.
+//    occurrence of R that follows L. Takes from the front of the string if L
+//    isn't found, and reads to the end if R isn't found.
 #define str_between(S, L, R)        slice_between(_s2r(S), _s2r(L), _s2r(R))
 
 // \brief Returns the slice of S between the substring L and the last
-//    occurrence of string R. An empty string is returned if L is not found. If
-//    R is not found, the remainder of S is included.
+//    occurrence of string R. Takes from the front of the string if L
+//    isn't found, and reads to the end if R isn't found.
 #define str_between_outer(S, L, R)  slice_between_outer(_s2r(S),_s2r(L),_s2r(R))
+
+// \brief Returns the slice of S between the last occurrence of L and the last
+//    occurrence of R that follows L. Takes from the front of the string if L
+//    isn't found, and reads to the end if R isn't found.
+#define str_between_last(S, L, R)   slice_between_last(_s2r(S),_s2r(L),_s2r(R))
 
 // \brief Returns a slice with leading and trailing whitespace omitted.
 #define str_trim(str)               slice_trim(_s2r(str))

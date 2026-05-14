@@ -328,6 +328,8 @@ bool slice_find_last_char(slice_t str, slice_t targets, slice_t* out_slice) {
   return true;
 }
 
+// Returns true if the string contains any of the target slices.
+// If a target match is found, an optional output can be set to the result.
 bool slice_find_last_any(slice_t str, span_slice_t any, slice_t* out_slice) {
   assert(slice_is_valid(str));
   index_t span_size = span_slice_size(any);
@@ -907,7 +909,7 @@ slice_t slice_until(slice_t str, slice_t delim) {
 // Gets the slice following (but not including) the given delimiter
 slice_t slice_after(slice_t str, slice_t delim) {
   index_t pos = slice_index_of_str(str, delim);
-  if (pos == str.size) return slice_empty;
+  if (pos == str.size) return str;
   pos += delim.size;
   return (slice_t) {
     .begin = str.begin + pos,
@@ -927,7 +929,7 @@ slice_t slice_until_last(slice_t str, slice_t delim) {
 // Gets the slice following the last instance of the given delimiter
 slice_t slice_after_last(slice_t str, slice_t delim) {
   index_t pos = slice_index_of_last_str(str, delim);
-  if (pos == str.size) return slice_empty;
+  if (pos == str.size) return str;
   pos += delim.size;
   return (slice_t) {
     .begin = str.begin + pos,
@@ -938,19 +940,34 @@ slice_t slice_after_last(slice_t str, slice_t delim) {
 // Gets the slice between the two given delimiters
 slice_t slice_between(slice_t str, slice_t left, slice_t right) {
   index_t begin = slice_index_of_str(str, left);
-  if (begin == str.size) return slice_empty;
-  str = slice_drop(str, begin + left.size);
+  if (begin != str.size) str = slice_drop(str, begin + left.size);
   index_t end = slice_index_of_str(str, right);
-  return slice_take(str, end);
+  return (slice_t) {
+    .begin = str.begin,
+    .size = end
+  };
 }
 
 // Gets the slice between the two given delimiters (last instance of right)
 slice_t slice_between_outer(slice_t str, slice_t left, slice_t right) {
   index_t begin = slice_index_of_str(str, left);
-  if (begin == str.size) return slice_empty;
-  str = slice_drop(str, begin + left.size);
+  if (begin != str.size) str = slice_drop(str, begin + left.size);
   index_t end = slice_index_of_last_str(str, right);
-  return slice_take(str, end);
+  return (slice_t) {
+    .begin = str.begin,
+    .size = end
+  };
+}
+
+// Gets the slice between the last of each of the two given delimiters
+slice_t slice_between_last(slice_t str, slice_t left, slice_t right) {
+  index_t begin = slice_index_of_last_str(str, left);
+  if (begin != str.size) str = slice_drop(str, begin + left.size);
+  index_t end = slice_index_of_last_str(str, right);
+  return (slice_t) {
+    .begin = str.begin,
+    .size = end
+  };
 }
 
 // Trims leading and trailing whitespace from the slice.

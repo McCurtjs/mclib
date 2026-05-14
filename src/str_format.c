@@ -441,7 +441,7 @@ static void _format_print_arg(
       spec.padding = '0';
       spec.sign = false;
 
-    } SWITCH_FALLTHROUGH
+    } SWITCH_FALLTHROUGH;
 
     case _str_arg_int: {
 

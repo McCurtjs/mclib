@@ -239,7 +239,7 @@ static inline con_type _prefix(_get)
 static inline con_type _prefix(_get_index)
 (_map_type map, index_t index) {
   assert(index >= 0 && index < map->size);
-  return *map->begin + index;
+  return *(map->begin + index);
 }
 
 static inline con_type* _prefix(_ref)
@@ -250,7 +250,7 @@ static inline con_type* _prefix(_ref)
 static inline con_type* _prefix(_ref_index)
 (_map_type map, index_t index) {
   if (index < 0 || index >= map->size) return NULL;
-  return map->begin + index;
+  return (con_type*)(map->begin + index);
 }
 
 static inline bool _prefix(_read)
@@ -260,7 +260,7 @@ static inline bool _prefix(_read)
 
 static inline bool _prefix(_read_index)
 (_map_type map, index_t index, con_type* out) {
-  return pmap_read((PackedMap)map, index, out);
+  return pmap_read_index((PackedMap)map, index, out);
 }
 
 static inline bool _prefix(_contains)
