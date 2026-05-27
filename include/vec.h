@@ -182,6 +182,12 @@ typedef vec4 color4;
 #define svNw        {.f={ 0, 0, 0, 1 } }
 #define sv2ones     {.f={ 1, 1 } }
 #define sv3ones     {.f={ 1, 1, 1 } }
+#define sv3right    {.f={ 1, 0, 0 } }
+#define sv3up       {.f={ 0, 1, 0 } }
+#define sv3back     {.f={ 0, 0, 1 } }
+#define sv3left     {.f={-1, 0, 0 } }
+#define sv3down     {.f={ 0,-1, 0 } }
+#define sv3front    {.f={ 0, 0,-1 } }
 #define sv4ones     {.f={ 1, 1, 1, 1 } }
 #define siNzero     {.i={ 0 } }
 #define siNx        {.i={ 1 } }
@@ -198,6 +204,16 @@ typedef vec4 color4;
 #define sc4magenta  {.f={ 1, 0, 1, 1 } }
 #define sc4white    {.f={ 1, 1, 1, 1 } }
 #define sc4gray     {.f={.5,.5,.5, 1 } }
+#define sb4black    {.i={   0,   0,   0, 255 } }
+#define sb4red      {.i={ 255,   0,   0, 255 } }
+#define sb4green    {.i={   0, 255,   0, 255 } }
+#define sb4blue     {.i={   0,   0, 255, 255 } }
+#define sb4yellow   {.i={ 255, 255,   0, 255 } }
+#define sb4cyan     {.i={   0, 255, 255, 255 } }
+#define sb4magenta  {.i={ 255,   0, 255, 255 } }
+#define sb4white    {.i={ 255, 255, 255, 255 } }
+#define sb4gray     {.i={ 128, 128, 128, 255 } }
+#define sb4normal   {.i={ 128, 128, 255, 255 } }
 
 #define i2zero      ((vec2i){.i={ 0, 0 } })
 #define i2ones      ((vec2i){.i={ 1, 1 } })
@@ -265,96 +281,380 @@ typedef vec4 color4;
 #define b4gray      ((vec4b){.i={ 128, 128, 128, 255 } })
 #define b4normal    ((vec4b){.i={ 128, 128, 255, 255 } })
 
-float   i2aspect(vec2i v);
-vec2i   i2zcurve(size_t i);
-size_t  i2zindex(vec2i v);
-vec2i   i2add(vec2i a, vec2i b);
-vec2i   i2sub(vec2i a, vec2i b);
-vec2i   i2mul(vec2i a, vec2i b);
-vec2i   i2div(vec2i a, vec2i b);
-vec2i   i2scale(vec2i a, float factor);
-vec2i   i2rescale(vec2i a, float length);
-vec2    i2ndc(vec2i screen_pos, vec2i screen_dimension);
+#define I static inline
 
-bool    v2eq(vec2 a, vec2 b);
-bool    v2about(vec2 a, vec2 b, float epsilon);
-float   v2mag(vec2 v);
-float   v2magsq(vec2 v);
-float   v2dist(vec2 P, vec2 Q);
-float   v2distsq(vec2 P, vec2 Q);
-vec2    v2norm(vec2 v);
-vec2    v2mid(vec2 P, vec2 Q);
-vec2    v2neg(vec2 v);
-vec2    v2add(vec2 a, vec2 b);
-vec2    v2sub(vec2 a, vec2 b);
-vec2    v2dir(vec2 dst, vec2 src);
-vec2    v2scale(vec2 v, float f);
-vec2    v2rescale(vec2 v, float length);
-vec2    v2limit(vec2 v, float max_length);
-vec2    v2clamp(vec2 v, float min_len, float max_len);
-float   v2dot(vec2 a, vec2 b);
-vec2    v2mul(vec2 a, vec2 b);
-vec2    v2div(vec2 a, vec2 b);
-float   v2cross(vec2 a, vec2 b);
-vec2    v2perp(vec2 v);
-vec2    v2reflect(vec2 v, vec2 mirror);
-float   v2angle(vec2 a, vec2 b);
-vec2    v2heading(float theta);
-vec2    v2rot(vec2 v, float theta);
-vec2    v2lerp(vec2 P, vec2 Q, float t);
-vec2    v2towards(vec2 P, vec2 Q, float max);
-float   v2aspect(vec2 dim);
-vec2    v2ndc(vec2 screen_pos, vec2i screen_dimension);
-float   v2line_dist(vec2 L, vec2 v, vec2 P);
-float   v2line_closest(vec2 L, vec2 v, vec2 P, vec2* R_out);
-bool    v2line_line(vec2 L, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
-bool    v2ray_line(vec2 R, vec2 v, vec2 L, vec2 u, float* t_out);
-bool    v2ray_ray(vec2 R, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
-bool    v2ray_seg(vec2 R, vec2 v, vec2 S1, vec2 S2, float* t_out);
-bool    v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out);
+I vec2i   v2i(int x, int y);
+I bool    i2eq(vec2i a, vec2i b);
+I float   i2aspect(vec2i v);
+  vec2i   i2zcurve(size_t i);
+  size_t  i2zindex(vec2i v);
+I vec2i   i2neg(vec2i v);
+I void    i2neg_eq(vec2i* v);
+I vec2i   i2add(vec2i a, vec2i b);
+I void    i2add_eq(vec2i* a, vec2i b);
+I vec2i   i2sub(vec2i a, vec2i b);
+I void    i2sub_eq(vec2i* a, vec2i b);
+I vec2i   i2mul(vec2i a, vec2i b);
+I void    i2mul_eq(vec2i* a, vec2i b);
+I vec2i   i2div(vec2i a, vec2i b);
+I void    i2div_eq(vec2i* a, vec2i b);
+I vec2i   i2scale(vec2i v, float factor);
+I void    i2scale_eq(vec2i* v, float factor);
+  vec2i   i2rescale(vec2i v, float length);
+  vec2    i2ndc(vec2i screen_pos, vec2i screen_dimension);
 
-bool    v3eq(vec3 a, vec3 b);
-bool    v3about(vec3 a, vec3 b, float epsilon);
-float   v3mag(vec3 v);
-float   v3magsq(vec3 v);
-float   v3dist(vec3 P, vec3 Q);
-float   v3distsq(vec3 P, vec3 Q);
-vec3    v3norm(vec3 v);
-vec3    v3mid(vec3 P, vec3 Q);
-vec3    v3neg(vec3 v);
-vec3    v3add(vec3 a, vec3 b);
-vec3    v3sub(vec3 a, vec3 b);
-vec3    v3dir(vec3 dst, vec3 src);
-vec3    v3scale(vec3 v, float f);
-vec3    v3rescale(vec3 v, float length);
-vec3    v3limit(vec3 v, float max_length);
-vec3    v3clamp(vec3 v, float min_len, float max_len);
-float   v3dot(vec3 a, vec3 b);
-vec3    v3mul(vec3 a, vec3 b);
-vec3    v3div(vec3 a, vec3 b);
-vec3    v3cross(vec3 a, vec3 b);
-vec3    v3perp(vec3 v);
-vec3    v3reflect(vec3 v, vec3 n_mirror);
-float   v3angle(vec3 a, vec3 b);
-vec3    v3lerp(vec3 P, vec3 Q, float t);
-vec3    v3towards(vec3 P, vec3 Q, float max);
-vec2    v3oct(vec3 v);
-vec3    v3oct_decode(vec2 v);
-float   v3line_dist(vec3 L, vec3 v, vec3 P);
-bool    v3line_plane(vec3 L, vec3 v, vec3 P, vec3 n, float* t_out);
-bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);
+I vec2    v2f(float x, float y);
+I bool    v2eq(vec2 a, vec2 b);
+I float   v2aspect(vec2 dim);
+  bool    v2about(vec2 a, vec2 b, float epsilon);
+  float   v2mag(vec2 v);
+I float   v2magsq(vec2 v);
+  vec2    v2norm(vec2 v);
+I vec2    v2scale(vec2 v, float f);
+I void    v2scale_eq(vec2* v, float f);
+I vec2    v2neg(vec2 v);
+I void    v2neg_eq(vec2* v);
+I vec2    v2add(vec2 a, vec2 b);
+I void    v2add_eq(vec2* a, vec2 b);
+I vec2    v2sub(vec2 a, vec2 b);
+I void    v2sub_eq(vec2* a, vec2 b);
+  vec2    v2dir(vec2 dst, vec2 src);
+  float   v2dist(vec2 P, vec2 Q);
+I float   v2distsq(vec2 P, vec2 Q);
+I vec2    v2mid(vec2 P, vec2 Q);
+  vec2    v2rescale(vec2 v, float length);
+  void    v2rescale_eq(vec2* v, float length);
+  vec2    v2limit(vec2 v, float max_length);
+  vec2    v2clamp(vec2 v, float min_len, float max_len);
+I float   v2dot(vec2 a, vec2 b);
+I vec2    v2mul(vec2 a, vec2 b);
+I void    v2mul_eq(vec2* a, vec2 b);
+I vec2    v2div(vec2 a, vec2 b);
+I void    v2div_eq(vec2* a, vec2 b);
+I float   v2cross(vec2 a, vec2 b);
+I vec2    v2perp(vec2 v);
+I void    v2perp_eq(vec2* v);
+  vec2    v2rand(float radius);
+  vec2    v2rand_shell(float inner_radius, float outer_radius);
+  vec2    v2rand_dir(void);
+  vec2    v2rand_box(void);
+  vec2    v2reflect(vec2 v, vec2 mirror);
+  float   v2angle(vec2 a, vec2 b);
+  vec2    v2heading(float theta);
+  vec2    v2rot(vec2 v, float theta);
+I vec2    v2lerp(vec2 P, vec2 Q, float t);
+  vec2    v2towards(vec2 P, vec2 Q, float max);
+  vec2    v2ndc(vec2 screen_pos, vec2i screen_dimension);
+  float   v2line_dist(vec2 L, vec2 v, vec2 P);
+  float   v2line_closest(vec2 L, vec2 v, vec2 P, vec2* R_out);
+  bool    v2line_line(vec2 L, vec2 v, vec2 Q, vec2 u, float* tout, float* sout);
+  bool    v2ray_line(vec2 R, vec2 v, vec2 L, vec2 u, float* t_out);
+  bool    v2ray_ray(vec2 R, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
+  bool    v2ray_seg(vec2 R, vec2 v, vec2 S1, vec2 S2, float* t_out);
+  bool    v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out);
+
+I vec3    v3f(float x, float y, float z);
+I bool    v3eq(vec3 a, vec3 b);
+  bool    v3about(vec3 a, vec3 b, float epsilon);
+  float   v3mag(vec3 v);
+I float   v3magsq(vec3 v);
+  vec3    v3norm(vec3 v);
+I vec3    v3neg(vec3 v);
+I void    v3neg_eq(vec3* v);
+I vec3    v3add(vec3 a, vec3 b);
+I void    v3add_eq(vec3* a, vec3 b);
+I vec3    v3sub(vec3 a, vec3 b);
+I void    v3sub_eq(vec3* a, vec3 b);
+  vec3    v3dir(vec3 dst, vec3 src);
+  float   v3dist(vec3 P, vec3 Q);
+I float   v3distsq(vec3 P, vec3 Q);
+I vec3    v3mid(vec3 P, vec3 Q);
+I vec3    v3scale(vec3 v, float f);
+I void    v3scale_eq(vec3* v, float f);
+  vec3    v3rescale(vec3 v, float length);
+  vec3    v3limit(vec3 v, float max_length);
+  vec3    v3clamp(vec3 v, float min_len, float max_len);
+I float   v3dot(vec3 a, vec3 b);
+I vec3    v3mul(vec3 a, vec3 b);
+I void    v3mul_eq(vec3* a, vec3 b);
+I vec3    v3div(vec3 a, vec3 b);
+I void    v3div_eq(vec3* a, vec3 b);
+I vec3    v3cross(vec3 a, vec3 b);
+  vec3    v3perp(vec3 v);
+I void    v3perp_eq(vec3* v);
+  vec3    v3rand(float radius);
+  vec3    v3rand_dumb(float radius);
+  vec3    v3rand_shell(float inner_radius, float outer_radius);
+  vec3    v3rand_dir(void);
+  vec3    v3rand_box(void);
+  vec3    v3rand_cone(float max_angle);
+  vec3    v3reflect(vec3 v, vec3 n_mirror);
+  float   v3angle(vec3 a, vec3 b);
+I vec3    v3lerp(vec3 P, vec3 Q, float t);
+  vec3    v3towards(vec3 P, vec3 Q, float max);
+  vec2    v3oct(vec3 v);
+  vec3    v3oct_decode(vec2 v);
+  float   v3line_dist(vec3 L, vec3 v, vec3 P);
+  bool    v3line_plane(vec3 L, vec3 v, vec3 P, vec3 n, float* t_out);
+  bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);
 
 //vec2  v2orbit(vec2 a, vec2 center, float theta);
 //vec3  v3reflect(vec3 v, vec3 axis);
 //vec3  v3rot(vec3 v, vec3 axis, float theta);
 
-////////////////////////////////////////////////////////////////////////////////
-// Vector type conversion shorthands
-////////////////////////////////////////////////////////////////////////////////
-
 float c4lum(color4 c);
 
 byte b4lum(color4b c);
+
+////////////////////////////////////////////////////////////////////////////////
+// Inline implementations
+////////////////////////////////////////////////////////////////////////////////
+
+I vec2i v2i(int x, int y) {
+  return (vec2i) { .i = { x, y } };
+}
+
+I bool i2eq(vec2i a, vec2i b) {
+  return a.x == b.x && a.y == b.y;
+}
+
+I float i2aspect(vec2i v) {
+  return (float)v.w / (float)v.h;
+}
+
+I vec2i i2neg(vec2i v) {
+  return v2i(-v.x, -v.y);
+}
+
+I void i2neg_eq(vec2i* a) {
+  *a = v2i(-a->x, -a->y);
+}
+
+I vec2i i2add(vec2i a, vec2i b) {
+  return v2i(a.x + b.x, a.y + b.y);
+}
+
+I void i2add_eq(vec2i* a, vec2i b) {
+  *a = v2i(a->x + b.x, a->y + b.y);
+}
+
+I vec2i i2sub(vec2i a, vec2i b) {
+  return v2i(a.x - b.x, a.y - b.y);
+}
+
+I void i2sub_eq(vec2i* a, vec2i b) {
+  *a = v2i(a->x - b.x, a->y - b.y);
+}
+
+I vec2i i2mul(vec2i a, vec2i b) {
+  return v2i(a.x * b.x, a.y * b.y);
+}
+
+I void i2mul_eq(vec2i* a, vec2i b) {
+  *a = v2i(a->x * b.x, a->y * b.y);
+}
+
+I vec2i i2div(vec2i a, vec2i b) {
+  return v2i(a.x / b.x, a.y / b.y);
+}
+
+I void i2div_eq(vec2i* a, vec2i b) {
+  *a = v2i(a->x / b.x, a->y / b.y);
+}
+
+I vec2i i2scale(vec2i v, float factor) {
+  return v2i( (int)((float)v.x * factor), (int)((float)v.y * factor) );
+}
+
+I void i2scale_eq(vec2i* v, float factor) {
+  *v = v2i((int)((float)v->x * factor), (int)((float)v->y * factor));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+I vec2 v2f(float x, float y) {
+  return (vec2) { .f = { x, y } };
+}
+
+I bool v2eq(vec2 a, vec2 b) {
+  return a.x == b.x && a.y == b.y;
+}
+
+I float v2aspect(vec2 dim) {
+  return dim.w / dim.h;
+}
+
+I float v2magsq(vec2 v) {
+  return v.x * v.x + v.y * v.y;
+}
+
+I vec2 v2scale(vec2 v, float f) {
+  return v2f(v.x * f, v.y * f);
+}
+
+I void v2scale_eq(vec2* v, float f) {
+  *v = v2f(v->x * f, v->y * f);
+}
+
+I vec2 v2neg(vec2 v) {
+  return v2f(-v.x, -v.y);
+}
+
+I void v2neg_eq(vec2* a) {
+  *a = v2f(-a->x, -a->y);
+}
+
+I vec2 v2add(vec2 a, vec2 b) {
+  return v2f(a.x + b.x, a.y + b.y);
+}
+
+I void v2add_eq(vec2* a, vec2 b) {
+  *a = v2f(a->x + b.x, a->y + b.y);
+}
+
+I vec2 v2sub(vec2 a, vec2 b) {
+  return v2f(a.x - b.x, a.y - b.y);
+}
+
+I void v2sub_eq(vec2* a, vec2 b) {
+  *a = v2f(a->x - b.x, a->y - b.y);
+}
+
+I float v2distsq(vec2 P, vec2 Q) {
+  return v2magsq(v2sub(Q, P));
+}
+
+I vec2 v2mid(vec2 P, vec2 Q) {
+  return v2scale(v2add(P, Q), 0.5f);
+}
+
+I float v2dot(vec2 a, vec2 b) {
+  return a.x * b.x + a.y * b.y;
+}
+
+I vec2 v2mul(vec2 a, vec2 b) {
+  return v2f(a.x * b.x, a.y * b.y);
+}
+
+I void v2mul_eq(vec2* a, vec2 b) {
+  *a = v2f(a->x * b.x, a->y * b.y);
+}
+
+I vec2 v2div(vec2 a, vec2 b) {
+  return v2f(a.x / b.x, a.y / b.y);
+}
+
+I void v2div_eq(vec2* a, vec2 b) {
+  *a = v2f(a->x / b.x, a->y / b.y);
+}
+
+I float v2cross(vec2 a, vec2 b) {
+  return a.x * b.y - a.y * b.x;
+}
+
+I vec2 v2perp(vec2 v) {
+  return v2f(-v.y, v.x);
+}
+
+I void v2perp_eq(vec2* v) {
+  *v = v2f(-v->y, v->x);
+}
+
+I vec2 v2lerp(vec2 P, vec2 Q, float t) {
+  vec2 v = v2scale(v2sub(Q, P), t);
+  return v2add(P, v);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+I vec3 v3f(float x, float y, float z) {
+  return (vec3) { .f = { x, y, z } };
+}
+
+I bool v3eq(vec3 a, vec3 b) {
+  return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+I float v3magsq(vec3 v) {
+  return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
+I vec3 v3neg(vec3 v) {
+  return v3f(-v.x, -v.y, -v.z);
+}
+
+I void v3neg_eq(vec3* a) {
+  *a = v3f(-a->x, -a->y, -a->z);
+}
+
+I vec3 v3add(vec3 a, vec3 b) {
+  return v3f(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+I void v3add_eq(vec3* a, vec3 b) {
+  *a = v3f(a->x + b.x, a->y + b.y, a->z + b.z);
+}
+
+I vec3 v3sub(vec3 a, vec3 b) {
+  return v3f(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+I void v3sub_eq(vec3* a, vec3 b) {
+  *a = v3f(a->x - b.x, a->y - b.y, a->z - b.z);
+}
+
+I float v3distsq(vec3 P, vec3 Q) {
+  return v3magsq(v3sub(P, Q));
+}
+
+I vec3 v3mid(vec3 P, vec3 Q) {
+  return v3scale(v3add(P, Q), 0.5f);
+}
+
+I vec3 v3scale(vec3 v, float f) {
+  return v3f(v.x * f, v.y * f, v.z * f);
+}
+
+I void v3scale_eq(vec3* v, float f) {
+  *v = v3f(v->x * f, v->y * f, v->z * f);
+}
+
+I float v3dot(vec3 a, vec3 b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+I vec3 v3mul(vec3 a, vec3 b) {
+  return v3f(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+
+I void v3mul_eq(vec3* a, vec3 b) {
+  *a = v3f(a->x * b.x, a->y * b.y, a->z * b.z);
+}
+
+I vec3 v3div(vec3 a, vec3 b) {
+  return v3f(a.x / b.x, a.y / b.y, a.z / b.z);
+}
+
+I void v3div_eq(vec3* a, vec3 b) {
+  *a = v3f(a->x / b.x, a->y / b.y, a->z / b.z);
+}
+
+I vec3 v3cross(vec3 a, vec3 b) {
+  return v3f(
+    a.y * b.z - a.z * b.y,
+    a.z * b.x - a.x * b.z,
+    a.x * b.y - a.y * b.x
+  );
+}
+
+I void v3perp_eq(vec3* v) {
+  *v = v3perp(*v);
+}
+
+I vec3 v3lerp(vec3 P, vec3 Q, float t) {
+  vec3 v = v3scale(v3sub(Q, P), t);
+  return v3add(P, v);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Vector type conversion shorthands
@@ -362,187 +662,175 @@ byte b4lum(color4b c);
 
 // Construct from individual components
 
-static inline vec3b v3b(byte r, byte g, byte b) {
+I vec3b v3b(byte r, byte g, byte b) {
   return (vec3b) { .i = { r, g, b } };
 }
 
-static inline vec4b v4b(byte r, byte g, byte b, byte a) {
+I vec4b v4b(byte r, byte g, byte b, byte a) {
   return (vec4b) { .i = { r, g, b, a } };
 }
 
-static inline vec4b v34b(vec3b rgb, byte a) {
+I vec4b v34b(vec3b rgb, byte a) {
   return v4b(rgb.r, rgb.g, rgb.b, a);
 }
 
-static inline vec2i v2i(int x, int y) {
-  return (vec2i) { .i = { x, y } };
-}
-
-static inline vec3i v3i(int x, int y, int z) {
+I vec3i v3i(int x, int y, int z) {
   return (vec3i) { .i = { x, y, z } };
 }
 
-static inline vec2 v2f(float x, float y) {
-  return (vec2) { .f = { x, y } };
-}
-
-static inline vec3 v3f(float x, float y, float z) {
-  return (vec3) { .f = { x, y, z } };
-}
-
-static inline vec4 v4f(float x, float y, float z, float w) {
+I vec4 v4f(float x, float y, float z, float w) {
   return (vec4) { .f = { x, y, z, w } };
 }
 
 // Convert dimensions with default new values where applicable
 
-static inline vec3b b13(byte b) {
+I vec3b b13(byte b) {
   return (vec3b) { .i = { b, b, b } };
 }
 
-static inline vec4b b14(byte b) {
+I vec4b b14(byte b) {
   return (vec4b) { .i = { b, b, b, b } };
 }
 
-static inline vec4b b34(vec3b v) {
+I vec4b b34(vec3b v) {
   return v4b(v.r, v.g, v.b, 255);
 }
 
-static inline vec2i i12(int i) {
+I vec2i i12(int i) {
   return (vec2i) { .i = { i, i } };
 }
 
-static inline vec3i i13(int i) {
+I vec3i i13(int i) {
   return (vec3i) { .i = { i, i, i } };
 }
 
-static inline vec3i i23(vec2i v) {
+I vec3i i23(vec2i v) {
   return v3i(v.x, v.y, 0);
 }
 
-static inline vec2 v12(float f) {
+I vec2 v12(float f) {
   return (vec2) { .f = { f, f } };
 }
 
-static inline vec3 v13(float f) {
+I vec3 v13(float f) {
   return (vec3) { .f = { f, f, f } };
 }
 
-static inline vec4 v14(float f) {
+I vec4 v14(float f) {
   return (vec4) { .f = { f, f, f, f } };
 }
 
-static inline vec3 v23(vec2 v) {
+I vec3 v23(vec2 v) {
   return v3f(v.x, v.y, 0);
 }
 
-static inline vec4 v24(vec2 v) {
+I vec4 v24(vec2 v) {
   return v4f(v.x, v.y, 0, 0);
 }
 
-static inline vec4 p24(vec2 v) {
+I vec4 p24(vec2 v) {
   return v4f(v.x, v.y, 0, 1);
 }
 
-static inline vec4 v34(vec3 v) {
+I vec4 v34(vec3 v) {
   return v4f(v.x, v.y, v.z, 0);
 }
 
-static inline vec4 p34(vec3 p) {
+I vec4 p34(vec3 p) {
   return v4f(p.x, p.y, p.z, 1);
 }
 
 // Convert dimensions while flipping from xz coords to xy
 
-static inline vec3 v23xz(vec2 v) {
+I vec3 v23xz(vec2 v) {
   return v3f(v.x, 0.f, v.y);
 }
 
-static inline vec3 v23xzf(vec2 v, float y) {
+I vec3 v23xzf(vec2 v, float y) {
   return v3f(v.x, y, v.y);
 }
 
-static inline vec4 v24xz(vec2 v) {
+I vec4 v24xz(vec2 v) {
   return v4f(v.x, 0.f, v.y, 0.f);
 }
 
-static inline vec4 v24xzf(vec2 v, float y) {
+I vec4 v24xzf(vec2 v, float y) {
   return v4f(v.x, y, v.y, 0.f);
 }
 
-static inline vec4 p24xz(vec2 v) {
+I vec4 p24xz(vec2 v) {
   return v4f(v.x, 0.f, v.y, 1.f);
 }
 
-static inline vec4 p24xzf(vec2 v, float y) {
+I vec4 p24xzf(vec2 v, float y) {
   return v4f(v.x, y, v.y, 1.f);
 }
 
-static inline vec2 v32xz(vec3 v) {
+I vec2 v32xz(vec3 v) {
   return v2f(v.x, v.z);
 }
 
-static inline vec2 v42xz(vec4 v) {
+I vec2 v42xz(vec4 v) {
   return v2f(v.x, v.z);
 }
 
 // Inrease dimensions and provide new component values
 
-static inline vec3 v23f(vec2 v, float z) {
+I vec3 v23f(vec2 v, float z) {
   return v3f(v.x, v.y, z);
 }
 
-static inline vec4 v24f(vec2 v, float z, float w) {
+I vec4 v24f(vec2 v, float z, float w) {
   return v4f(v.x, v.y, z, w);
 }
 
-static inline vec4 p24f(vec2 v, float z) {
+I vec4 p24f(vec2 v, float z) {
   return v4f(v.x, v.y, z, 1);
 }
 
-static inline vec4 v34f(vec3 v, float w) {
+I vec4 v34f(vec3 v, float w) {
   return v4f(v.x, v.y, v.z, w);
 }
 
-static inline vec4 v24v(vec2 xy, vec2 zw) {
+I vec4 v24v(vec2 xy, vec2 zw) {
   return v4f(xy.x, xy.y, zw.x, zw.y);
 }
 
 // Convert between vector types
 
-static inline vec2i v2iv(vec2 v) {
+I vec2i v2iv(vec2 v) {
   return v2i((int)v.x, (int)v.y);
 }
 
-static inline vec2 v2vi(vec2i v) {
+I vec2 v2vi(vec2i v) {
   return v2f((float)v.x, (float)v.y);
 }
 
-static inline vec3i v3iv(vec3 v) {
+I vec3i v3iv(vec3 v) {
   return v3i((int)v.x, (int)v.y, (int)v.z);
 }
 
-static inline vec3 v3vi(vec3i v) {
+I vec3 v3vi(vec3i v) {
   return v3f((float)v.x, (float)v.y, (float)v.z);
 }
 
-static inline vec3 v3vb(vec3b v) {
+I vec3 v3vb(vec3b v) {
   return v3f((float)v.x, (float)v.y, (float)v.z);
 }
 
-static inline vec3b v3bv(vec3 v) {
+I vec3b v3bv(vec3 v) {
   return v3b((byte)v.x, (byte)v.y, (byte)v.z);
 }
 
-static inline vec3 v3vc(vec3b c) {
+I vec3 v3vc(vec3b c) {
   return v3f((float)c.r / 255.f, (float)c.g / 255.f, (float)c.b / 255.f);
 }
 
-static inline vec3b v3cv(vec3 c) {
+I vec3b v3cv(vec3 c) {
   return v3b((byte)(c.r * 255.f), (byte)(c.g * 255.f), (byte)(c.b * 255.f));
 }
 
-static inline vec4 v4vc(vec4b c) {
+I vec4 v4vc(vec4b c) {
   return v4f
   ( (float)c.r / 255.f
   , (float)c.g / 255.f
@@ -551,7 +839,7 @@ static inline vec4 v4vc(vec4b c) {
   );
 }
 
-static inline vec4b v4cv(vec4 c) {
+I vec4b v4cv(vec4 c) {
   return v4b
   ( (byte)(c.r * 255.f)
   , (byte)(c.g * 255.f)
@@ -559,6 +847,8 @@ static inline vec4b v4cv(vec4 c) {
   , (byte)(c.a * 255.f)
   );
 }
+
+#undef I
 
 ////////////////////////////////////////////////////////////////////////////////
 // Add vector types to the string formatter

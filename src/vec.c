@@ -24,15 +24,13 @@
 
 #include "vec.h"
 
+#include "utility.h"
+
 #include <math.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Vector 2 (integer)
 ////////////////////////////////////////////////////////////////////////////////
-
-float i2aspect(vec2i v) {
-  return (float)v.w / (float)v.h;
-}
 
 vec2i i2zcurve(size_t i) {
   int x = 0, y = 0;
@@ -60,26 +58,6 @@ size_t i2zindex(vec2i v) {
   return ret;
 }
 
-vec2i i2add(vec2i a, vec2i b) {
-  return (vec2i) { a.x + b.x, a.y + b.y };
-}
-
-vec2i i2sub(vec2i a, vec2i b) {
-  return (vec2i) { a.x - b.x, a.y - b.y };
-}
-
-vec2i i2mul(vec2i a, vec2i b) {
-  return (vec2i) { a.x * b.x, a.y * b.y };
-}
-
-vec2i i2div(vec2i a, vec2i b) {
-  return (vec2i) { a.x / b.x, a.y / b.y };
-}
-
-vec2i i2scale(vec2i a, float factor) {
-  return (vec2i) { (int)((float)a.x * factor), (int)((float)a.y * factor) };
-}
-
 vec2i i2rescale(vec2i a, float length) {
   return v2iv(v2rescale(v2vi(a), length));
 }
@@ -95,10 +73,6 @@ vec2 i2ndc(vec2i sp, vec2i scr_wh) {
 // Vector 2 (float)
 ////////////////////////////////////////////////////////////////////////////////
 
-bool v2eq(vec2 a, vec2 b) {
-  return a.x == b.x && a.y == b.y;
-}
-
 bool v2about(vec2 a, vec2 b, float epsilon) {
   if (fabsf(b.x - a.x) >= epsilon) return false;
   return fabsf(b.y - a.y) < epsilon;
@@ -108,49 +82,25 @@ float v2mag(vec2 v) {
   return sqrtf(v2magsq(v));
 }
 
-float v2magsq(vec2 v) {
-  return v.x * v.x + v.y * v.y;
-}
-
-float v2dist(vec2 P, vec2 Q) {
-  return sqrtf(v2distsq(P, Q));
-}
-
-float v2distsq(vec2 P, vec2 Q) {
-  return v2magsq(v2sub(Q, P));
-}
-
 vec2 v2norm(vec2 v) {
   float mag = v2mag(v);
   return v2f(v.x / mag, v.y / mag);
-}
-
-vec2 v2mid(vec2 P, vec2 Q) {
-  return v2scale(v2add(P, Q), 0.5f);
-}
-
-vec2 v2neg(vec2 v) {
-  return v2f(-v.x, -v.y);
 }
 
 vec2 v2dir(vec2 dst, vec2 src) {
   return v2norm(v2sub(dst, src));
 }
 
-vec2 v2add(vec2 a, vec2 b) {
-  return v2f(a.x + b.x, a.y + b.y);
-}
-
-vec2 v2sub(vec2 a, vec2 b) {
-  return v2f(a.x - b.x, a.y - b.y);
-}
-
-vec2 v2scale(vec2 v, float f) {
-  return v2f(v.x * f, v.y * f);
+float v2dist(vec2 P, vec2 Q) {
+  return sqrtf(v2distsq(P, Q));
 }
 
 vec2 v2rescale(vec2 v, float f) {
   return v2scale(v2norm(v), f);
+}
+
+void v2rescale_eq(vec2* v, float f) {
+  *v = v2scale(v2norm(*v), f);
 }
 
 vec2 v2limit(vec2 v, float max) {
@@ -167,24 +117,26 @@ vec2 v2clamp(vec2 v, float min, float max) {
   return v;
 }
 
-float v2dot(vec2 a, vec2 b) {
-  return a.x * b.x + a.y * b.y;
+vec2 v2rand(float radius) {
+  float a = frand() * TAU;
+  float r = radius * sqrtf(frand());
+  return v2f(cosf(a) * r, sinf(a) * r);
 }
 
-vec2 v2mul(vec2 a, vec2 b) {
-  return v2f(a.x * b.x, a.y * b.y);
+vec2 v2rand_shell(float inner, float outer) {
+  float r2_inner = inner * inner;
+  float r2_outer = outer * outer;
+  float r = sqrtf(frand() * (r2_outer - r2_inner) + r2_inner);
+  return v2scale(v2rand_dir(), r);
 }
 
-vec2 v2div(vec2 a, vec2 b) {
-  return v2f(a.x / b.x, a.y / b.y);
+vec2 v2rand_dir(void) {
+  float a = frand() * TAU;
+  return v2f(cosf(a), sinf(a));
 }
 
-float v2cross(vec2 a, vec2 b) {
-  return a.x * b.y - a.y * b.x;
-}
-
-vec2 v2perp(vec2 v) {
-  return v2f(-v.y, v.x);
+vec2 v2rand_box(void) {
+  return v2f(frand() * 2.f - 1.f, frand() * 2.f - 1.f);
 }
 
 vec2 v2reflect(vec2 v, vec2 mirror) {
@@ -212,20 +164,11 @@ vec2 v2rot(vec2 v, float theta) {
   return v2f(cost * v.x - sint * v.y, sint * v.x + cost * v.y);
 }
 
-vec2 v2lerp(vec2 P, vec2 Q, float t) {
-  vec2 v = v2scale(v2sub(Q, P), t);
-  return v2add(P, v);
-}
-
 vec2 v2towards(vec2 P, vec2 Q, float max) {
   vec2 v = v2sub(Q, P);
   float mag = v2mag(v);
   if (mag <= max || mag == 0.0f) return Q;
   return v2add(P, v2scale(v, max / mag));
-}
-
-float v2aspect(vec2 dim) {
-  return dim.w / dim.h;
 }
 
 vec2 v2ndc(vec2 screen_pos, vec2i scr_wh) {
@@ -299,10 +242,6 @@ bool v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out) {
 // Vector 3 (float)
 ////////////////////////////////////////////////////////////////////////////////
 
-bool v3eq(vec3 a, vec3 b) {
-  return a.x == b.x && a.y == b.y && a.z == b.z;
-}
-
 bool v3about(vec3 a, vec3 b, float epsilon) {
   if (fabsf(b.x - a.x) >= epsilon) return false;
   if (fabsf(b.y - a.y) >= epsilon) return false;
@@ -313,45 +252,17 @@ float v3mag(vec3 v) {
   return sqrtf(v3magsq(v));
 }
 
-float v3magsq(vec3 v) {
-  return v.x * v.x + v.y * v.y + v.z * v.z;
-}
-
-float v3dist(vec3 P, vec3 Q) {
-  return sqrtf(v3distsq(P, Q));
-}
-
-float v3distsq(vec3 P, vec3 Q) {
-  return v3magsq(v3sub(P, Q));
-}
-
 vec3 v3norm(vec3 v) {
   float mag = v3mag(v);
   return v3f( v.x / mag, v.y / mag, v.z / mag );
-}
-
-vec3 v3mid(vec3 P, vec3 Q) {
-  return v3scale(v3add(P, Q), 0.5f);
-}
-
-vec3 v3neg(vec3 v) {
-  return v3f( -v.x, -v.y, -v.z );
-}
-
-vec3 v3add(vec3 a, vec3 b) {
-  return v3f( a.x + b.x, a.y + b.y, a.z + b.z );
-}
-
-vec3 v3sub(vec3 a, vec3 b) {
-  return v3f( a.x - b.x, a.y - b.y, a.z - b.z );
 }
 
 vec3 v3dir(vec3 dst, vec3 src) {
   return v3norm(v3sub(dst, src));
 }
 
-vec3 v3scale(vec3 v, float f) {
-  return v3f( v.x * f, v.y * f, v.z * f );
+float v3dist(vec3 P, vec3 Q) {
+  return sqrtf(v3distsq(P, Q));
 }
 
 vec3 v3rescale(vec3 v, float f) {
@@ -372,26 +283,6 @@ vec3 v3clamp(vec3 v, float min, float max) {
   return v;
 }
 
-float v3dot(vec3 a, vec3 b) {
-  return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-vec3 v3mul(vec3 a, vec3 b) {
-  return v3f( a.x * b.x, a.y * b.y, a.z * b.z );
-}
-
-vec3 v3div(vec3 a, vec3 b) {
-  return v3f(a.x / b.x, a.y / b.y, a.z / b.z);
-}
-
-vec3 v3cross(vec3 a, vec3 b) {
-  return v3f(
-    a.y * b.z - a.z * b.y,
-    a.z * b.x - a.x * b.z,
-    a.x * b.y - a.y * b.x
-  );
-}
-
 // Gets an arbitrary vector that's perpendicular to v
 //
 // From Ken Whatmough's post on
@@ -405,6 +296,69 @@ vec3 v3perp(vec3 v) {
   );
 }
 
+vec3 v3rand(float radius)
+{
+  // random direction
+  vec3 dir;
+
+  do {
+    dir = v3f(
+      frand() * 2.f - 1.f,
+      frand() * 2.f - 1.f,
+      frand() * 2.f - 1.f
+    );
+  } while (v3magsq(dir) < 1e-6f);
+
+  dir = v3norm(dir);
+
+  // uniform radius distribution in volume
+  float r = radius * cbrtf(frand());
+
+  return v3scale(dir, r);
+}
+
+vec3 v3rand_dumb(float radius) {
+  vec3 p;
+
+  do {
+    p = v3f(
+      (frand() * 2.f - 1.f) * radius,
+      (frand() * 2.f - 1.f) * radius,
+      (frand() * 2.f - 1.f) * radius
+    );
+  } while (v3magsq(p) > radius * radius);
+
+  return p;
+}
+
+vec3 v3rand_shell(float inner, float outer) {
+  float r3_inner = inner * inner * inner;
+  float r3_outer = outer * outer * outer;
+  float r = cbrtf(frand() * (r3_outer - r3_inner) + r3_inner);
+  return v3scale(v3rand_dir(), r);
+}
+
+vec3 v3rand_dir(void) {
+  float z = frand() * 2.f - 1.f;
+  float a = frand() * TAU;
+  float r = sqrtf(1.0f - z * z);
+  return v3f(r * cosf(a), r * sinf(a), z);
+}
+
+vec3 v3rand_box(void) {
+  return v3f(frand() * 2.f - 1.f, frand() * 2.f - 1.f, frand() * 2.f - 1.f);
+}
+
+vec3 v3rand_cone(float max_angle) {
+  float cos_max = cosf(max_angle);
+
+  float z = frand() * (1.f - cos_max) + cos_max;
+  float a = frand() * TAU;
+  float r = sqrtf(1.0f - z * z);
+
+  return v3f(r * cosf(a), r * sinf(a), -z);
+}
+
 vec3 v3reflect(vec3 v, vec3 mirror_normal) {
   vec3 n = v3norm(mirror_normal);
   return v3sub(v, v3scale(n, 2.0f * v3dot(v, n)));
@@ -412,11 +366,6 @@ vec3 v3reflect(vec3 v, vec3 mirror_normal) {
 
 float v3angle(vec3 a, vec3 b) {
   return acosf(v3dot(a, b) / (v3mag(a) * v3mag(b)));
-}
-
-vec3 v3lerp(vec3 P, vec3 Q, float t) {
-  vec3 v = v3scale(v3sub(Q, P), t);
-  return v3add(P, v);
 }
 
 vec3 v3towards(vec3 P, vec3 Q, float max) {

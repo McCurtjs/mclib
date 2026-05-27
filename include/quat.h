@@ -57,6 +57,10 @@ vec3  q4axis(quat q);
 
 vec3  v3rotate(vec3 v, quat q);
 
+static inline vec3 q4dir(quat q)    { return v3rotate(v3front, q); }
+static inline vec3 q4right(quat q)  { return v3rotate(v3right, q); }
+static inline vec3 q4up(quat q)     { return v3rotate(v3up, q); }
+
 static inline quat q4f(float i, float j, float k, float w) {
   return (quat) { .i = i, .j = j, .k = k, .w = w };
 }

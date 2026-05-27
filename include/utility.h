@@ -27,7 +27,21 @@
 
 #include "types.h"
 
-size_t msb(size_t x);
-hash_t hash(const void* src, index_t size);
+size_t  msb(size_t x);
+hash_t  hash(const void* src, index_t size);
+
+float   frand(void);
+
+static inline float frand_01(void) {
+  return frand();
+}
+
+static inline float frand_11(void) {
+  return frand() * 2.f - 1.f;
+}
+
+static inline float frand_r(float low, float high) {
+  return frand() * (high - low) + low;
+}
 
 #endif

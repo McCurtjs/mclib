@@ -226,8 +226,13 @@ vec3 q4axis(quat q) {
 ////////////////////////////////////////////////////////////////////////////////
 
 vec3 v3rotate(vec3 v, quat q) {
+  q = q4norm(q);
+
+  /*
+
   // t = 2 * (qv x v)
   vec3 t = v3cross(q.ijk, v);
+  t      = v3scale(t, 2);
 
   // v' = v + q.w*t + (qv x t)
   vec3 qv_x_t = v3cross(q.ijk, t);
@@ -236,4 +241,17 @@ vec3 v3rotate(vec3 v, quat q) {
     v.y + q.w*t.y + qv_x_t.y,
     v.z + q.w*t.z + qv_x_t.z
   );
+
+  /*/
+  vec3 t = v3cross(v, q.ijk);
+  t      = v3scale(t, 2.0f);
+
+  vec3 t_x_qv = v3cross(t, q.ijk);
+
+  return v3f(
+    v.x + q.w * t.x + t_x_qv.x,
+    v.y + q.w * t.y + t_x_qv.y,
+    v.z + q.w * t.z + t_x_qv.z
+  );
+  //*/
 }

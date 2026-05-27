@@ -26,6 +26,8 @@
 
 #include "murmur3.h"
 
+#include <stdlib.h>
+
 // Most significant bit algorithm, from:
 //    https://aggregate.org/MAGIC/#Most%20Significant%201%20Bit
 size_t msb(size_t x) {
@@ -50,4 +52,8 @@ hash_t hash(const void* src, index_t size) {
   MurmurHash3_x86_32(src, (int)size, 0, &ret);
 #endif
   return ret;
+}
+
+float frand(void) {
+  return (float)rand() / (float)RAND_MAX;
 }
