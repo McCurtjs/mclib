@@ -77,7 +77,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     tst/spec_main.c
     tst/array_spec.c
     tst/map_spec.c
+    tst/mat_spec.c
     tst/packedmap_spec.c
+    tst/quat_spec.c
     tst/slotmap_spec.c
     tst/span_spec.c
     tst/str_spec.c

@@ -64,12 +64,14 @@ void printer(const char* str, csUint len, csUint color) {
 // Test suites
 
 extern TestSuite tests_cspec;
-extern TestSuite tests_slice;
 extern TestSuite tests_span;
+extern TestSuite tests_slice;
 extern TestSuite tests_array;
 extern TestSuite tests_string;
 extern TestSuite tests_map;
 extern TestSuite tests_vec;
+extern TestSuite tests_mat;
+extern TestSuite tests_quat;
 extern TestSuite tests_slotmap;
 extern TestSuite tests_packedmap;
 
@@ -91,6 +93,8 @@ int main(int argc, char* argv[]) {
     &tests_string,
     &tests_map,
     &tests_vec,
+    &tests_mat,
+    &tests_quat,
     &tests_slotmap,
     &tests_packedmap,
   };
