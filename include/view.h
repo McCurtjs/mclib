@@ -67,6 +67,7 @@
 //
 // // Accessors
 // const A* view_a_ref(view_a_t, index_t);
+// const A* view_a_ref_unchecked(view_a_t, index_t);
 // const A* view_a_ref_front(view_a_t);
 // const A* view_a_ref_back(view_a_t);
 //
@@ -124,6 +125,7 @@ index_t view_size(view_t view, index_t element_size);
 bool    view_is_empty(view_t view);
 
 const void* view_ref(view_t view, index_t index, index_t element_size);
+const void* view_ref_unchecked(view_t view, index_t index, index_t elem_size);
 const void* view_ref_front(view_t view);
 const void* view_ref_back(view_t view, index_t element_size);
 
@@ -300,6 +302,11 @@ static inline bool _prefix(_eq)
 static inline const con_type* _prefix(_ref)
 (_view_type view, index_t index) {
   return view_ref(view.base, index, sizeof(con_type));
+}
+
+static inline const con_type* _prefix(_ref_unchecked)
+(_view_type view, index_t index) {
+  return view_ref_unchecked(view.base, index, sizeof(con_type));
 }
 
 static inline const con_type* _prefix(_ref_front)

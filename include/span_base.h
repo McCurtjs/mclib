@@ -169,6 +169,12 @@ static inline const void* view_ref(view_t view, index_t i, index_t el_size) {
   return (const byte*)view.begin + i * el_size;
 }
 
+static inline const void* view_ref_unchecked(
+  view_t view, index_t index, index_t element_size
+) {
+  return (const byte*)view.begin + index * element_size;
+}
+
 static inline const void* view_ref_front(view_t view) {
   if (view_is_empty(view)) return NULL;
   return view.begin;
@@ -185,6 +191,12 @@ static inline void* span_ref(span_t span, index_t index, index_t element_size) {
   index_t size = span_size(span, element_size);
   if (index < 0) index = size + index;
   if (index < 0 || index >= size) return NULL;
+  return (byte*)span.begin + index * element_size;
+}
+
+static inline void* span_ref_unchecked(
+  span_t span, index_t index, index_t element_size
+) {
   return (byte*)span.begin + index * element_size;
 }
 

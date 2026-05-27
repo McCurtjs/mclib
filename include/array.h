@@ -95,6 +95,7 @@
 // V          arr_v_get_front(Array_V);
 // V          arr_v_get_back(Array_V);
 // V*         arr_v_ref(Array_V, index_t index);
+// V*         arr_v_ref_unchecked(Array_V, index_t index);
 // V*         arr_v_ref_front(Array_V);
 // V*         arr_v_ref_back(Array_V);
 // bool       arr_v_read(Array_V, index_t index, V* out);
@@ -315,6 +316,13 @@ static inline void* arr_ref(
   if (array->size <= 0) return NULL;
   if (index < 0) index += array->size;
   if (index < 0 || index >= array->size) return NULL;
+  return (byte*)array->begin + index * array->element_size;
+}
+
+static inline void* arr_ref_unchecked(
+  Array array, index_t index
+) {
+  ARR_VALID(array);
   return (byte*)array->begin + index * array->element_size;
 }
 
@@ -1051,13 +1059,10 @@ static inline con_type _prefix(_get_back)
   return *element;
 }
 
-// \brief Returns a reference to the element at the given position, or NULL if
-//    the index is not valid. Note: an index that is within the capacity of the
-//    array but outside the size will still return NULL.
-// \brief Supports negative indexing from the end of the array.
-//
 // \brief Returns a pointer to the element at the given position, or NULL if
 //    the index is out of bounds.
+//
+// \brief Supports negative indexing from the end of the array.
 //
 // \param index - the index at which to retrieve the item from. If negative, the
 //    value will index be used as an offset from the end of the array.
@@ -1066,6 +1071,14 @@ static inline con_type _prefix(_get_back)
 static inline con_type* _prefix(_ref)
 (_arr_type arr, index_t index) {
   return arr_ref((Array)arr, index);
+}
+
+// \brief Returns a reference to the element at the given position. Unlike the
+//    general `arr_ref` form, this does not perform any bounds checking and
+//    does not support negative indexing.
+static inline con_type* _prefix(_ref_unchecked)
+(_arr_type arr, index_t index) {
+  return arr_ref_unchecked((Array)arr, index);
 }
 
 // \returns a pointer to the first element in the array, or NULL if empty.

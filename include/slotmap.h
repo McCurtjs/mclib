@@ -125,7 +125,7 @@ bool      smap_remove(SlotMap, slotkey_t);
 #define _map_type MACRO_CONCAT(SlotMap_, _con_name)
 #define _prefix(_FN) MACRO_CONCAT3(smap_, _con_name, _FN)
 
-typedef struct MACRO_CONCAT3(_opaque_, _map_type, _base_t) {
+typedef struct MACRO_CONCAT3(_opaque_, _map_type, _t) {
   index_t const element_size;
   index_t const capacity;
   index_t const size;

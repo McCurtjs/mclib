@@ -63,6 +63,7 @@
 //
 // // Accessors
 // A*       span_a_ref(span_a_t, index_t index);
+// A*       span_a_ref_unchecked(span_a_t, index_t index);
 // A*       span_a_ref_front(span_a_t);
 // A*       span_a_ref_back(span_a_t);
 //
@@ -138,6 +139,7 @@ index_t span_size(span_t span, index_t element_size);
 bool    span_is_empty(span_t span);
 
 void*   span_ref(span_t span, index_t index, index_t element_size);
+void*   span_ref_unchecked(span_t span, index_t index, index_t element_size);
 void*   span_ref_front(span_t span);
 void*   span_ref_back(span_t span, index_t element_size);
 
@@ -292,7 +294,16 @@ static int _con_cmp(const void* lhs, const void* rhs) {
 }
 #endif
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 static _span_type _prefix(_empty) = { .begin = NULL, .end = NULL };
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -342,6 +353,11 @@ static inline bool _prefix(_is_empty)
 static inline con_type* _prefix(_ref)
 (_span_type span, index_t index) {
   return span_ref(span.base, index, sizeof(con_type));
+}
+
+static inline con_type* _prefix(_ref_unchecked)
+(_span_type span, index_t index) {
+  return span_ref_unchecked(span.base, index, sizeof(con_type));
 }
 
 static inline con_type* _prefix(_ref_front)
