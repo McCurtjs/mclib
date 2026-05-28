@@ -138,7 +138,7 @@ describe(invariants) {
 describe(q4look) {
 
   it("creates a rotation looking in a certain direction") {
-    quat q = q3look(v3left, v3up);
+    quat q = v3look(v3left, v3up);
     vec3 v = v3rotate(v3front, q);
     expect(v.x to be_about(-1));
     expect(v.y to be_about(0));
@@ -146,7 +146,7 @@ describe(q4look) {
   }
 
   it("creates a rotation looking to a non-axis direction") {
-    quat q = q3look(v3f(1, 2, 3), v3up);
+    quat q = v3look(v3f(1, 2, 3), v3up);
     vec3 v = v3rotate(v3front, q);
     vec3 expected = v3norm(v3f(1, 2, 3));
     expect(v.x to be_about(expected.x));

@@ -133,82 +133,52 @@ quat q4euler(vec3 euler) {
   return q4norm(q4mul(q4mul(qy, qx), qz));
 }
 
-quat q3rotation(vec3 from, vec3 to) {
-  from = v3norm(from);
-  to = v3norm(to);
-
-  float d = v3dot(from, to);
-  if (d > 1.0f - epsilon) return q4identity;
-
-  // if vectors are nearly opposite, pick some orthogonal axis
-  if (d < -1.0f + epsilon) {
-    return q4axang(v3perp(from), PI);
-  }
-
-  vec3 axis = v3cross(from, to);
-  return q4norm(qv34f(axis, 1.0f + d));
-}
-
-quat q3look(vec3 forward, vec3 up) {
-  vec3 f = v3norm(forward);
-
-  if (v3magsq(f) < epsilon) return q4identity;
-
-  vec3 r = v3cross(up, f);
-  if (v3magsq(r) < epsilon) {
-    up = (fabsf(f.y) < 1.0f - epsilon) ? v3up : v3right;
-    r = v3cross(up, f);
-  }
-  r = v3norm(r);
-
-  vec3 u = v3cross(f, r);
-
-  mat3 basis = m3v(r, u, f);
-  assert(m3det(basis) > 0.0f); // right-handed check
-  return q4m(basis);
-}
-
 quat q4m(mat3 m) {
   float trace = m3trace(m);
   quat q;
+  
+  float m00 = m.col[0].x, m10 = m.col[0].y, m20 = m.col[0].z;
+  float m01 = m.col[1].x, m11 = m.col[1].y, m21 = m.col[1].z;
+  float m02 = m.col[2].x, m12 = m.col[2].y, m22 = m.col[2].z;
 
   if (trace > 0.0f) {
-    float s = sqrtf(trace + 1.0f) * 2.0f; // s = 4*w
+    // s = 4*w
+    float s = sqrtf(trace + 1.0f) * 2.0f;
     q = q4f(
-      (m.col[1].z - m.col[2].y) / s,
-      (m.col[2].x - m.col[0].z) / s,
-      (m.col[0].y - m.col[1].x) / s,
+      (m21 - m12) / s,
+      (m02 - m20) / s,
+      (m10 - m01) / s,
       0.25f * s
     );
   }
-  else if (m.col[0].x > m.col[1].y && m.col[0].x > m.col[2].z) {
+  else if (m00 > m11 && m00 > m22) {
     // s = 4*x
-    float s = sqrtf(1.0f + m.col[0].x - m.col[1].y - m.col[2].z) * 2.0f;
+    float s = sqrtf(1.0f + m00 - m11 - m22) * 2.0f;
     q = q4f(
       0.25f * s,
-      (m.col[0].y + m.col[1].x) / s,
-      (m.col[0].z + m.col[2].x) / s,
-      (m.col[1].z - m.col[2].y) / s
+      (m01 + m10) / s,
+      (m02 + m20) / s,
+      (m21 - m12) / s
     );
   }
-  else if (m.col[1].y > m.col[2].z) {
+  else if (m11 > m22) {
     // s = 4*y
-    float s = sqrtf(1.0f + m.col[1].y - m.col[0].x - m.col[2].z) * 2.0f;
+    float s = sqrtf(1.0f + m11 - m00 - m22) * 2.0f;
     q = q4f(
-      (m.col[0].y + m.col[1].x) / s,
+      (m01 + m10) / s,
       0.25f * s,
-      (m.col[1].z + m.col[2].y) / s,
-      (m.col[2].x - m.col[0].z) / s
+      (m12 + m21) / s,
+      (m02 - m20) / s
     );
   }
   else {
     // s = 4*z
-    float s = sqrtf(1.0f + m.col[2].z - m.col[0].x - m.col[1].y) * 2.0f;
+    float s = sqrtf(1.0f + m22 - m00 - m11) * 2.0f;
     q = q4f(
-      (m.col[0].z + m.col[2].x) / s,
-      (m.col[1].z + m.col[2].y) / s,
+      (m02 + m20) / s,
+      (m12 + m21) / s,
       0.25f * s,
-      (m.col[0].y - m.col[1].x) / s
+      (m10 - m01) / s
     );
   }
 
@@ -259,3 +229,72 @@ vec3 v3rotate(vec3 v, quat q) {
   );
   //*/
 }
+
+quat v3rotation(vec3 from, vec3 to) {
+  from = v3norm(from);
+  to = v3norm(to);
+
+  float d = v3dot(from, to);
+  if (d > 1.0f - epsilon) return q4identity;
+
+  // if vectors are nearly opposite, pick some orthogonal axis
+  if (d < -1.0f + epsilon) {
+    return q4axang(v3perp(from), PI);
+  }
+
+  vec3 axis = v3cross(from, to);
+  return q4norm(qv34f(axis, 1.0f + d));
+}
+
+//*
+quat v3look(vec3 forward, vec3 up) {
+    vec3 f = v3norm(forward);
+    if (v3magsq(f) < epsilon) return q4identity;
+
+    quat q = v3rotation(v3front, f); // from_to
+
+    // Rotate canonical up by q
+    vec3 cur_up = v3rotate(v3up, q);
+
+    // Project desired up and current up onto plane perpendicular to f
+    vec3 desired_up = v3sub(up, v3scale(f, v3dot(up, f)));
+    vec3 actual_up  = v3sub(cur_up, v3scale(f, v3dot(cur_up, f)));
+
+    if (v3magsq(desired_up) < epsilon || v3magsq(actual_up) < epsilon)
+        return q;
+
+    desired_up = v3norm(desired_up);
+    actual_up  = v3norm(actual_up);
+
+    // Roll around forward to align current up to desired up
+    float c = v3dot(actual_up, desired_up);
+    float s = v3dot(f, v3cross(actual_up, desired_up));
+    float angle = atan2f(s, c);
+
+    quat roll = q4axang(f, angle);
+
+    return q4norm(q4mul(roll, q));
+}
+
+/*/
+
+quat v3look(vec3 forward, vec3 up) {
+  vec3 f = v3norm(forward);
+
+  if (v3magsq(f) < epsilon) return q4identity;
+
+  vec3 r = v3cross(up, f);
+  if (v3magsq(r) < epsilon) {
+    up = (fabsf(f.y) < 1.0f - epsilon) ? v3up : v3right;
+    r = v3cross(up, f);
+  }
+  r = v3norm(r);
+
+  vec3 u = v3cross(f, r);
+
+  mat3 basis = m3v(r, u, f);
+  assert(m3det(basis) > 0.0f); // right-handed check
+  return q4m(basis);
+}
+
+//*/

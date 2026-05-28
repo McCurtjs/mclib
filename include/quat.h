@@ -50,13 +50,13 @@ quat  q4nlerp(quat a, quat b, float t);
 quat  q4slerp(quat a, quat b, float t);
 quat  q4axang(vec3 axis, float angle);
 quat  q4euler(vec3 euler);
-quat  q3rotation(vec3 from, vec3 to);
-quat  q3look(vec3 forward, vec3 up);
 quat  q4m(mat3 matrix);
 float q4angle(quat q);
 vec3  q4axis(quat q);
 
 vec3  v3rotate(vec3 v, quat q);
+quat  v3rotation(vec3 from, vec3 to);
+quat  v3look(vec3 forward, vec3 up);
 
 static inline vec3 q4dir(quat q)    { return v3rotate(v3front, q); }
 static inline vec3 q4right(quat q)  { return v3rotate(v3right, q); }
