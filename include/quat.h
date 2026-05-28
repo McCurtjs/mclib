@@ -40,6 +40,7 @@ float q4magsq(quat q);
 float q4mag(quat q);
 quat  q4norm(quat q);
 quat  q4conj(quat q);
+quat  q4neg(quat q);
 quat  q4inv(quat q);
 quat  q4canon(quat q);
 float q4dot(quat a, quat b);

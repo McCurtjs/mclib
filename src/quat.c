@@ -44,14 +44,19 @@ quat q4norm(quat q) {
 }
 
 quat q4conj(quat q) {
+  return q4f(-q.i, -q.j, -q.k, q.w);
+}
+
+quat q4neg(quat q) {
   return q4f(-q.i, -q.j, -q.k, -q.w);
 }
 
 quat q4inv(quat q) {
   float magsq = q4magsq(q);
   if (magsq <= 0.0f) return q4identity;
-  float inv = -1.0f / magsq;
-  return q4f(q.i*inv, q.j*inv, q.k*inv, q.w*inv);
+  quat c = q4conj(q);
+  float inv = 1.0f / magsq;
+  return q4f(c.i * inv, c.j * inv, c.k * inv, c.w * inv);
 }
 
 quat q4canon(quat q) {
@@ -82,18 +87,19 @@ quat q4lerp(quat a, quat b, float t) {
 }
 
 quat q4nlerp(quat a, quat b, float t) {
-  if (q4dot(a, b) < 0.0f) b = q4conj(b);
+  if (q4dot(a, b) < 0.0f) b = q4neg(b);
   return q4norm(q4lerp(a, b, t));
 }
 
 quat q4slerp(quat a, quat b, float t) {
   float cosom = q4dot(a, b);
+
   if (cosom < 0.0f) {
     cosom = -cosom;
-    b = q4conj(b);
+    b = q4neg(b);
   }
 
-  if (1.0 - cosom < epsilon) {
+  if (1.0f - cosom < epsilon) {
     return q4nlerp(a, b, t);
   }
 
@@ -101,15 +107,14 @@ quat q4slerp(quat a, quat b, float t) {
   float sinom = sinf(omega);
 
   float s0 = sinf((1.0f - t) * omega) / sinom;
-  float s1 = sinf(t * omega);
+  float s1 = sinf(t * omega) / sinom;
 
-  quat ret = (quat) {
-    .i = a.i*s0 + b.i*s1,
-    .j = a.j*s0 + b.j*s1,
-    .k = a.k*s0 + b.k*s1,
-    .w = a.w*s0 + b.w*s1,
-  };
-  return q4norm(ret);
+  return q4norm(q4f(
+    a.i * s0 + b.i * s1,
+    a.j * s0 + b.j * s1,
+    a.k * s0 + b.k * s1,
+    a.w * s0 + b.w * s1
+  ));
 }
 
 quat q4axang(vec3 axis, float angle) {
@@ -149,17 +154,16 @@ quat q3look(vec3 forward, vec3 up) {
 
   if (v3magsq(f) < epsilon) return q4identity;
 
-  vec3 r = v3cross(f, up);
-  float rmagsq = v3magsq(r);
-  if (rmagsq < epsilon) {
+  vec3 r = v3cross(up, f);
+  if (v3magsq(r) < epsilon) {
     up = (fabsf(f.y) < 1.0f - epsilon) ? v3up : v3right;
-    r = v3cross(f, up);
+    r = v3cross(up, f);
   }
   r = v3norm(r);
 
-  vec3 u = v3cross(r, f);
+  vec3 u = v3cross(f, r);
 
-  mat3 basis = m3v(r, u, v3neg(f));
+  mat3 basis = m3v(r, u, f);
   assert(m3det(basis) > 0.0f); // right-handed check
   return q4m(basis);
 }
@@ -171,9 +175,9 @@ quat q4m(mat3 m) {
   if (trace > 0.0f) {
     float s = sqrtf(trace + 1.0f) * 2.0f; // s = 4*w
     q = q4f(
-      (m.col[2].y - m.col[1].z) / s,
-      (m.col[0].z - m.col[2].x) / s,
-      (m.col[1].x - m.col[0].y) / s,
+      (m.col[1].z - m.col[2].y) / s,
+      (m.col[2].x - m.col[0].z) / s,
+      (m.col[0].y - m.col[1].x) / s,
       0.25f * s
     );
   }
@@ -184,7 +188,7 @@ quat q4m(mat3 m) {
       0.25f * s,
       (m.col[0].y + m.col[1].x) / s,
       (m.col[0].z + m.col[2].x) / s,
-      (m.col[2].y - m.col[1].z) / s
+      (m.col[1].z - m.col[2].y) / s
     );
   }
   else if (m.col[1].y > m.col[2].z) {
@@ -194,7 +198,7 @@ quat q4m(mat3 m) {
       (m.col[0].y + m.col[1].x) / s,
       0.25f * s,
       (m.col[1].z + m.col[2].y) / s,
-      (m.col[0].z - m.col[2].x) / s
+      (m.col[2].x - m.col[0].z) / s
     );
   }
   else {
@@ -204,7 +208,7 @@ quat q4m(mat3 m) {
       (m.col[0].z + m.col[2].x) / s,
       (m.col[1].z + m.col[2].y) / s,
       0.25f * s,
-      (m.col[1].x - m.col[0].y) / s
+      (m.col[0].y - m.col[1].x) / s
     );
   }
 
@@ -228,7 +232,7 @@ vec3 q4axis(quat q) {
 vec3 v3rotate(vec3 v, quat q) {
   q = q4norm(q);
 
-  /*
+  //*
 
   // t = 2 * (qv x v)
   vec3 t = v3cross(q.ijk, v);

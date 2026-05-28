@@ -76,9 +76,9 @@ mat3 m3q(quat q) {
   float wz = q.w * q.z;
 
   return (mat3) { .f = {
-    1.f - 2.f * (yy + zz) , 2.f * (xy - wz)       , 2.f * (xz + wy),
-    2.f * (xy + wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz - wx),
-    2.f * (xz - wy)       , 2.f * (yz + wx)       , 1.f - 2.f * (xx + yy)
+    1.f - 2.f * (yy + zz) , 2.f * (xy + wz)       , 2.f * (xz - wy),
+    2.f * (xy - wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz + wx),
+    2.f * (xz + wy)       , 2.f * (yz - wx)       , 1.f - 2.f * (xx + yy)
   }};
 }
 
@@ -201,9 +201,9 @@ mat4 m4q(quat q) {
   float wz = q.w * q.z;
 
   return (mat4) {.f = {
-    1.f - 2.f * (yy + zz) , 2.f * (xy - wz)       , 2.f * (xz + wy)       , 0,
-    2.f * (xy + wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz - wx)       , 0,
-    2.f * (xz - wy)       , 2.f * (yz + wx)       , 1.f - 2.f * (xx + yy) , 0,
+    1.f - 2.f * (yy + zz) , 2.f * (xy + wz)       , 2.f * (xz - wy)       , 0,
+    2.f * (xy - wz)       , 1.f - 2.f * (xx + zz) , 2.f * (yz + wx)       , 0,
+    2.f * (xz + wy)       , 2.f * (yz - wx)       , 1.f - 2.f * (xx + yy) , 0,
     0                     , 0                     , 0                     , 1
   }};
 }

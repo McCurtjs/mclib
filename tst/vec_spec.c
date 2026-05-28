@@ -36,7 +36,50 @@ describe(vector_z_order_curve) {
 
 }
 
+describe(test_handedness) {
+  vec3 result = v3zero;
+  vec3 expected = v3ones;
+
+  it("verifies the right-hand coordinate system (XxY)") {
+    result = v3cross(v3x, v3y);
+    expected = v3z;
+  }
+
+  it("verifies the right-hand coordinate system (YxZ)") {
+    result = v3cross(v3y, v3z);
+    expected = v3x;
+  }
+
+  it("verifies the right-hand coordinate system (ZxX)") {
+    result = v3cross(v3z, v3x);
+    expected = v3y;
+  }
+
+  it("verifies the right-hand coordinate system (YxX)") {
+    result = v3cross(v3y, v3x);
+    expected = v3f(0, 0, -1);
+  }
+
+  it("verifies the right-hand coordinate system (ZxY)") {
+    result = v3cross(v3z, v3y);
+    expected = v3f(-1, 0, 0);
+  }
+
+  it("verifies the right-hand coordinate system (XxZ)") {
+    result = v3cross(v3x, v3z);
+    expected = v3f(0, -1, 0);
+  }
+
+  after {
+    expect(result.x to be_about(expected.x));
+    expect(result.y to be_about(expected.y));
+    expect(result.z to be_about(expected.z));
+  }
+
+}
+
 test_suite(tests_vec) {
   test_group(vector_z_order_curve),
+  test_group(test_handedness),
   test_suite_end
 };

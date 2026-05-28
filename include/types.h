@@ -98,7 +98,7 @@ typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 #endif
 
 #ifndef SQRT2
-# define SQRT2 1.41421356237
+# define SQRT2 1.41421356237f
 #endif
 
 #ifndef PI
