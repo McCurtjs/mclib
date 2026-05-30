@@ -774,7 +774,7 @@ I vec2 v42xz(vec4 v) {
   return v2f(v.x, v.z);
 }
 
-// Inrease dimensions and provide new component values
+// Increase dimensions and provide new component values
 
 I vec3 v23f(vec2 v, float z) {
   return v3f(v.x, v.y, z);

@@ -28,10 +28,6 @@
 
 const float epsilon = 1e-6f;
 
-float q4magsq(quat q) {
-  return q.i*q.i + q.j*q.j + q.k*q.k + q.w*q.w;
-}
-
 float q4mag(quat q) {
   return sqrtf(q4magsq(q));
 }
@@ -43,29 +39,12 @@ quat q4norm(quat q) {
   return q4f(q.i*inv, q.j*inv, q.k*inv, q.w*inv);
 }
 
-quat q4conj(quat q) {
-  return q4f(-q.i, -q.j, -q.k, q.w);
-}
-
-quat q4neg(quat q) {
-  return q4f(-q.i, -q.j, -q.k, -q.w);
-}
-
 quat q4inv(quat q) {
   float magsq = q4magsq(q);
   if (magsq <= 0.0f) return q4identity;
   quat c = q4conj(q);
   float inv = 1.0f / magsq;
   return q4f(c.i * inv, c.j * inv, c.k * inv, c.w * inv);
-}
-
-quat q4canon(quat q) {
-  if (q.w >= 0.0f) return q;
-  return q4conj(q);
-}
-
-float q4dot(quat a, quat b) {
-  return a.i*b.i + a.j*b.j + a.k*b.k + a.w*b.w;
 }
 
 quat q4mul(quat a, quat b) {
@@ -202,8 +181,6 @@ vec3 q4axis(quat q) {
 vec3 v3rotate(vec3 v, quat q) {
   q = q4norm(q);
 
-  //*
-
   // t = 2 * (qv x v)
   vec3 t = v3cross(q.ijk, v);
   t      = v3scale(t, 2);
@@ -215,19 +192,6 @@ vec3 v3rotate(vec3 v, quat q) {
     v.y + q.w*t.y + qv_x_t.y,
     v.z + q.w*t.z + qv_x_t.z
   );
-
-  /*/
-  vec3 t = v3cross(v, q.ijk);
-  t      = v3scale(t, 2.0f);
-
-  vec3 t_x_qv = v3cross(t, q.ijk);
-
-  return v3f(
-    v.x + q.w * t.x + t_x_qv.x,
-    v.y + q.w * t.y + t_x_qv.y,
-    v.z + q.w * t.z + t_x_qv.z
-  );
-  //*/
 }
 
 quat v3rotation(vec3 from, vec3 to) {
@@ -246,44 +210,13 @@ quat v3rotation(vec3 from, vec3 to) {
   return q4norm(qv34f(axis, 1.0f + d));
 }
 
-//*
 quat v3look(vec3 forward, vec3 up) {
-    vec3 f = v3norm(forward);
-    if (v3magsq(f) < epsilon) return q4identity;
+  assert(v3magsq(up) > 1.f - epsilon && v3magsq(up) < 1.f + epsilon);
+  if (v3magsq(forward) < epsilon) return q4identity;
 
-    quat q = v3rotation(v3front, f); // from_to
-
-    // Rotate canonical up by q
-    vec3 cur_up = v3rotate(v3up, q);
-
-    // Project desired up and current up onto plane perpendicular to f
-    vec3 desired_up = v3sub(up, v3scale(f, v3dot(up, f)));
-    vec3 actual_up  = v3sub(cur_up, v3scale(f, v3dot(cur_up, f)));
-
-    if (v3magsq(desired_up) < epsilon || v3magsq(actual_up) < epsilon)
-        return q;
-
-    desired_up = v3norm(desired_up);
-    actual_up  = v3norm(actual_up);
-
-    // Roll around forward to align current up to desired up
-    float c = v3dot(actual_up, desired_up);
-    float s = v3dot(f, v3cross(actual_up, desired_up));
-    float angle = atan2f(s, c);
-
-    quat roll = q4axang(f, angle);
-
-    return q4norm(q4mul(roll, q));
-}
-
-/*/
-
-quat v3look(vec3 forward, vec3 up) {
   vec3 f = v3norm(forward);
-
-  if (v3magsq(f) < epsilon) return q4identity;
-
   vec3 r = v3cross(up, f);
+
   if (v3magsq(r) < epsilon) {
     up = (fabsf(f.y) < 1.0f - epsilon) ? v3up : v3right;
     r = v3cross(up, f);
@@ -296,5 +229,3 @@ quat v3look(vec3 forward, vec3 up) {
   assert(m3det(basis) > 0.0f); // right-handed check
   return q4m(basis);
 }
-
-//*/
