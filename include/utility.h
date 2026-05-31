@@ -44,4 +44,19 @@ static inline float frand_r(float low, float high) {
   return frand() * (high - low) + low;
 }
 
+static inline int clampi(int value, int min, int max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+static inline float clampf(float value, float min, float max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+#define clamp(value, min, max) \
+  _Generic((value), int: clampi, float clampf)(value, min, max)
+
 #endif

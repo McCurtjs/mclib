@@ -26,6 +26,19 @@
 
 #include "cspec.h"
 
+void expect_vector_eq(vec3 result, vec3 expected) {
+  expect(result.x to be_about(expected.x));
+  expect(result.y to be_about(expected.y));
+  expect(result.z to be_about(expected.z));
+}
+
+void expect_quaternion_eq(quat result, quat expected) {
+  expect(result.i to be_about(expected.i));
+  expect(result.j to be_about(expected.j));
+  expect(result.k to be_about(expected.k));
+  expect(result.w to be_about(expected.w));
+}
+
 describe(invariants) {
   vec3 begin = v3right;
   vec3 expected = v3zero;
@@ -80,12 +93,8 @@ describe(invariants) {
       vec3 result_v = v3rotate(begin, test);
       vec3 result_m = mv4mul(m4q(test), v34(begin)).xyz;
 
-      expect(result_v.x to be_about(expected.x));
-      expect(result_v.y to be_about(expected.y));
-      expect(result_v.z to be_about(expected.z));
-      expect(result_m.x to be_about(expected.x));
-      expect(result_m.y to be_about(expected.y));
-      expect(result_m.z to be_about(expected.z));
+      expect_vector_eq(result_v, expected);
+      expect_vector_eq(result_m, expected);
     }
 
   }
@@ -107,30 +116,36 @@ describe(invariants) {
     it("validates inverse invariant") {
       test = q4f(3, 2, 4, 1);
       test = q4mul(test, q4inv(test));
-      expect(test.i to be_about(0));
-      expect(test.j to be_about(0));
-      expect(test.k to be_about(0));
-      expect(test.w to be_about(1));
+      expect_quaternion_eq(test, q4identity);
     }
 
     it("validates conjugate as inverse with unit quaternion") {
       test = q4norm(q4f(5, 1, -2, 6));
       test = q4mul(test, q4conj(test));
-      expect(test.i to be_about(0));
-      expect(test.j to be_about(0));
-      expect(test.k to be_about(0));
-      expect(test.w to be_about(1));
+      expect_quaternion_eq(test, q4identity);
     }
 
     it("validates identity with inverse rotation") {
       test = q4norm(q4f(2, 8, -4, 3));
       begin = v3rand_dir();
       vec3 result = v3rotate(v3rotate(begin, test), q4inv(test));
-      expect(result.x to be_about(begin.x));
-      expect(result.y to be_about(begin.y));
-      expect(result.z to be_about(begin.z));
+      expect_vector_eq(result, begin);
     }
 
+  }
+
+}
+
+describe(constants) {
+
+  it("gets the correct output vector when rotating with quaternion constants") {
+    expect_quaternion_eq(q4front, q4identity);
+    expect_vector_eq(v3rotate(v3front, q4front), v3front);
+    expect_vector_eq(v3rotate(v3front, q4right), v3right);
+    expect_vector_eq(v3rotate(v3front, q4up), v3up);
+    expect_vector_eq(v3rotate(v3front, q4left), v3left);
+    expect_vector_eq(v3rotate(v3front, q4down), v3down);
+    expect_vector_eq(v3rotate(v3front, q4back), v3back);
   }
 
 }
@@ -140,18 +155,14 @@ describe(q4look) {
   it("creates a rotation looking in a certain direction") {
     quat q = v3look(v3left, v3up);
     vec3 v = v3rotate(v3front, q);
-    expect(v.x to be_about(-1));
-    expect(v.y to be_about(0));
-    expect(v.z to be_about(0));
+    expect_vector_eq(v, v3left);
   }
 
   it("creates a rotation looking to a non-axis direction") {
     quat q = v3look(v3f(1, 2, 3), v3up);
     vec3 v = v3rotate(v3front, q);
     vec3 expected = v3norm(v3f(1, 2, 3));
-    expect(v.x to be_about(expected.x));
-    expect(v.y to be_about(expected.y));
-    expect(v.z to be_about(expected.z));
+    expect_vector_eq(v, expected);
   }
 
 }
@@ -174,6 +185,7 @@ describe(q4m) {
 
 test_suite(tests_quat) {
   test_group(invariants),
+  test_group(constants),
   test_group(q4look),
   test_group(q4m),
   test_suite_end

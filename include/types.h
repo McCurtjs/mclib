@@ -98,7 +98,13 @@ typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 #endif
 
 #ifndef SQRT2
+# // Square root of 2
 # define SQRT2 1.41421356237f
+#endif
+
+#ifndef SQRT1_2
+# // Square root of 1/2
+# define SQRT1_2 0.7071067811865475244f
 #endif
 
 #ifndef PI
@@ -120,19 +126,19 @@ typedef void*   (*copy_fn)(void* dst, const void* src, size_t size);
 // True if an integer value is a power of 2
 #define is_pow2(n) ((n & (n-1)) == 0)
 
-// Allows writing loops in the form:
-//    loop {
-//      // setup that happens on every iteration but always at least once
-//      until (condition);
-//      // do stuff each iteration after the conditional check
-//    }
 #ifndef loop
+# // Allows writing loops in the form:
+# //    loop {
+# //      // setup that happens on every iteration but always at least once
+# //      until (condition);
+# //      // do stuff each iteration after the conditional check
+# //    }
 # define loop for(;;)
 # define until(condition) if (condition) break
 #endif
 
-// Ruby, lol
 #ifndef unless
+# // Ruby, lol
 # define unless(condition) if (!(condition))
 #endif
 

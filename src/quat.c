@@ -23,6 +23,7 @@
 */
 
 #include "quat.h"
+#include "utility.h"
 
 #include <math.h>
 
@@ -54,6 +55,30 @@ quat q4mul(quat a, quat b) {
     .k = a.w*b.k + a.i*b.j - a.j*b.i + a.k*b.w,
     .w = a.w*b.w - a.i*b.i - a.j*b.j - a.k*b.k,
   };
+}
+
+quat q4pow(quat q, float t) {
+  q = q4norm(q);
+
+  // Clamp for numerical safety
+  float w = clampf(q.w, -1.0f, 1.0f);
+  float half_angle = acosf(w);
+
+  // Near identity
+  if (fabsf(half_angle) < epsilon) {
+    return q4identity;
+  }
+
+  float new_half = half_angle * t;
+  float sin_old = sinf(half_angle);
+  float scale = sinf(new_half) / sin_old;
+
+  return q4norm(q4f(
+    q.x * scale,
+    q.y * scale,
+    q.z * scale,
+    cosf(new_half)
+  ));
 }
 
 quat q4lerp(quat a, quat b, float t) {
@@ -164,16 +189,28 @@ quat q4m(mat3 m) {
   return q4canon(q4norm(q));
 }
 
-float q4angle(quat q) {
-  return 2.0f * acosf(q.w);
-}
-
 vec3 q4axis(quat q) {
   q = q4norm(q);
   float s = sqrtf(1.0f - q.w*q.w);
   if (s < epsilon)
     return v3right;
   return v3scale(q.ijk, s);
+}
+
+float q4angle(quat q) {
+  return 2.0f * acosf(q.w);
+}
+
+float q4dist(quat a, quat b) {
+  float d = fabsf(q4dot(a, b));
+  d = clampf(d, -1.0f, 1.0f);
+  return acosf(d) * 2.0f;
+}
+
+bool q4within(quat a, quat b, float angle) {
+  float d = fabsf(q4dot(a, b));
+  float limit = cosf(angle * 0.5f);
+  return d >= limit;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
