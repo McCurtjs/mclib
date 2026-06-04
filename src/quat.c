@@ -215,6 +215,38 @@ bool q4within(quat a, quat b, float angle) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+vec3 v3euler(quat q) {
+  q = q4norm(q);
+
+  float x = q.x;
+  float y = q.y;
+  float z = q.z;
+  float w = q.w;
+
+  // Pitch (X axis)
+  float sinp = 2.0f * (w * x - y * z);
+
+  float pitch;
+  if (fabsf(sinp) >= 1.0f) {
+    pitch = copysignf(PI * 0.5f, sinp);
+  }
+  else {
+    pitch = asinf(sinp);
+  }
+
+  // Yaw (Y axis)
+  float siny = 2.0f * (w * y + x * z);
+  float cosy = 1.0f - 2.0f * (x * x + y * y);
+  float yaw = atan2f(siny, cosy);
+
+  // Roll (Z axis)
+  float sinr = 2.0f * (w * z + x * y);
+  float cosr = 1.0f - 2.0f * (x * x + z * z);
+  float roll = atan2f(sinr, cosr);
+
+  return v3f(yaw, pitch, roll);
+}
+
 vec3 v3rotate(vec3 v, quat q) {
   q = q4norm(q);
 

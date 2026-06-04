@@ -74,8 +74,11 @@ I quat  q4look(vec3 forward, vec3 up);
   bool  q4within(quat a, quat b, float angle);
 I vec3  q4dir(quat q);
 
+  vec3  v3euler(quat q);
   vec3  v3rotate(vec3 v, quat q);
 I void  v3rotate_eq(vec3* v, quat q);
+I vec3  v3rotate_slerp(vec3 v, quat q, float t);
+I void  v3rotate_slerp_eq(vec3* v, quat q, float t);
   quat  v3rotation(vec3 from, vec3 to);
   quat  v3look(vec3 forward, vec3 up);
 
@@ -129,10 +132,6 @@ I quat q4mix(quat a, quat b, float t) {
   return q4nlerp(a, b, t);
 }
 
-I void v3rotate_eq(vec3* v, quat q) {
-  *v = v3rotate(*v, q);
-}
-
 I quat q4from_to(vec3 from, vec3 to) {
   return v3rotation(from, to);
 }
@@ -143,6 +142,20 @@ I quat q4look(vec3 forward, vec3 up) {
 
 I vec3 q4dir(quat q) {
   return v3rotate(v3front, q);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+I void v3rotate_eq(vec3* v, quat q) {
+  *v = v3rotate(*v, q);
+}
+
+I vec3 v3rotate_slerp(vec3 v, quat q, float t) {
+  return v3rotate(v, q4pow(q, t));
+}
+
+I void v3rotate_slerp_eq(vec3* v, quat q, float t) {
+  *v = v3rotate(*v, q4pow(q, t));
 }
 
 #undef I

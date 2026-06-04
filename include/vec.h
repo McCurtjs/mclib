@@ -398,10 +398,6 @@ I vec3    v3lerp(vec3 P, vec3 Q, float t);
   bool    v3line_plane(vec3 L, vec3 v, vec3 P, vec3 n, float* t_out);
   bool    v3ray_plane(vec3 R, vec3 v, vec3 P, vec3 n, float* t_out);
 
-//vec2  v2orbit(vec2 a, vec2 center, float theta);
-//vec3  v3reflect(vec3 v, vec3 axis);
-//vec3  v3rot(vec3 v, vec3 axis, float theta);
-
 float c4lum(color4 c);
 
 byte b4lum(color4b c);
