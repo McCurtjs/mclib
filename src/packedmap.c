@@ -193,8 +193,8 @@ void* pmap_emplace(PackedMap pm_in, slotkey_t* out_key) {
   mapping->unique = ++pm->unique_counter;
   assert(mapping->unique);
   mapping->index = slot_index;
-  pm->mapping[slot_index].reverse = map_index;
   *out_key = sk_build(map_index, mapping->unique);
+  pm->mapping[slot_index].reverse = map_index;
   pm->size_bytes += pm->element_size;
   pm->end += pm->element_size;
   ++pm->size;
@@ -216,6 +216,15 @@ slotkey_t pmap_key(PackedMap pm_in, index_t index) {
   int32_t map_index = entry.reverse;
   entry = pm->mapping[map_index];
   return sk_build(map_index, entry.unique);
+}
+
+index_t pmap_index(PackedMap pm_in, slotkey_t key) {
+  PACKEDMAP_INTERNAL;
+  int32_t key_index = sk_index(key);
+  if (key_index < 0 || key_index >= pm->capacity) return pm->size;
+  entry_t mapping = pm->mapping[key_index];
+  if (mapping.unique != sk_unique(key)) return pm->size;
+  return mapping.index;
 }
 
 void* pmap_ref(PackedMap pm_in, slotkey_t key) {
@@ -279,6 +288,7 @@ bool pmap_remove(PackedMap pm_in, slotkey_t key) {
     int32_t map_reverse_index = pm->mapping[last_slot_index].reverse;
     pm->mapping[slot_index].reverse = map_reverse_index;
     pm->mapping[map_reverse_index].index = slot_index;
+    // pm->mapping[map_reverse_index].reverse = EMPTY_FREELIST;
   }
 
   // Invalidate the removed key and put it on the free list

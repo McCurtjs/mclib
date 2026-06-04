@@ -70,6 +70,7 @@
 //
 // // Accessors
 // slotkey_t    pmap_a_key(PackedMap_A, index_t index);
+// index_t      pmap_a_index(PackedMap_A, slotkey_t);
 // A            pmap_a_get(PackedMap_A, slotkey_t);
 // A*           pmap_a_ref(PackedMap_A, slotkey_t);
 // bool         pmap_a_read(PackedMap_A, slotkey_t, A* out);
@@ -112,6 +113,7 @@ void        pmap_delete(PackedMap*);
 void*       pmap_emplace(PackedMap, slotkey_t* out_key);
 slotkey_t   pmap_insert(PackedMap, const void* element);
 slotkey_t   pmap_key(PackedMap, index_t index);
+index_t     pmap_index(PackedMap, slotkey_t key);
 void*       pmap_ref(PackedMap, slotkey_t);
 void*       pmap_ref_index(PackedMap, index_t index);
 bool        pmap_read(PackedMap, slotkey_t, void* out_element);
@@ -227,6 +229,11 @@ static inline slotkey_t _prefix(_add)
 static inline slotkey_t _prefix(_key)
 (_map_type map, index_t index) {
   return pmap_key((PackedMap)map, index);
+}
+
+static inline index_t _prefix(_index)
+(_map_type map, slotkey_t key) {
+  return pmap_index((PackedMap)map, key);
 }
 
 static inline con_type _prefix(_get)
