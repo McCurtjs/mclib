@@ -198,6 +198,16 @@ static inline bool _prefix(_read)
   return smap_read((SlotMap)map, key, out);
 }
 
+static inline con_type* _prefix(_next)
+(_map_type map, slotkey_t* key) {
+  return smap_next((SlotMap)map, key);
+}
+
+static inline bool _prefix(_contains)
+(_map_type map, slotkey_t key) {
+  return smap_contains((SlotMap)map, key);
+}
+
 static inline bool _prefix(_remove)
 (_map_type map, slotkey_t key) {
   return smap_remove((SlotMap)map, key);
