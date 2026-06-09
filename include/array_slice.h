@@ -29,11 +29,13 @@
 
 #define con_type slice_t
 #define con_prefix slice
+#define con_cmp_sized slice_compare_vptr
 #define con_view_type view_slice_t
 #define con_span_type span_slice_t
 #include "array.h"
 #undef con_type
 #undef con_prefix
+#undef con_cmp_sized
 #undef con_view_type
 #undef con_span_type
 

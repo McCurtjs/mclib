@@ -356,7 +356,7 @@ vec3 v3rand_cone(float max_angle) {
   float a = frand() * TAU;
   float r = sqrtf(1.0f - z * z);
 
-  return v3f(r * cosf(a), r * sinf(a), -z);
+  return v3f(r * cosf(a), r * sinf(a), z);
 }
 
 vec3 v3reflect(vec3 v, vec3 mirror_normal) {

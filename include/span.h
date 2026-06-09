@@ -285,13 +285,19 @@ typedef struct _span_type {
 #ifdef con_cmp
 # define _con_cmp con_cmp
 #elif !defined(con_no_cmp)
-# define _con_cmp MACRO_CONCAT3(_span_, _con_name, _cmp)
+# ifdef con_cmp_sized
+#   define _con_cmp_sized con_cmp_sized
+# else
 extern int memcmp(const void* lhs, const void* rhs, size_t size);
+#   define _con_cmp_sized memcmp
+# endif
+# define _con_cmp MACRO_CONCAT3(_span_, _con_name, _cmp)
 static int _con_cmp(const void* lhs, const void* rhs) {
   if (lhs == rhs) return 0;
   if (!lhs || !rhs) return lhs ? 1 : -1;
-  return memcmp(lhs, rhs, sizeof(con_type));
+  return _con_cmp_sized(lhs, rhs, sizeof(con_type));
 }
+# undef _con_cmp_sized
 #endif
 
 #ifdef __GNUC__
@@ -592,10 +598,10 @@ static inline bool _prefix(_search_contains)
   return span_search_contains(span.base, item, _con_cmp, sizeof(con_type));
 }
 
+# undef _con_cmp
 #endif
 
 #undef _con_name
-#undef _con_cmp
 #undef _span_type
 #undef _pair_type
 #undef _partition_type

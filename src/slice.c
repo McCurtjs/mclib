@@ -206,8 +206,10 @@ bool slice_to_double(slice_t str, double* out) {
 int slice_compare(slice_t lhs, slice_t rhs) {
   assert(slice_is_valid(lhs));
   assert(slice_is_valid(rhs));
-  if (lhs.size != rhs.size) return (lhs.size < rhs.size) ? -1 : 1;
-  return memcmp(lhs.begin, rhs.begin, (size_t)lhs.size);
+  int ret = strncmp(lhs.begin, rhs.begin, MIN(lhs.size, rhs.size));
+  if (ret || lhs.size == rhs.size)
+    return ret;
+  return (lhs.size < rhs.size) ? -1 : 1;
 }
 
 // True if the slice is lexicographically equivalent to the other string.
@@ -246,7 +248,7 @@ bool slice_contains_char(slice_t str, slice_t targets) {
 
 // True if the slice contains at least one of the target strings.
 bool slice_contains_any(slice_t str, span_slice_t any) {
-  return slice_index_of_any(str, any);
+  return slice_index_of_any(str, any) != str.size;
 }
 
 // True if the slice contains only whitespace, false otherwise.
@@ -1033,6 +1035,7 @@ view_byte_t slice_to_view(slice_t slice) {
 // Compares two slices passed as void pointers.
 int slice_compare_vptr(const void* lhs, const void* rhs, size_t unused) {
   UNUSED(unused);
+  assert(unused == sizeof(slice_t));
   assert(lhs && rhs);
   return slice_compare(*(slice_t*)lhs, *(slice_t*)rhs);
 }
@@ -1040,6 +1043,7 @@ int slice_compare_vptr(const void* lhs, const void* rhs, size_t unused) {
 // Returns a hash value representing the slice passed as a void pointer.
 hash_t slice_hash_vptr(const void* str, index_t unused) {
   UNUSED(unused);
+  assert(unused == sizeof(slice_t));
   assert(str);
   return slice_hash(*(slice_t*)str);
 }
@@ -1049,6 +1053,7 @@ hash_t slice_hash_vptr(const void* str, index_t unused) {
 // Copies the slice into a new block of memory, functionally the same as string?
 void* slice_copy_vptr(void* _dst, const void* _src, size_t unused) {
   UNUSED(unused);
+  assert(unused == sizeof(slice_t));
   assert(_dst && _src);
   slice_t* dst = (slice_t*)_dst;
   const slice_t* src = (const slice_t*)_src;

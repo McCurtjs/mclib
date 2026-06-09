@@ -665,13 +665,19 @@ typedef struct _arr_local_type {
 #ifdef con_cmp
 # define _con_cmp con_cmp
 #elif !defined(con_no_cmp)
-# define _con_cmp MACRO_CONCAT3(_arr_, _con_name, _cmp)
+# ifdef con_cmp_sized
+#   define _con_cmp_sized con_cmp_sized
+# else
 extern int memcmp(const void* lhs, const void* rhs, size_t size);
+#   define _con_cmp_sized memcmp
+# endif
+# define _con_cmp MACRO_CONCAT3(_arr_, _con_name, _cmp)
 static int _con_cmp(const void* lhs, const void* rhs) {
   if (lhs == rhs) return 0;
   if (!lhs || !rhs) return lhs ? 1 : -1;
-  return memcmp(lhs, rhs, sizeof(con_type));
+  return _con_cmp_sized(lhs, rhs, sizeof(con_type));
 }
+# undef _con_cmp_sized
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1363,10 +1369,10 @@ static inline bool _prefix(search_contains)
   return arr_search_contains((Array)arr, item, _con_cmp);
 }
 
-#endif // con_cmp
+# undef _con_cmp
+#endif // _con_cmp
 
 #undef _con_name
-#undef _con_cmp
 #undef _arr_type
 #undef _arr_local_type
 #undef _prefix
