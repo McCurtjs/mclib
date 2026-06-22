@@ -169,16 +169,21 @@ typedef struct array_t {
   //Allocator   const alloc;
 } array_t, *Array;
 
-#define     arr_new(TYPE) iarr_new(sizeof(TYPE))
+#define     arr_new(TYPE)         iarr_new(sizeof(TYPE))
 #define     arr_new_reserve(TYPE, capacity) \
-                            iarr_new_reserve(sizeof(TYPE), capacity)
-#define     arr_build(TYPE) iarr_build(sizeof(TYPE))
+                                  iarr_new_reserve(sizeof(TYPE), capacity)
+#define     arr_build(TYPE)       iarr_build(sizeof(TYPE))
 #define     arr_build_reserve(TYPE, capacity) \
-                            iarr_build_reserve(sizeof(TYPE), capacity)
+                                  iarr_build_reserve(sizeof(TYPE), capacity)
+#define     arr_init(p_arr, TYPE) iarr_init(p_arr, sizeof(TYPE))
+#define     arr_init_reserve(p_arr, TYPE, cap) \
+                                  iarr_init_reserve(p_arr, sizeof(TYPE), cap)
 Array      iarr_new(index_t elemenet_size);
 Array      iarr_new_reserve(index_t element_size, index_t capacity);
 array_t    iarr_build(index_t element_size);
 array_t    iarr_build_reserve(index_t element_size, index_t capacity);
+void       iarr_init(array_t*, index_t element_size);
+void       iarr_init_reserve(array_t*, index_t element_size, index_t capacity);
 Array       arr_copy(Array to_copy);
 Array       arr_new_copy(view_t to_copy, index_t element_size);
 //Array     arr_copy_span_deep(span_t to_copy, void (*copy_fn)(void* dst, void* src));
@@ -726,7 +731,6 @@ static inline _arr_local_type _prefix(_build)
 // \brief Initializes an array of the given type in local storage. Pre-allocates
 //    heap space for N elements to be added without needing to expand the array.
 //
-//
 // \brief Note: when finished with the array, to deallocate pass its address to
 //    `arr_free` rather than trying to pass it to `arr_delete`.
 //
@@ -738,6 +742,16 @@ static inline _arr_local_type _prefix(_build_reserve)
 (index_t capacity) {
   array_t ret = arr_build_reserve(con_type, capacity);
   return *(_arr_local_type*)(&ret);
+}
+
+static inline void _prefix(_init)
+(_arr_local_type* arr) {
+  iarr_init((array_t*)arr, sizeof(con_type));
+}
+
+static inline void _prefix(_init_reserve)
+(_arr_local_type* arr, index_t capacity) {
+  iarr_init_reserve((array_t*)arr, sizeof(con_type), capacity);
 }
 
 // \brief Creates a new array as a SHALLOW COPY of the given array.

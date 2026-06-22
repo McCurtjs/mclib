@@ -70,6 +70,7 @@ typedef struct Array_Internal {
   assert(a)
 
 Array iarr_new(index_t element_size) {
+  assert(element_size > 0);
   Array_Internal* ret = malloc(sizeof(Array_Internal));
   assert(ret);
   *ret = (Array_Internal) {
@@ -84,6 +85,8 @@ Array iarr_new(index_t element_size) {
 }
 
 Array iarr_new_reserve(index_t element_size, index_t capacity) {
+  assert(element_size > 0);
+  assert(capacity >= 0);
   Array_Internal* ret = (Array_Internal*)iarr_new(element_size);
   if (capacity <= 0) return (Array)ret;
   byte* mem = malloc(element_size * capacity);
@@ -95,6 +98,7 @@ Array iarr_new_reserve(index_t element_size, index_t capacity) {
 }
 
 array_t iarr_build(index_t element_size) {
+  assert(element_size > 0);
   return (array_t) {
     .begin = NULL,
     .end = NULL,
@@ -106,6 +110,8 @@ array_t iarr_build(index_t element_size) {
 }
 
 array_t iarr_build_reserve(index_t element_size, index_t capacity) {
+  assert(element_size > 0);
+  assert(capacity >= 0);
   void* data = NULL;
   if (capacity > 0) {
     data = malloc(element_size * capacity);
@@ -119,6 +125,44 @@ array_t iarr_build_reserve(index_t element_size, index_t capacity) {
     .size = 0,
     .size_bytes = 0,
   };
+}
+
+void iarr_init(array_t* p_arr, index_t element_size) {
+  assert(p_arr);
+  assert(p_arr->element_size == 0);
+  assert(p_arr->begin == NULL);
+  assert(element_size > 0);
+  array_t ret = {
+    .begin = NULL,
+    .end = NULL,
+    .element_size = element_size,
+    .capacity = 0,
+    .size = 0,
+    .size_bytes = 0
+  };
+  memcpy(p_arr, &ret, sizeof(ret));
+}
+
+void iarr_init_reserve(array_t* p_arr, index_t element_size, index_t capacity) {
+  assert(p_arr);
+  assert(p_arr->element_size == 0);
+  assert(p_arr->begin == NULL);
+  assert(element_size > 0);
+  assert(capacity >= 0);
+  void* data = NULL;
+  if (capacity > 0) {
+    data = malloc(element_size * capacity);
+    assert(data);
+  }
+  array_t ret = {
+    .begin = data,
+    .end = data,
+    .element_size = element_size,
+    .capacity = capacity,
+    .size = 0,
+    .size_bytes = 0
+  };
+  memcpy(p_arr, &ret, sizeof(ret));
 }
 
 Array arr_copy(Array a_in) {

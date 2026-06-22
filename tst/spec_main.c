@@ -43,7 +43,9 @@ csBool resolve_types(const char** p_type, const void* value) {
   }
 
   if (value_slice) {
+    cspec_out_ch('"');
     cspec_out_slice(value_slice->begin, (csSize)value_slice->size);
+    cspec_out_ch('"');
     return TRUE;
   }
 
@@ -74,6 +76,7 @@ extern TestSuite tests_mat;
 extern TestSuite tests_quat;
 extern TestSuite tests_slotmap;
 extern TestSuite tests_packedmap;
+extern TestSuite tests_data_tree;
 
 // Main
 
@@ -81,8 +84,8 @@ int main(int argc, char* argv[]) {
 
 #ifdef CSPEC_MSVC
   /* Test values for Visual Studio without having to modify properties */
-  argv = (char* []){ argv[0], "-y", "quat_spec.c" };
-  argc = 2;
+  argv = (char* []){ argv[0], "-yv", "data_tree_spec.c" };
+  argc = 3;
 #endif
 
   TestSuite* test_suites[] = {
@@ -97,6 +100,7 @@ int main(int argc, char* argv[]) {
     &tests_quat,
     &tests_slotmap,
     &tests_packedmap,
+    &tests_data_tree,
   };
 
   cspec_opt_print_line = printer;

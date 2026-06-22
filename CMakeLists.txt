@@ -6,6 +6,7 @@ set_property(TARGET McLib PROPERTY C_STANDARD 23)
 target_include_directories(McLib PUBLIC include)
 target_sources(McLib PRIVATE
   src/array.c
+  src/data_tree.c
   src/map.c
   src/mat.c
   src/packedmap.c
@@ -22,6 +23,9 @@ target_sources(McLib PRIVATE
   include/array.h
   include/array_byte.h
   include/array_slice.h
+  include/data_node.h
+  include/data_tree.h
+  include/data_view.h
   include/map.h
   include/mat.h
   include/packedmap.h
@@ -76,6 +80,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     lib/cspec/tst/cspec_spec.c
     tst/spec_main.c
     tst/array_spec.c
+    tst/data_tree_spec.c
     tst/map_spec.c
     tst/mat_spec.c
     tst/packedmap_spec.c
