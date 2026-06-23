@@ -46,7 +46,7 @@ describe(dnode_read) {
     }
 
     it("recognizes a slash after empty as the next level down") {
-      expect(dnode_contains to be_false given(subject, S("/x")));
+      expect(dnode_contains to be_false given(subject, S("x")));
     }
 
     it("doesn't find something keyed below") {
@@ -54,7 +54,12 @@ describe(dnode_read) {
     }
 
     it("doesn't find anything with a name with a slash") {
-      expect(dnode_contains to be_false given(subject, S("a/b")));
+      expect(dnode_contains to be_false given(subject, S("$.b")));
+    }
+
+    it("won't index into a non-indexable node") {
+      expect(dnode_contains to be_false given(subject, S("S[0]")));
+      expect(dnode_contains to be_false given(subject, S("$['key']")));
     }
 
     it("gets the correct type from a null node") {
@@ -71,9 +76,10 @@ describe(dnode_read) {
       .value_int = 7,
     };
 
-    it("only reads the top value with an empty identifier") {
+    it("can read the top level node using the '$' specifier or empty") {
+      expect(dnode_contains to be_true given(subject, S("$")));
       expect(dnode_contains to be_true given(subject, slice_empty));
-      expect(dnode_read to be_false given(subject, S("/"), &result));
+      expect(dnode_read to be_false given(subject, S("$."), &result));
     }
 
     it("can read out the stored number") {
@@ -87,27 +93,77 @@ describe(dnode_read) {
   context("when the root is an empty object") {
 
     // {}
-    DataNode dnode = &(dnode_t) {
+    DataNode subject = &(dnode_t) {
       .type = DN_OBJECT,
+      .object.size = 0, // can't omit because of padding nonsense
     };
 
     it("has zero children") {
-
+      expect(dnode_read to be_true given(subject, S("$"), &result));
+      expect(result.type, == , DN_OBJECT);
+      expect(result.node->object.size to be_zero);
     }
 
   }
 
-
-
-  it("can represent an array") {
+  context("when the root is an array of basic types") {
 
     // [ 1, 2, 3 ]
-    DataNode dnode = &(dnode_t) {
+    DataNode subject = &(dnode_t) {
       .type = DN_ARRAY,
       .array.elem_type = DN_INT,
       .array.size = 3,
       .array.ints = (int64_t[3]) { 1, 2, 3 }
     };
+
+    it("fails when bracket sections aren't closed") {
+      expect(dnode_contains to be_false given(subject, S("$[1")));
+    }
+
+    it("fails when reading out of bounds") {
+      expect(dnode_contains to be_false given(subject, S("$[3]")));
+      expect(dnode_contains to be_false given(subject, S("$[-8]")));
+    }
+
+    it("can read a value from the array") {
+      expect(dnode_read to be_true given(subject, S("$[0]"), &result));
+      expect(result.type, == , DN_INT);
+      expect(*result.value_int, == , 1);
+    }
+
+    it("can handle arbitrary spaces") {
+      expect(dnode_contains to be_true given(subject, S("$[  1   ]")));
+    }
+
+    it("can access with negative indexing") {
+      expect(dnode_read to be_true given(subject, S("$[-1]"), &result));
+      expect(result.type, == , DN_INT);
+      expect(*result.value_int, == , 3);
+
+      expect(dnode_read to be_true given(subject, S("$[-3]"), &result));
+      expect(result.type, == , DN_INT);
+      expect(*result.value_int, == , 1);
+    }
+
+  }
+
+  context("when the root is an array of strings") {
+
+    DataNode subject = &(dnode_t) {
+      .type = DN_ARRAY,
+      .array.elem_type = DN_STRING,
+      .array.size = 4,
+      .array.strings = (slice_t[4]){
+        S("first"), S("second"), S("third"), S("fourth")
+      }
+    };
+
+    it("can find and access the string") {
+      expect(dnode_read to be_true given(subject, S("$[0]"), &result));
+      expect(result.type, == , DN_STRING);
+      expect(slice_eq to be_true given(*result.value_str, S("first")));
+    }
+
   }
 
   context("when the root is an object with some member values") {
@@ -146,7 +202,7 @@ describe(dnode_read) {
     }
 
     it("cannot access children of nodes with no children") {
-      expect(dnode_contains to be_false given(subject, S("first/")));
+      expect(dnode_contains to be_false given(subject, S("first.second")));
     }
 
     it("can access child members of the root node") {
@@ -157,6 +213,36 @@ describe(dnode_read) {
       expect(dnode_read to be_true given(subject, S("third"), &result));
       expect(result.type, == , DN_FLOAT);
       expect(*result.value_float, == , 3.5);
+    }
+
+    it("can access child nodes using index notation") {
+      expect(dnode_read to be_true given(subject, S("$['first']"), &result));
+      expect(result.type, == , DN_INT);
+      expect(*result.value_int, == , 1);
+
+      expect(dnode_read to be_true given(subject, S("$['third']"), &result));
+      expect(result.type, == , DN_FLOAT);
+      expect(*result.value_float, == , 3.5);
+    }
+
+    it("can't use index notation with no closing quote or bracket") {
+      expect(dnode_contains to be_false given(subject, S("$[first]")));
+      expect(dnode_contains to be_false given(subject, S("$['first]")));
+      expect(dnode_contains to be_false given(subject, S("$['first'")));
+      expect(dnode_contains to be_false given(subject, S("$[first']")));
+    }
+
+    it("ignores spacing around index tokens") {
+      expect(dnode_contains to be_true given(subject, S("$[ 'first']")));
+      expect(dnode_contains to be_true given(subject, S("$['first' ]")));
+      expect(dnode_contains to be_true given(subject, S("$ ['first']")));
+      expect(dnode_contains to be_true given(subject, S("$['first'] ")));
+      expect(dnode_contains to be_true given(subject, S("$ \t [  'first' ]  ")));
+    }
+
+    it("does not ignore spacing inside the quotes") {
+      expect(dnode_contains to be_false given(subject, S("$[' first']")));
+      expect(dnode_contains to be_false given(subject, S("$['first ']")));
     }
 
   }

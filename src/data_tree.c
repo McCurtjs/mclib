@@ -217,7 +217,7 @@ static bool _dnode_read_index(DataNode node, slice_t path, dnode_value_t* out) {
         return _success_with_value(DN_FLOAT, &node->array.floats[index], out);
 
       case DN_STRING:
-        return _success_with_value(DN_STRING, &node->array.floats[index], out);
+        return _success_with_value(DN_STRING, &node->array.strings[index], out);
 
       default:
         return false;
