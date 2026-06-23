@@ -233,8 +233,6 @@ static bool _dnode_read_index(DataNode node, slice_t path, dnode_value_t* out) {
 static bool _dnode_read_member(DataNode obj, slice_t path, dnode_value_t* out) {
   assert(obj);
 
-  path = slice_trim_start(path);
-
   if (obj->type == DN_OBJECT) {
     assert(obj->object.size >= 0);
     index_t next_pos = slice_index_of_char(path, S(".["));
@@ -244,7 +242,8 @@ static bool _dnode_read_member(DataNode obj, slice_t path, dnode_value_t* out) {
 
     pair_slice_t split = slice_split_at(path, next_pos);
 
-    DataNode child = _dnode_key_into_object(obj, split.left);
+    slice_t key = slice_trim(split.left);
+    DataNode child = _dnode_key_into_object(obj, key);
     if (!child) return false;
 
     return _dnode_read_next(child, split.right, out);

@@ -162,6 +162,10 @@ describe(dnode_read) {
       expect(dnode_read to be_true given(subject, S("$[0]"), &result));
       expect(result.type, == , DN_STRING);
       expect(slice_eq to be_true given(*result.value_str, S("first")));
+
+      expect(dnode_read to be_true given(subject, S("$[-2]"), &result));
+      expect(result.type, == , DN_STRING);
+      expect(slice_eq to be_true given(*result.value_str, S("third")));
     }
 
   }
@@ -237,7 +241,7 @@ describe(dnode_read) {
       expect(dnode_contains to be_true given(subject, S("$['first' ]")));
       expect(dnode_contains to be_true given(subject, S("$ ['first']")));
       expect(dnode_contains to be_true given(subject, S("$['first'] ")));
-      expect(dnode_contains to be_true given(subject, S("$ \t [  'first' ]  ")));
+      expect(dnode_contains to be_true given(subject, S("$ \t [  'first' ] ")));
     }
 
     it("does not ignore spacing inside the quotes") {
@@ -248,8 +252,9 @@ describe(dnode_read) {
   }
 
   context("when accessing a multi-layer object mapping") {
+
     // { first: { second: { third: 3 } }, fourth: 4 }
-    DataNode dnode = &(dnode_t) {
+    DataNode subject = &(dnode_t) {
       .type = DN_OBJECT,
       .object.size = 2,
       .object.children = (dnode_member_t[2]) {
@@ -262,7 +267,7 @@ describe(dnode_read) {
               .name = S("second"),
               .type = DN_OBJECT,
               .object.size = 1,
-              .object.children = (dnode_member_t[]) {
+              .object.children = (dnode_member_t[1]) {
                 {
                   .name = S("third"),
                   .type = DN_INT,
@@ -280,13 +285,106 @@ describe(dnode_read) {
       }
     };
 
-    dnode->object.children[1].value_int++;
-
-    it("does a thing") {
-      int64_t* value = dnode_ref_int(dnode, S("$.first.second.third"));
-      expect(value to not be_null);
-      expect(*value, == , 3);
+    it("can find the sub-objects") {
+      expect(dnode_contains to be_true given(subject, S("first")));
+      expect(dnode_contains to be_true given(subject, S("first.second")));
+      expect(
+        dnode_read to be_true given(subject, S("first.second.third"), &result)
+      );
+      expect(result.type, == , DN_INT);
+      expect(*result.value_int, == , 3);
     }
+
+    it("ignores leading spaces on dots") {
+      expect(dnode_contains to be_true given(subject, S("first  .second")));
+    }
+
+    it("ignores trailing spaces as well") {
+      // technically not in compliance with actual JSONPath, but that's fine
+      expect(dnode_contains to be_true given(subject, S("first.  second")));
+      expect(dnode_contains to be_true given(subject, S("first . second")));
+    }
+
+    it("can mix index and dot notation when indexing") {
+      expect(
+        dnode_contains to be_true given(subject, S("first['second'].third"))
+      );
+    }
+
+  }
+
+  context("when accessing an array of objects") {
+
+    // {
+    //    admin: { first_name: "Curtis", last_name: "McCoy", id: 123 },
+    //    user : { first_name: "John"  , last_name: "Doe"  , id: 456 },
+    // }
+    DataNode subject = &(dnode_t) {
+      .type = DN_ARRAY,
+      .array.elem_type = DN_OBJECT,
+      .array.size = 2,
+      .array.nodes = (dnode_t[2]) {
+        {
+          .type = DN_OBJECT,
+          .object.size = 3,
+          .object.children = (dnode_member_t[3]) {
+            {
+              .name = S("first_name"),
+              .type = DN_STRING,
+              .value_str = S("Curtis"),
+            },
+            {
+              .name = S("last_name"),
+              .type = DN_STRING,
+              .value_str = S("McCoy"),
+            },
+            {
+              .name = S("id"),
+              .type = DN_INT,
+              .value_int = 123,
+            },
+          }
+        },
+        {
+          .type = DN_OBJECT,
+          .object.size = 3,
+          .object.children = (dnode_member_t[3]) {
+            {
+              .name = S("first_name"),
+              .type = DN_STRING,
+              .value_str = S("John"),
+            },
+            {
+              .name = S("last_name"),
+              .type = DN_STRING,
+              .value_str = S("Doe"),
+            },
+            {
+              .name = S("id"),
+              .type = DN_INT,
+              .value_int = 456
+            },
+          }
+        },
+      }
+    };
+
+    it("can index through the array") {
+      expect(dnode_contains to be_true given(subject, S("$[0].id")));
+      expect(dnode_contains to be_true given(subject, S("$[1].id")));
+    }
+
+    it("correctly indexes and resolves types") {
+      expect(
+        dnode_read to be_true given(subject, S("$[0].last_name"), &result)
+      );
+      expect(result.type, == , DN_STRING);
+      expect(slice_eq to be_true given(*result.value_str, S("McCoy")));
+    }
+
+    // TODO: conditional searches
+    //    "$[?@.id == 456].first_name" => "John"
+
   }
 
 }
