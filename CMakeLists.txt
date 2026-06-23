@@ -6,6 +6,7 @@ set_property(TARGET McLib PROPERTY C_STANDARD 23)
 target_include_directories(McLib PUBLIC include)
 target_sources(McLib PRIVATE
   src/array.c
+  src/data_node.c
   src/data_tree.c
   src/map.c
   src/mat.c
@@ -80,6 +81,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     lib/cspec/tst/cspec_spec.c
     tst/spec_main.c
     tst/array_spec.c
+    tst/data_node_spec.c
     tst/data_tree_spec.c
     tst/map_spec.c
     tst/mat_spec.c
