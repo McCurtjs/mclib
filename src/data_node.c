@@ -263,6 +263,8 @@ bool dnode_contains(const DataNode node, slice_t path) {
   return dnode_read(node, path, NULL);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 bool* dnode_ref_bool(DataNode node, slice_t path) {
   dnode_value_t value;
   if (dnode_read(node, path, &value) && value.type == DN_BOOL)
@@ -296,6 +298,71 @@ DataNode dnode_ref_object(DataNode node, slice_t path) {
   if (dnode_read(node, path, &value) && value.type == DN_OBJECT)
     return value.node;
   return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool dnode_get_bool(const DataNode node, slice_t path) {
+  dnode_value_t value;
+  if (!dnode_read(node, path, &value)) return false;
+  switch (value.type) {
+    case DN_BOOL:   return *value.value_bool;
+    case DN_INT:    return *value.value_int != 0;
+    case DN_FLOAT:  return *value.value_float != 0;
+    case DN_STRING:
+      bool ret;
+      if (!slice_to_bool(*value.value_str, &ret)) return false;
+      return ret;
+    default: return false;
+  }
+}
+
+int dnode_get_int(const DataNode node, slice_t path) {
+  return (int)dnode_get_long(node, path);
+}
+
+int64_t dnode_get_long(const DataNode node, slice_t path) {
+  dnode_value_t value;
+  if (!dnode_read(node, path, &value)) return false;
+  switch (value.type) {
+    case DN_BOOL:   return *value.value_bool ? 1 : 0;
+    case DN_INT:    return *value.value_int;
+    case DN_FLOAT:  return (int64_t)*value.value_float;
+    case DN_STRING:
+      int64_t ret;
+      if (!slice_to_long(*value.value_str, &ret)) return 0;
+      return ret;
+    default: return 0;
+  }
+}
+
+float dnode_get_float(const DataNode node, slice_t path) {
+  return (float)dnode_get_double(node, path);
+}
+
+double dnode_get_double(const DataNode node, slice_t path) {
+  dnode_value_t value;
+  if (!dnode_read(node, path, &value)) return 0.0;
+  switch (value.type) {
+    case DN_BOOL:   return *value.value_bool ? 1.0 : 0.0;
+    case DN_INT:    return (double)*value.value_int;
+    case DN_FLOAT:  return *value.value_float;
+    case DN_STRING:
+      double ret;
+      if (!slice_to_double(*value.value_str, &ret)) return 0.0;
+      return ret;
+    default: return 0.0;
+  }
+}
+
+slice_t dnode_get_str(const DataNode node, slice_t path) {
+  dnode_value_t value;
+  if (!dnode_read(node, path, &value)) return slice_empty;
+  switch (value.type) {
+    case DN_BOOL:   return *value.value_bool ? slice_true : slice_false;
+    case DN_STRING: return *value.value_str;
+    default: return slice_empty;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
