@@ -109,30 +109,45 @@ typedef struct dnode_value_t {
   dnode_type_t        CONST type;
   union {
     DataNode          CONST node;
-    bool* value_bool;
-    int64_t* value_int;
-    double* value_float;
-    slice_t* value_str;
+    bool*                   value_bool;
+    int64_t*                value_int;
+    double*                 value_float;
+    slice_t*                value_str;
   };
 } dnode_value_t;
 
-bool      dnode_read(DataNode, slice_t path, dnode_value_t* out_value);
-bool      dnode_contains(const DataNode, slice_t path);
-bool*     dnode_ref_bool(DataNode, slice_t path);
-int64_t*  dnode_ref_int(DataNode, slice_t path);
-double*   dnode_ref_float(DataNode, slice_t path);
-slice_t*  dnode_ref_str(DataNode, slice_t path);
-DataNode  dnode_ref_object(DataNode, slice_t path);
-bool      dnode_get_bool(const DataNode, slice_t path);
-int       dnode_get_int(const DataNode, slice_t path);
-int64_t   dnode_get_long(const DataNode, slice_t path);
-float     dnode_get_float(const DataNode, slice_t path);
-double    dnode_get_double(const DataNode, slice_t path);
-slice_t   dnode_get_str(const DataNode, slice_t path);
+bool          dnode_read(DataNode, slice_t path, dnode_value_t* out_value);
+bool          dnode_read_bool(DataNode, slice_t path, bool* out);
+bool          dnode_read_int(DataNode, slice_t path, int* out);
+bool          dnode_read_long(DataNode, slice_t path, int64_t* out);
+bool          dnode_read_float(DataNode, slice_t path, float* out);
+bool          dnode_read_double(DataNode, slice_t path, double* out);
+bool          dnode_read_slice(DataNode, slice_t path, slice_t* out);
+bool          dnode_contains(DataNode, slice_t path);
+bool*         dnode_ref_bool(DataNode, slice_t path);
+int64_t*      dnode_ref_int(DataNode, slice_t path);
+double*       dnode_ref_float(DataNode, slice_t path);
+slice_t*      dnode_ref_str(DataNode, slice_t path);
+DataNode      dnode_ref_object(DataNode, slice_t path);
+DataNode      dnode_ref_array(DataNode, slice_t path);
+DataNode      dnode_ref_node(DataNode, slice_t path);
+dnode_type_t  dnode_get_type(DataNode, slice_t path);
+bool          dnode_get_bool(DataNode, slice_t path);
+int           dnode_get_int(DataNode, slice_t path);
+int64_t       dnode_get_long(DataNode, slice_t path);
+float         dnode_get_float(DataNode, slice_t path);
+double        dnode_get_double(DataNode, slice_t path);
+slice_t       dnode_get_str(DataNode, slice_t path);
+bool          dnode_get_or_default_bool(DataNode, slice_t path, bool def);
+int           dnode_get_or_default_int(DataNode, slice_t path, int def);
+int64_t       dnode_get_or_default_long(DataNode, slice_t path, int64_t def);
+float         dnode_get_or_default_float(DataNode, slice_t path, float def);
+double        dnode_get_or_default_double(DataNode, slice_t path, double def);
+slice_t       dnode_get_or_default_str(DataNode, slice_t path, slice_t def);
 
-DataNode  dnode_select(const DataNode input, DataNode query_and_output);
+DataNode      dnode_select(DataNode input, DataNode query_and_output);
 
-String    dnode_to_json(DataNode node);
+String        dnode_to_json(DataNode node);
 
 ////////////////////////////////////////////////////////////////////////////////
 

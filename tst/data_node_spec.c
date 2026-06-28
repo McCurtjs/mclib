@@ -575,9 +575,156 @@ describe(dnode_get) {
 
 }
 
+describe(dnode_select) {
+
+  DataNode subject = NODE_ROOT(
+    NODE_OBJECT(
+      MEMB_BOOL(S("bool"), true),
+      MEMB_INT(S("int"), 24),
+      MEMB_FLOAT(S("float"), 36.2),
+      MEMB_STRING(S("string"), S("it's actually a slice")),
+      MEMB_NULL(S("null")),
+      MEMB_OBJECT(S("object"),
+        MEMB_ARRAY(S("sub-array"),
+          NODE_BOOL(true),
+          NODE_INT(12),
+          NODE_FLOAT(12.3),
+          NODE_STRING(S("True")),
+          NODE_OBJECT_EMPTY,
+          NODE_ARRAY(
+            NODE_STRING(S("-987.5")),
+            NODE_NULL,
+            NODE_INT(42069),
+            NODE_NULL
+          )
+        )
+      )
+    )
+  );
+
+  context("using a simple mask of two leaf nodes") {
+
+    DataNode result = dnode_select(subject, NODE_ROOT(
+      NODE_OBJECT(
+        MEMB_INT(S("int"), 10),
+        MEMB_FLOAT(S("float"), 0.0)
+      )
+    ));
+
+    it("can copy a value into a query 'mask' structure") {
+      expect(dnode_get_int to be( == , 24) given(result, S("int")));
+      expect(dnode_get_float to be_about(36.2) given(result, S("float")));
+    }
+
+    it("will not find values that weren't in the filter") {
+      expect(dnode_ref_bool to be_null given(result, S("bool")));
+      expect(dnode_contains to be_false given(result, S("object")));
+    }
+
+  }
+
+  context("using a mask with extra keys that aren't found in the source") {
+
+    DataNode result = dnode_select(subject, NODE_ROOT(
+      NODE_OBJECT(
+        MEMB_INT(S("unknown"), 12),
+        MEMB_FLOAT(S("asdf"), 12.34)
+      )
+    ));
+
+    it("uses the provided default value") {
+      expect(dnode_contains to be_false given(subject, S("unknown")));
+      expect(dnode_get_int to be( == , 12) given(result, S("unknown")));
+
+      expect(dnode_contains to be_false given(subject, S("asdf")));
+      expect(dnode_get_float to be_about(12.34) given(result, S("asdf")));
+    }
+
+  }
+
+  context("using a mask that converts values") {
+
+    DataNode result = dnode_select(subject, NODE_ROOT(
+      NODE_OBJECT(
+        MEMB_BOOL(S("int"), false),
+        MEMB_INT(S("float"), 0),
+        MEMB_FLOAT(S("bool"), 12.0)
+      )
+    ));
+
+    it("converts the values correctly") {
+      expect(dnode_get_type to be( == , DN_BOOL) given(result, S("$['int']")));
+      expect(dnode_get_bool to be_true given(result, S("int")));
+
+      expect(dnode_get_type to be(== , DN_INT) given(result, S("float")));
+      expect(dnode_get_int to be( == , 36) given(result, S("$.float")));
+
+      expect(dnode_get_type to be(== , DN_FLOAT) given(result, S("bool")));
+      expect(dnode_get_float to be_about(1.0) given(result, S("int")));
+    }
+
+  }
+
+  context("can mask values in an array") {
+
+    DataNode result = dnode_select(subject, NODE_ROOT(
+      NODE_OBJECT(
+        MEMB_OBJECT(S("object"),
+          MEMB_ARRAY(S("sub-array"),
+            NODE_INT(0),
+            NODE_FLOAT(0),
+            NODE_NULL,
+            NODE_BOOL(false),
+            NODE_NULL,
+            NODE_ARRAY_FLOAT(10, 10, 10)
+          )
+        )
+      )
+    ));
+
+    it("correctly filters out the members of the array") {
+      slice_t first = S("object.sub-array[0]");
+      slice_t second = S("object.sub-array[1]");
+      slice_t third = S("object.sub-array[2]");
+      slice_t fourth = S("object.sub-array[3]");
+      slice_t fifth = S("object.sub-array[4]");
+      slice_t sixth = S("object.sub-array[5]");
+
+      expect(dnode_get_type to match(DN_INT) given(result, first));
+      expect(dnode_get_type to match(DN_FLOAT) given(result, second));
+      expect(dnode_get_type to match(DN_FLOAT) given(result, third));
+      expect(dnode_get_type to match(DN_BOOL) given(result, fourth));
+      expect(dnode_get_type to match(DN_NULL) given(result, fifth));
+      expect(dnode_get_type to match(DN_ARRAY) given(result, sixth));
+
+      expect(dnode_get_int to be( == , 1) given(result, first));
+      expect(dnode_get_float to be_about(12) given(result, second));
+      expect(dnode_get_float to be_about(12.3) given(result, third));
+      expect(dnode_get_bool to be_true given(result, fourth));
+    }
+
+    it("filters the values in the sub-array into floats") {
+      slice_t first = S("object.sub-array[5][0]");
+      slice_t second = S("object.sub-array[5][1]");
+      slice_t third = S("object.sub-array[5][2]");
+
+      expect(dnode_get_type to match(DN_FLOAT) given(result, first));
+      expect(dnode_get_type to match(DN_FLOAT) given(result, second));
+      expect(dnode_get_type to match(DN_FLOAT) given(result, third));
+
+      expect(dnode_get_float to be_about(-987.5) given(result, first));
+      expect(dnode_get_float to be_about(10) given(result, second));
+      expect(dnode_get_float to be_about(42069) given(result, third));
+    }
+
+  }
+
+}
+
 test_suite(tests_data_node) {
   test_group(dnode_read),
   test_group(dnode_ref),
   test_group(dnode_get),
+  test_group(dnode_select),
   test_suite_end
 };
