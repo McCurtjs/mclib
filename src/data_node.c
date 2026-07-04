@@ -83,7 +83,7 @@ static bool _dnode_coerce_bool(dnode_value_t value, bool* out) {
       // NaN is false, INF and non-zero is true
       *out = !isnan(*value.value_float) && *value.value_float != 0;
       break;
-    case DN_STRING: slice_to_bool(*value.value_str, out);   break;
+    case DN_STRING: return slice_to_bool(*value.value_str, out);
 
     default: return false;
   }
@@ -106,7 +106,7 @@ static bool _dnode_coerce_int(dnode_value_t value, int64_t* out) {
       if (!isfinite(*value.value_float)) return false;
       *out = (int64_t)*value.value_float;
       break;
-    case DN_STRING: slice_to_long(*value.value_str, out);   break;
+    case DN_STRING: return slice_to_long(*value.value_str, out);
 
     default: return false;
   }
@@ -125,7 +125,7 @@ static bool _dnode_coerce_float(dnode_value_t value, double* out) {
     case DN_BOOL:   *out = *value.value_bool ? 1 : 0;       break;
     case DN_INT:    *out = (double)*value.value_int;        break;
     case DN_FLOAT:  *out = *value.value_float;              break;
-    case DN_STRING: slice_to_double(*value.value_str, out); break;
+    case DN_STRING: return slice_to_double(*value.value_str, out);
 
     default: return false;
   }
@@ -166,8 +166,6 @@ static bool _dnode_coerce_value_node(dnode_value_t value, DataNode out) {
 
     default: return false;
   }
-
-  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -384,6 +382,50 @@ bool dnode_read(DataNode node, slice_t path, dnode_value_t* out_value) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Type-specific read accessors with type coercing
+////////////////////////////////////////////////////////////////////////////////
+
+bool dnode_read_bool(DataNode node, slice_t path, bool* out) {
+  assert(out);
+  dnode_value_t value;
+  return dnode_read(node, path, &value) && _dnode_coerce_bool(value, out);
+}
+
+bool dnode_read_int(DataNode node, slice_t path, int* out) {
+  assert(out);
+  int64_t res = 0;
+  if (!dnode_read_long(node, path, &res)) return false;
+  *out = (int)res;
+  return true;
+}
+
+bool dnode_read_long(DataNode node, slice_t path, int64_t* out) {
+  assert(out);
+  dnode_value_t value;
+  return dnode_read(node, path, &value) && _dnode_coerce_int(value, out);
+}
+
+bool dnode_read_float(DataNode node, slice_t path, float* out) {
+  assert(out);
+  double res = 0;
+  if (!dnode_read_double(node, path, &res)) return false;
+  *out = (float)res;
+  return true;
+}
+
+bool dnode_read_double(DataNode node, slice_t path, double* out) {
+  assert(out);
+  dnode_value_t value;
+  return dnode_read(node, path, &value) && _dnode_coerce_float(value, out);
+}
+
+bool dnode_read_slice(DataNode node, slice_t path, slice_t* out) {
+  assert(out);
+  dnode_value_t value;
+  return dnode_read(node, path, &value) && _dnode_coerce_string(value, out);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 bool dnode_contains(DataNode node, slice_t path) {
   return dnode_read(node, path, NULL);
@@ -454,39 +496,65 @@ dnode_type_t dnode_get_type(DataNode node, slice_t path) {
 }
 
 bool dnode_get_bool(DataNode node, slice_t path) {
-  bool ret = false; // default value
-  dnode_value_t value;
-  if (dnode_read(node, path, &value)) _dnode_coerce_bool(value, &ret);
-  return ret;
+  return dnode_get_or_default_bool(node, path, false);
 }
 
 int dnode_get_int(DataNode node, slice_t path) {
-  return (int)dnode_get_long(node, path);
+  return dnode_get_or_default_int(node, path, 0);
 }
 
 int64_t dnode_get_long(DataNode node, slice_t path) {
-  int64_t ret = 0; // default value
-  dnode_value_t value;
-  if (dnode_read(node, path, &value)) _dnode_coerce_int(value, &ret);
-  return ret;
+  return dnode_get_or_default_long(node, path, 0);
 }
 
 float dnode_get_float(DataNode node, slice_t path) {
-  return (float)dnode_get_double(node, path);
+  return dnode_get_or_default_float(node, path, 0.0f);
 }
 
 double dnode_get_double(DataNode node, slice_t path) {
-  double ret = 0.0;
-  dnode_value_t value;
-  if (dnode_read(node, path, &value)) _dnode_coerce_float(value, &ret);
-  return ret;
+  return dnode_get_or_default_double(node, path, 0.0);
 }
 
 slice_t dnode_get_str(DataNode node, slice_t path) {
-  slice_t ret = slice_empty;
-  dnode_value_t value;
-  if (dnode_read(node, path, &value)) _dnode_coerce_string(value, &ret);
-  return ret;
+  return dnode_get_or_default_str(node, path, slice_empty);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool dnode_get_or_default_bool(DataNode node, slice_t path, bool def) {
+  bool res;
+  if (dnode_read_bool(node, path, &res)) return res;
+  return def;
+}
+
+int dnode_get_or_default_int(DataNode node, slice_t path, int def) {
+  int res;
+  if (dnode_read_int(node, path, &res)) return res;
+  return def;
+}
+
+int64_t dnode_get_or_default_long(DataNode node, slice_t path, int64_t def) {
+  int64_t res;
+  if (dnode_read_long(node, path, &res)) return res;
+  return def;
+}
+
+float dnode_get_or_default_float(DataNode node, slice_t path, float def) {
+  float res;
+  if (dnode_read_float(node, path, &res)) return res;
+  return def;
+}
+
+double dnode_get_or_default_double(DataNode node, slice_t path, double def) {
+  double res;
+  if (dnode_read_double(node, path, &res)) return res;
+  return def;
+}
+
+slice_t dnode_get_or_default_str(DataNode node, slice_t path, slice_t def) {
+  slice_t res;
+  if (dnode_read_slice(node, path, &res)) return res;
+  return def;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
