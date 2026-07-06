@@ -41,13 +41,20 @@
 // While DataNode can represent an entire structure, it does not own the data it
 //    contains. A DataTree both contains and owns a copy of its data.
 typedef struct _opaque_DataTree_t {
-  DataNode            CONST root;
+  union {
+    DataNode            CONST root;
+    DataView            CONST view;
+  };
 }* DataTree;
 
-DataTree  dtree_new(dnode_type_t root_node_type);
-DataTree  dtree_compress(DataTree tree);
+DataTree  dtree_copy(DataView tree_to_copy);
+
+DataTree  dtree_from_json(slice_t json_string);
+
 void      dtree_delete(DataTree* to_delete);
 
-DataNode  dtree_replace(DataNode node, dnode_type_t type);
+DataNode  dtree_add_member(DataTree, slice_t parent_path, dnode_member_t);
+DataNode  dtree_add_node(DataTree, slice_t parent_path, dnode_t);
+DataNode  dtree_add_value(DataTree, slice_t path, dnode_value_t);
 
 #endif

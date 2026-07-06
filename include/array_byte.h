@@ -37,6 +37,7 @@
 
 span_byte_t arr_byte_append_int(Array_byte arr, long long int i);
 span_byte_t arr_byte_append_float(Array_byte arr, double f, int precision);
+void        arr_byte_align(Array_byte arr, index_t offset);
 
 #endif
 

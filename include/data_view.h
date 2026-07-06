@@ -51,7 +51,7 @@ typedef enum {
 typedef struct dview_t dview_t;
 typedef struct dview_value_t dview_value_t;
 typedef struct dview_member_t dview_member_t;
-typedef struct dview_t* DataView;
+typedef struct dview_t  const* DataView;
 
 typedef struct dview_object_t {
   index_t               CONST size;

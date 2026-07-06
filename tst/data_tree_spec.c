@@ -30,12 +30,30 @@
 
 #include "cspec.h"
 
-describe(dtree_new) {
+describe(dtree_copy) {
 
   DataTree dtree = NULL;
 
   it("Should create a tree with a single node and delete successfully") {
-    //dtree = dtree_new(DN_NULL);
+    dtree = dtree_copy(VIEW_ROOT(NODE_NULL));
+  }
+
+  it("should copy a tree with a limited set of items") {
+    dtree = dtree_copy(VIEW_ROOT(
+      NODE_OBJECT(
+        MEMB_INT(S("herp"), 5),
+        MEMB_STRING(S("derp"), S("5")),
+        MEMB_OBJECT(S("test"),
+          MEMB_INT(S("sub"), 6)
+        ),
+        MEMB_ARRAY(S("arr"),
+          NODE_BOOL(false),
+          NODE_INT(5),
+          NODE_STRING(S("string")),
+          NODE_OBJECT_EMPTY
+        )
+      )
+    ));
   }
 
   after {
@@ -46,6 +64,6 @@ describe(dtree_new) {
 }
 
 test_suite(tests_data_tree) {
-  test_group(dtree_new),
+  test_group(dtree_copy),
   test_suite_end
 };

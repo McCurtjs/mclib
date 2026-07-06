@@ -51,7 +51,7 @@ typedef struct dnode_object_t {
       dnode_member_t*     CONST children;
     };
   };
-}*DataNode_Object, dnode_object_t;
+} dnode_object_t;
 
 typedef struct dnode_array_t {
   union {
@@ -158,7 +158,20 @@ String          dnode_to_json(DataNode node);
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define         dnode_get_or_default(DNODE, PATH, DEFAULT_VALUE)              \
+                  _Generic((DEFAULT_VALUE),                                   \
+                    bool:     dnode_get_or_default_bool,                      \
+                    int:      dnode_get_or_default_int,                       \
+                    int64_t:  dnode_get_or_default_long,                      \
+                    float:    dnode_get_or_default_float,                     \
+                    double:   dnode_get_or_default_double,                    \
+                    slice_t:  dnode_get_or_default_str,                       \
+                  )((DNODE), (PATH), (DEFAULT_VALUE))                         //
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define NODE_ROOT(ROOT_NODE) &(ROOT_NODE)
+#define VIEW_ROOT(ROOT_NODE) &(ROOT_NODE).view
 
 #define NODE_NULL ((dnode_t) { .type = DN_NULL })
 #define MEMB_NULL(NAME) ((dnode_member_t) { .name = (NAME), .type = DN_NULL })
