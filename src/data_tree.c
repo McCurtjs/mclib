@@ -80,6 +80,7 @@ DataTree_Internal* _dtree_new(void) {
 static void _dtree_copy_node_contents(DataTree_Internal*, DataNode, DataView);
 
 static slice_t _dtree_store_string(DataTree_Internal* tree, slice_t slice) {
+  UNUSED(tree);
   // needs to be updated to store strings in a set and arena
   //    (set will contain slices and hash, arena will store the string data)
   char* str = malloc(slice.length + 1);
@@ -192,6 +193,8 @@ static DataNode _dtree_copy_node(DataTree_Internal* tree, DataView src) {
 }
 
 static void _dtree_consolidate_strings(DataTree_Internal* tree) {
+  UNUSED(tree);
+
   HMap_slice strs = map_slice_new();
 
   // for each node:

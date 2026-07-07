@@ -8,6 +8,7 @@ target_sources(McLib PRIVATE
   src/array.c
   src/data_node.c
   src/data_tree.c
+  src/data_view.c
   src/map.c
   src/mat.c
   src/packedmap.c

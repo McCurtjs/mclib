@@ -25,6 +25,15 @@
 #ifndef MCLIB_DATA_TREE_H_
 #define MCLIB_DATA_TREE_H_
 
+//
+// General-Purpose Dynamic Data Tree Container
+//
+// A data tree system representing a tree containing general-purpose fixed-type
+// nodes of data that map cleanly to json-like structures. This can be used to
+// read or write json or to implement logic for similar compatible formats.
+//
+
+//
 // Node structure:
 //
 // Node (typed) --contains--> value --can_be--> [ number ]
@@ -48,8 +57,10 @@ typedef struct _opaque_DataTree_t {
 }* DataTree;
 
 DataTree  dtree_copy(DataView tree_to_copy);
-
 DataTree  dtree_from_json(slice_t json_string);
+
+DataTree  dtree_copy_select(DataView source, DataView query);
+DataNode  dtree_select(DataNode source, DataNode query_and_output);
 
 void      dtree_delete(DataTree* to_delete);
 
