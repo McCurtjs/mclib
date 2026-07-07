@@ -25,6 +25,7 @@
 #define MCLIB_INTERNAL_IMPL
 #include "data_node.h"
 
+#include "str.h"
 #include "array_byte.h"
 
 #include <stdlib.h>
@@ -37,15 +38,6 @@
 # pragma warning ( disable : 6011 )
 # pragma warning ( disable : 6387 )
 #endif
-
-////////////////////////////////////////////////////////////////////////////////
-// Serialization to JSON
-////////////////////////////////////////////////////////////////////////////////
-
-String dnode_to_json(DataNode root) {
-  UNUSED(root);
-  return NULL;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Rules for casting node values between types
@@ -690,4 +682,132 @@ DataNode dnode_select(DataNode node, DataNode query) {
   }
 
   return query;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Serialization to JSON
+////////////////////////////////////////////////////////////////////////////////
+
+void _dnode_to_json(
+  DataNode node, Array_byte ret, index_t level, dnode_output_opts_t opts
+) {
+  bool spacing = !!(opts & OPT_SPACING);
+
+  slice_t obj_memb_kv = S("\":");
+  slice_t obj_memb_separator = S(",");
+
+  if (spacing) {
+    obj_memb_kv = S("\": ");
+    obj_memb_separator = S(",\n");
+  }
+
+  switch (node->type) {
+
+    case DN_NULL: {
+      arr_byte_append(ret, slice_null);
+    } break;
+
+    case DN_BOOL: {
+      arr_byte_append(ret, node->value_bool ? slice_true : slice_false);
+    } break;
+
+    case DN_INT: {
+      arr_byte_append_int(ret, node->value_int);
+    } break;
+
+    case DN_FLOAT: {
+      arr_byte_append_float(ret, node->value_float, 5);
+    } break;
+
+    case DN_STRING: {
+      arr_byte_push_back(ret, '"');
+      arr_byte_append(ret, node->value_str);
+      arr_byte_push_back(ret, '"');
+    } break;
+
+    case DN_OBJECT: {
+      arr_byte_push_back(ret, '{');
+      if (node->object.size > 0) {
+        index_t i = 0;
+        loop {
+          if (spacing) arr_byte_push_back(ret, '\n');
+          if (spacing) arr_byte_push_back_repeat(ret, ' ', level * 2 + 2);
+          arr_byte_push_back(ret, '"');
+          arr_byte_append(ret, node->object.children[i].name);
+          arr_byte_append(ret, obj_memb_kv);
+
+          _dnode_to_json(&node->object.children[i].node, ret, level + 1, opts);
+
+          until(++i >= node->object.size);
+          arr_byte_push_back(ret, ',');
+        }
+        if (spacing) arr_byte_push_back(ret, '\n');
+        if (spacing) arr_byte_push_back_repeat(ret, ' ', level * 2);
+      }
+      arr_byte_push_back(ret, '}');
+    } break;
+
+    case DN_ARRAY: {
+      arr_byte_push_back(ret, '[');
+      if (node->array.size > 0) {
+
+        index_t i = 0;
+        loop {
+          if (spacing) arr_byte_push_back(ret, '\n');
+          if (spacing) arr_byte_push_back_repeat(ret, ' ', level * 2 + 2);
+
+          // construct a proxy node to hold the value and recurse one more time
+          //    to avoid having to duplicate the per-type printing logic
+          DataNode proxy = &(dnode_t){ .type = node->array.elem_type };
+
+          switch (proxy->type) {
+            case DN_NULL:   break;
+            case DN_BOOL:   proxy->value_bool = node->array.bools[i];     break;
+            case DN_INT:    proxy->value_int = node->array.ints[i];       break;
+            case DN_FLOAT:  proxy->value_float = node->array.floats[i];   break;
+            case DN_STRING: proxy->value_str = node->array.strings[i];    break;
+
+            case DN_OBJECT: SWITCH_FALLTHROUGH;
+            case DN_ARRAY:  SWITCH_FALLTHROUGH;
+            case DN_ARRAY_ELEM_MIXED:
+              proxy = &node->array.nodes[i];
+              break;
+
+            default: assert(false); break;
+          }
+
+          _dnode_to_json(proxy, ret, level + 1, opts);
+
+          until(++i >= node->array.size);
+          arr_byte_push_back(ret, ',');
+        }
+        if (spacing) arr_byte_push_back(ret, '\n');
+        if (spacing) arr_byte_push_back_repeat(ret, ' ', level * 2);
+      }
+      arr_byte_push_back(ret, ']');
+    }
+
+  }
+}
+
+String dnode_to_json_opts(DataNode node, dnode_output_opts_t opts) {
+  Array_byte bytes = &(array_byte_t) { 0 };
+  arr_byte_init(bytes);
+
+  arr_byte_emplace_back_range(bytes, sizeof(slice_t));
+
+  _dnode_to_json(node, bytes, 0, opts);
+
+  arr_byte_push_back(bytes, '\0');
+  arr_byte_truncate(bytes, bytes->size);
+
+  slice_t* ret = (slice_t*)bytes->begin;
+  ret->begin = bytes->begin + sizeof(slice_t);
+  ret->size = bytes->size - sizeof(slice_t) - 1;
+
+  return (String)ret;
+}
+
+String dnode_to_json(DataNode node) {
+  return dnode_to_json_opts(node, OPT_DEFAULT);
 }

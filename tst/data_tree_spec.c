@@ -24,6 +24,8 @@
 
 #include "data_tree.h"
 
+#include "str.h"
+
 #define CSPEC_CUSTOM_TYPES \
   slice_t: "slice_t",       \
   DataTree: "dtree_t*", DataNode: "dnode_t*", default: "void*"
@@ -41,19 +43,24 @@ describe(dtree_copy) {
   it("should copy a tree with a limited set of items") {
     dtree = dtree_copy(VIEW_ROOT(
       NODE_OBJECT(
-        MEMB_INT(S("herp"), 5),
-        MEMB_STRING(S("derp"), S("5")),
-        MEMB_OBJECT(S("test"),
-          MEMB_INT(S("sub"), 6)
+        MEMB_INT("herp", 5),
+        MEMB_STRING("derp", "5"),
+        MEMB_OBJECT("test",
+          MEMB_INT("sub", 6),
+          MEMB_NULL("nothin")
         ),
         MEMB_ARRAY(S("arr"),
           NODE_BOOL(false),
           NODE_INT(5),
-          NODE_STRING(S("string")),
-          NODE_OBJECT_EMPTY
+          NODE_STRING("string"),
+          NODE_OBJECT_EMPTY,
+          NODE_ARRAY_FLOAT(1, 2, 3.087, 4, 5),
+          NODE_ARRAY_EMPTY
         )
       )
     ));
+    String xyz = dnode_to_json_opts(dtree->root, OPT_SPACING);
+    str_delete(&xyz);
   }
 
   after {

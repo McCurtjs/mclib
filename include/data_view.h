@@ -48,6 +48,11 @@ typedef enum {
   DN_ARRAY_ELEM_MIXED
 } dnode_type_t;
 
+typedef enum {
+  OPT_DEFAULT = 0x00,
+  OPT_SPACING = 0x01
+} dnode_output_opts_t;
+
 typedef struct dview_t dview_t;
 typedef struct dview_value_t dview_value_t;
 typedef struct dview_member_t dview_member_t;
@@ -111,7 +116,7 @@ typedef struct dview_value_t {
   };
 } dview_value_t;
 
-bool            dview_read(DataView, slice_t path, dview_value_t* out_value);
+bool dview_read(DataView, slice_t path, dview_value_t* out_value);
 bool            dview_read_bool(DataView, slice_t path, bool* out);
 bool            dview_read_int(DataView, slice_t path, int* out);
 bool            dview_read_long(DataView, slice_t path, int64_t* out);
