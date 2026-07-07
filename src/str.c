@@ -428,32 +428,42 @@ String istr_append(slice_t str, index_t length, char c) {
 // String building functions for Array_byte
 ////////////////////////////////////////////////////////////////////////////////
 
-Array_byte arr_byte_new_str(void) {
-  Array_byte ret = arr_byte_new_reserve(sizeof(String_Internal));
-  assert(ret->begin);
-  String_Internal* str = (String_Internal*)ret->begin;
-  str->slice = slice_empty;
+Array_byte arr_byte_new_reserve_str(index_t capacity) {
+  assert(capacity >= 0);
+  index_t size_header_cap = sizeof(String_Internal) + capacity;
+  Array_byte ret = arr_byte_new_reserve(size_header_cap + 1);
+  arr_byte_emplace_back_range(ret, sizeof(String_Internal));
+  ((String_Internal*)ret->begin)->slice = slice_empty;
   return ret;
 }
 
-Array_byte arr_byte_new_reserve_str(index_t length) {
-  Array_byte ret = arr_byte_new_reserve(sizeof(String_Internal) + length + 1);
-  assert(ret->begin);
-  String_Internal* str = (String_Internal*)ret->begin;
-  str->slice = slice_empty;
+array_byte_t arr_byte_build_reserve_str(index_t capacity) {
+  assert(capacity >= 0);
+  index_t size_header_cap = sizeof(String_Internal) + capacity;
+  array_byte_t ret = arr_byte_build_reserve(size_header_cap + 1);
+  arr_byte_emplace_back_range(&ret, sizeof(String_Internal));
+  assert(ret.begin);
+  ((String_Internal*)ret.begin)->slice = slice_empty;
   return ret;
 }
 
-String arr_byte_release_str(Array_byte* arr) {
+String arr_byte_finish_str(Array_byte arr) {
   const index_t header_size = (index_t)sizeof(String_Internal);
-  assert(arr);
-  if ((*arr)->size < header_size) {
-    arr_byte_reserve(*arr, header_size);
+  if (arr->size < header_size) {
+    arr_byte_reserve(arr, header_size + 1);
   }
-  assert((*arr)->size > header_size);
-  index_t str_len = (*arr)->size - header_size;
-  String_Internal* ret = (String_Internal*)arr_byte_release(arr).begin;
+  assert(arr->size > header_size);
+  index_t str_len = arr->size - header_size;
+  arr_byte_push_back(arr, '\0');
+  arr_byte_truncate(arr, arr->size);
+  String_Internal* ret = (String_Internal*)arr->begin;
   ret->begin = ret->head;
   ret->length = str_len;
   return (String)ret;
+}
+
+String arr_byte_release_str(Array_byte* arr) {
+  String ret = arr_byte_finish_str(*arr);
+  arr_byte_release(arr);
+  return ret;
 }

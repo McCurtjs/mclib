@@ -256,6 +256,10 @@ void              slice_delete_vptr(void* str);
 ////////////////////////////////////////////////////////////////////////////////
 
 // If byte spans are available, re-include to get slice functions
+#ifdef MCLIB_VIEW_BYTE_
+# include "view_byte.h"
+#endif
+
 #ifdef MCLIB_SPAN_BYTE_
 # include "span_byte.h"
 #endif

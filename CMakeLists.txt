@@ -46,6 +46,7 @@ target_sources(McLib PRIVATE
   include/utility.h
   include/vec.h
   include/view.h
+  include/view_byte.h
 )
 
 # Include Murmur3 library for default hashing solution

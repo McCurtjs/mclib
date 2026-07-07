@@ -77,6 +77,10 @@ DataTree_Internal* _dtree_new(void) {
   return ret;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Create and copy
+////////////////////////////////////////////////////////////////////////////////
+
 static void _dtree_copy_node_contents(DataTree_Internal*, DataNode, DataView);
 
 static slice_t _dtree_store_string(DataTree_Internal* tree, slice_t slice) {
@@ -89,6 +93,8 @@ static slice_t _dtree_store_string(DataTree_Internal* tree, slice_t slice) {
   str[slice.size] = '\0';
   return slice_build(str, slice.size);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 static void _dtree_copy_object(
   DataTree_Internal* tree, DataNode node, DataView src
@@ -112,6 +118,8 @@ static void _dtree_copy_object(
 
   node->object.children = children;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 static void _dtree_copy_array(
   DataTree_Internal* tree, DataNode node, DataView src
@@ -159,6 +167,8 @@ static void _dtree_copy_array(
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 static void _dtree_copy_node_contents(
   DataTree_Internal* tree, DataNode node, DataView src
 ) {
@@ -182,6 +192,8 @@ static void _dtree_copy_node_contents(
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 static DataNode _dtree_copy_node(DataTree_Internal* tree, DataView src) {
   assert(src->type >= 0 && src->type < DN_ARRAY_ELEM_MIXED);
 
@@ -191,6 +203,8 @@ static DataNode _dtree_copy_node(DataTree_Internal* tree, DataView src) {
 
   return node;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 static void _dtree_consolidate_strings(DataTree_Internal* tree) {
   UNUSED(tree);
@@ -214,6 +228,8 @@ static void _dtree_consolidate_strings(DataTree_Internal* tree) {
   map_slice_delete(&strs);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 DataTree dtree_copy(const DataView other) {
   assert(other);
 
@@ -231,6 +247,10 @@ DataTree dtree_copy(const DataView other) {
 
   return (DataTree)ret;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Delete tree
+////////////////////////////////////////////////////////////////////////////////
 
 void _dtree_delete_node(DataNode node) {
 
@@ -276,6 +296,8 @@ void _dtree_delete_node(DataNode node) {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void dtree_delete(DataTree* p_dtree) {
   if (!p_dtree || !*p_dtree) return;
   DataTree_Internal* dtree = (DataTree_Internal*)*p_dtree;
@@ -293,3 +315,7 @@ void dtree_delete(DataTree* p_dtree) {
   //arr_byte_delete(&data);
   *p_dtree = NULL;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Load tree from JSON
+////////////////////////////////////////////////////////////////////////////////

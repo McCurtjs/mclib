@@ -46,6 +46,7 @@
 #include "types.h"
 
 #include "data_node.h"
+#include "view_byte.h"
 
 // While DataNode can represent an entire structure, it does not own the data it
 //    contains. A DataTree both contains and owns a copy of its data.
@@ -58,6 +59,8 @@ typedef struct _opaque_DataTree_t {
 
 DataTree  dtree_copy(DataView tree_to_copy);
 DataTree  dtree_from_json(slice_t json_string);
+DataTree  dtree_from_dtn(slice_t dtn_string);
+DataTree  dtree_from_dtb(view_byte_t dtb_data);
 
 DataTree  dtree_copy_select(DataView source, DataView query);
 DataNode  dtree_select(DataNode source, DataNode query_and_output);

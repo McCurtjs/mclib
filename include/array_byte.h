@@ -25,6 +25,7 @@
 #ifndef MCLIB_ARRAY_BYTE_
 #define MCLIB_ARRAY_BYTE_
 
+#include "view_byte.h"
 #include "span_byte.h"
 
 #define con_type byte
@@ -63,10 +64,16 @@ static inline Array_byte arr_byte_copy_slice(slice_t slice) {
   return ret;
 }
 
-# define arr_byte_append(arr, slice) iarr_byte_append(arr, slice)
+#ifndef _s2r
+# define _s2r(X) X
+#endif
 
-# define arr_byte_append_repeat(arr, slice, count)                            \
-            iarr_byte_append(arr, slice, count)                               //
+# define arr_byte_copy_str(str)      arr_byte_copy_slice(_s2r(str))
+
+# define arr_byte_append(arr, slice) iarr_byte_append(arr, _s2r(slice))
+
+# define arr_byte_appened_repeat(arr, slice, count)                           \
+           iarr_byte_append_repeat(arr, _s2r(slice), count)                   //
 
 # endif
 #endif
@@ -79,19 +86,22 @@ static inline Array_byte arr_byte_copy_slice(slice_t slice) {
 # ifndef MCLIB_ARR_BYTE_STRING_FNS_
 # define MCLIB_ARR_BYTE_STRING_FNS_
 
-# undef     arr_byte_append
-# define    arr_byte_append(arr, slice) iarr_byte_append(arr, _s2r(slice))
+Array_byte    arr_byte_new_reserve_str(index_t capacity);
+array_byte_t  arr_byte_build_reserve_str(index_t capacity);
+String        arr_byte_finish_str(Array_byte);
+String        arr_byte_release_str(Array_byte*);
 
-# define    arr_byte_appened_repeat(arr, slice, count)                        \
-              iarr_byte_append_repeat(arr, _s2r(slice), count)                //
+static inline Array_byte arr_byte_new_str(void) {
+  return arr_byte_new_reserve_str(0);
+}
 
-# define    arr_byte_copy_str(str)      arr_byte_copy_slice(_s2r(str))
+static inline array_byte_t arr_byte_build_str(void) {
+  return arr_byte_build_reserve_str(0);
+}
 
-void        iarr_byte_append_format(
-  Array_byte output, slice_t fmt, _str_arg_t args[], index_t argc);
-
-Array_byte  arr_byte_new_str(void);
-String      arr_byte_release_str(Array_byte*);
+void iarr_byte_append_format(
+  Array_byte output, slice_t fmt, _str_arg_t args[], index_t argc
+);
 
 # define arr_byte_append_format(out, fmt, ...) iarr_byte_append_format(       \
   (out),                                                                      \

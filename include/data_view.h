@@ -161,12 +161,12 @@ static inline String dview_to_json(DataView);
 String  dview_to_dtn_opts(DataView, dnode_output_opts_t);
 static inline String dview_to_dtn(DataView);
 
-bool    dview_read_bool(DataView, slice_t path, bool* out);
-bool    dview_read_int(DataView, slice_t path, int* out);
-bool    dview_read_long(DataView, slice_t path, int64_t* out);
-bool    dview_read_float(DataView, slice_t path, float* out);
-bool    dview_read_double(DataView, slice_t path, double* out);
-bool    dview_read_slice(DataView, slice_t path, slice_t* out);
+bool dview_read_bool(DataView, slice_t path, bool* out);
+bool dview_read_int(DataView, slice_t path, int* out);
+bool dview_read_long(DataView, slice_t path, int64_t* out);
+bool dview_read_float(DataView, slice_t path, float* out);
+bool dview_read_double(DataView, slice_t path, double* out);
+bool dview_read_slice(DataView, slice_t path, slice_t* out);
 
 static inline bool dview_contains(DataView node, slice_t path) {
   return dview_read_value(node, path, NULL);
@@ -312,26 +312,26 @@ static inline String dview_to_dtn(DataView data) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define         dview_read(DNODE, PATH, OUT)                                  \
-                  _Generic((OUT),                                             \
-                    dview_value_t*: dview_read_value,                         \
-                    bool*:          dview_read_bool,                          \
-                    int64_t*:       dview_read_int,                           \
-                    double*:        dview_read_float,                         \
-                    slice_t*:       dview_read_slice,                         \
-                  )((DNODE), (PATH), (OUT))                                   //
+#define dview_read(DNODE, PATH, OUT)                                          \
+          _Generic((OUT),                                                     \
+            dview_value_t*: dview_read_value,                                 \
+            bool*:          dview_read_bool,                                  \
+            int64_t*:       dview_read_int,                                   \
+            double*:        dview_read_float,                                 \
+            slice_t*:       dview_read_slice,                                 \
+          )((DNODE), (PATH), (OUT))                                           //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define         dview_get_or_default(DNODE, PATH, DEFAULT_VALUE)              \
-                  _Generic((DEFAULT_VALUE),                                   \
-                    bool:           dview_get_or_default_bool,                \
-                    int:            dview_get_or_default_int,                 \
-                    int64_t:        dview_get_or_default_long,                \
-                    float:          dview_get_or_default_float,               \
-                    double:         dview_get_or_default_double,              \
-                    slice_t:        dview_get_or_default_str,                 \
-                  )((DNODE), (PATH), (DEFAULT_VALUE))                         //
+#define dview_get_or_default(DNODE, PATH, DEFAULT_VALUE)                      \
+          _Generic((DEFAULT_VALUE),                                           \
+            bool:           dview_get_or_default_bool,                        \
+            int:            dview_get_or_default_int,                         \
+            int64_t:        dview_get_or_default_long,                        \
+            float:          dview_get_or_default_float,                       \
+            double:         dview_get_or_default_double,                      \
+            slice_t:        dview_get_or_default_str,                         \
+          )((DNODE), (PATH), (DEFAULT_VALUE))                                 //
 
 ////////////////////////////////////////////////////////////////////////////////
 

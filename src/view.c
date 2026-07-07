@@ -359,7 +359,3 @@ slice_t view_to_slice(view_t view) {
   }
   return ret;
 }
-
-slice_t view_byte_to_slice(view_byte_t view) {
-  return view_to_slice(view.base);
-}

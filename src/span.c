@@ -325,19 +325,3 @@ bool span_search_contains(
 ) {
   return view_search_ref(span.view, item, cmp, element_size) != NULL;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-#include "slice.h"
-#include "span_byte.h"
-
-slice_t span_byte_to_slice(span_byte_t span) {
-  assert(span.end >= span.begin);
-  slice_t ret = { .begin = (char*)span.begin, .size = (span.end - span.begin) };
-  // If the span contains a null-terminator, remove it for the slice.
-  // This will happen when using the SLICE macro on a string literal.
-  if (span.end > span.begin && *(span.end - 1) == '\0') {
-    ret.size -= 1;
-  }
-  return ret;
-}

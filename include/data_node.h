@@ -328,26 +328,26 @@ static inline String dnode_to_dtn(DataNode node) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define         dnode_read(DNODE, PATH, OUT)                                  \
-                  _Generic((OUT),                                             \
-                    dnode_value_t*: dnode_read_value,                         \
-                    bool*:          dnode_read_bool,                          \
-                    int64_t*:       dnode_read_int,                           \
-                    double*:        dnode_read_float,                         \
-                    slice_t*:       dnode_read_slice                          \
-                  )((DNODE), (PATH), (OUT))                                   //
+#define dnode_read(DNODE, PATH, OUT)                                          \
+          _Generic((OUT),                                                     \
+            dnode_value_t*: dnode_read_value,                                 \
+            bool*:          dnode_read_bool,                                  \
+            int64_t*:       dnode_read_int,                                   \
+            double*:        dnode_read_float,                                 \
+            slice_t*:       dnode_read_slice                                  \
+          )((DNODE), (PATH), (OUT))                                           //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define         dnode_get_or_default(DNODE, PATH, DEFAULT_VALUE)              \
-                  _Generic((DEFAULT_VALUE),                                   \
-                    bool:     dnode_get_or_default_bool,                      \
-                    int:      dnode_get_or_default_int,                       \
-                    int64_t:  dnode_get_or_default_long,                      \
-                    float:    dnode_get_or_default_float,                     \
-                    double:   dnode_get_or_default_double,                    \
-                    slice_t:  dnode_get_or_default_str                        \
-                  )((DNODE), (PATH), (DEFAULT_VALUE))                         //
+#define dnode_get_or_default(DNODE, PATH, DEFAULT_VALUE)                      \
+          _Generic((DEFAULT_VALUE),                                           \
+            bool:     dnode_get_or_default_bool,                              \
+            int:      dnode_get_or_default_int,                               \
+            int64_t:  dnode_get_or_default_long,                              \
+            float:    dnode_get_or_default_float,                             \
+            double:   dnode_get_or_default_double,                            \
+            slice_t:  dnode_get_or_default_str                                \
+          )((DNODE), (PATH), (DEFAULT_VALUE))                                 //
 
 ////////////////////////////////////////////////////////////////////////////////
 

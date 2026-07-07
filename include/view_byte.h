@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MIT License
 *
-* Copyright (c) 2024 Curtis McCoy
+* Copyright (c) 2026 Curtis McCoy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -22,25 +22,24 @@
 * SOFTWARE.
 */
 
-#ifndef MCLIB_SPAN_BYTE_
-#define MCLIB_SPAN_BYTE_
-#include "view_byte.h"
+#ifndef MCLIB_VIEW_BYTE_
+#define MCLIB_VIEW_BYTE_
 #define con_type byte
-#define con_view_type view_byte_t
-#include "span.h"
+#include "view.h"
 #undef con_type
-#undef con_view_type
 #endif
 
 // Specialty span_byte_t functions
 
 #ifdef MCLIB_SLICE_H_
-# ifndef MCLIB_SPAN_BYTE_SLICE_FNS_
-# define MCLIB_SPAN_BYTE_SLICE_FNS_
+# ifndef MCLIB_VIEW_BYTE_SLICE_FNS_
+# define MCLIB_VIEW_BYTE_SLICE_FNS_
 
-// \brief Converts a byte span to a string slice.
-static inline slice_t span_byte_to_slice(span_byte_t span) {
-  return view_to_slice(span.view.base);
+slice_t view_to_slice(view_t view);
+view_byte_t slice_to_view(slice_t slice);
+
+static inline slice_t view_byte_to_slice(view_byte_t view) {
+  return view_to_slice(view.base);
 }
 
 # endif

@@ -535,19 +535,11 @@ void _dnode_to_json(
 ////////////////////////////////////////////////////////////////////////////////
 
 String dview_to_json_opts(DataView node, dnode_output_opts_t opts) {
-  Array_byte bytes = &(array_byte_t) { 0 };
-  arr_byte_init(bytes);
-
-  arr_byte_emplace_back_range(bytes, sizeof(slice_t));
+  array_byte_t _bytes = arr_byte_build_str();
+  Array_byte bytes = &_bytes;
 
   _dnode_to_json((DataNode)node, bytes, 0, opts);
+  if (opts & OPT_SPACING) arr_byte_push_back(bytes, '\n');
 
-  arr_byte_push_back(bytes, '\0');
-  arr_byte_truncate(bytes, bytes->size);
-
-  slice_t* ret = (slice_t*)bytes->begin;
-  ret->begin = (char* const)bytes->begin + sizeof(slice_t);
-  ret->size = bytes->size - sizeof(slice_t) - 1;
-
-  return (String)ret;
+  return arr_byte_finish_str(bytes);
 }
