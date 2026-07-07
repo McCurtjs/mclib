@@ -78,6 +78,9 @@ extern const slice_t slice_newline;
 // \brief slice constant for a tab character
 extern const slice_t slice_tab;
 
+// \brief slice constant for a "null" string
+extern const slice_t slice_null;
+
 ////////////////////////////////////////////////////////////////////////////////
 // User-provided hook for output
 ////////////////////////////////////////////////////////////////////////////////

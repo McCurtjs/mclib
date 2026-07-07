@@ -40,7 +40,7 @@
 # pragma warning ( disable : 28182 )
 #endif
 
-const char slice_constants[] = "\0true\0false\0\r\n \t\v\f\0";
+const char slice_constants[] = "\0true\0false\0\r\n \t\v\f\0null\0";
 
 const slice_t slice_empty = { .begin = &slice_constants[0], .size = 0 };
 const slice_t slice_true = { .begin = &slice_constants[1], .size = 4 };
@@ -49,6 +49,7 @@ const slice_t slice_newline = { .begin = &slice_constants[13], .size = 1 };
 const slice_t slice_space = { .begin = &slice_constants[14], .size = 1 };
 const slice_t slice_whitespace = { .begin = &slice_constants[12], .size = 6 };
 const slice_t slice_tab = { .begin = &slice_constants[15], .size = 1 };
+const slice_t slice_null = { .begin = &slice_constants[19], .size = 4 };
 
 // Builds a slice from a null-terminated c-style string.
 slice_t slice_from_c_str(const char* c_str) {

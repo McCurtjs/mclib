@@ -94,6 +94,11 @@ static inline slice_t _s2r_c_str(const char* str, size_t size) {
   return slice_build(str, (index_t)size - 1);
 }
 
+// Allow other headers to define "_s2r" as passthroughs, but replace them here
+#ifdef _s2r
+# undef _s2r
+#endif
+
 // \brief Macro to coalesce a String, slice, or char* into a slice.
 #define _s2r(str) _Generic((str), \
   slice_t:      _s2r_slice,       \

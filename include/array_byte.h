@@ -35,9 +35,9 @@
 #undef con_view_type
 #undef con_type
 
-span_byte_t arr_byte_append_int(Array_byte arr, long long int i);
-span_byte_t arr_byte_append_float(Array_byte arr, double f, int precision);
-void        arr_byte_align(Array_byte arr, index_t offset);
+span_byte_t arr_byte_append_int(Array_byte, long long int i);
+span_byte_t arr_byte_append_float(Array_byte, double f, int precision);
+void        arr_byte_align(Array_byte, index_t offset);
 
 #endif
 
@@ -54,7 +54,8 @@ static inline slice_t slice_from_arr(Array_byte arr) {
   return slice_build((char*)arr->begin, arr->size);
 }
 
-span_byte_t iarr_byte_append(Array_byte arr, slice_t slice);
+span_byte_t iarr_byte_append(Array_byte, slice_t slice);
+span_byte_t iarr_byte_append_repeat(Array_byte, slice_t slice, index_t count);
 
 static inline Array_byte arr_byte_copy_slice(slice_t slice) {
   Array_byte ret = arr_byte_new_reserve(slice.size);
@@ -63,6 +64,9 @@ static inline Array_byte arr_byte_copy_slice(slice_t slice) {
 }
 
 # define arr_byte_append(arr, slice) iarr_byte_append(arr, slice)
+
+# define arr_byte_append_repeat(arr, slice, count)                            \
+            iarr_byte_append(arr, slice, count)                               //
 
 # endif
 #endif
@@ -77,6 +81,10 @@ static inline Array_byte arr_byte_copy_slice(slice_t slice) {
 
 # undef     arr_byte_append
 # define    arr_byte_append(arr, slice) iarr_byte_append(arr, _s2r(slice))
+
+# define    arr_byte_appened_repeat(arr, slice, count)                        \
+              iarr_byte_append_repeat(arr, _s2r(slice), count)                //
+
 # define    arr_byte_copy_str(str)      arr_byte_copy_slice(_s2r(str))
 
 void        iarr_byte_append_format(

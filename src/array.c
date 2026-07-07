@@ -365,6 +365,35 @@ void arr_insert_back_range(Array a, view_t range) {
   memcpy(data.begin, range.begin, element_count * a->element_size);
 }
 
+void arr_insert_back_repeat(Array a, const void* element, index_t count) {
+  ARR_VALID(a);
+  assert(element);
+  assert(count >= 0);
+  if (count <= 0) return;
+  span_t span = arr_emplace_back_range(a, a->element_size * count);
+  if (a->element_size == 1) {
+    memset(span.begin, *(byte*)element, count);
+    return;
+  }
+  for (index_t i = 0; i < count; ++i) {
+    memcpy((byte*)span.begin + a->element_size * i, element, a->element_size);
+  }
+}
+
+void arr_insert_back_range_repeat(Array a, view_t view, index_t count) {
+  ARR_VALID(a);
+  VIEW_VALID(view);
+  assert(count >= 0);
+  if (count <= 0) return;
+  index_t range_size = view_size(view, a->element_size);
+  index_t range_size_bytes = range_size * a->element_size;
+  span_t span = arr_emplace_back_range(a, range_size * count);
+  for (index_t i = 0; i < count * range_size; i += range_size) {
+    void* section = (byte*)span.begin + a->element_size * i;
+    memcpy(section, view.begin, range_size_bytes);
+  }
+}
+
 void arr_write(Array a_in, index_t index, const void* element) {
   DARRAY_INTERNAL;
   assert(element);
@@ -564,8 +593,31 @@ span_byte_t arr_byte_append_float(Array_byte arr, double f_in, int precision) {
   return span_byte_build(arr->begin + origin, arr->end);
 }
 
+void arr_byte_align(Array_byte arr, index_t offset) {
+  ARR_VALID(arr);
+  assert(offset > 0);
+  if (arr->size <= 0) return;
+  index_t to_add = ((size_t)arr->end) % offset;
+  if (to_add == 0) return;
+  to_add = offset - to_add;
+  arr_byte_emplace_back_range(arr, to_add);
+}
+
 span_byte_t iarr_byte_append(Array_byte arr, slice_t slice) {
+  ARR_VALID(arr);
+  assert(slice_is_valid(slice));
   span_byte_t ret = arr_byte_emplace_back_range(arr, slice.size);
   memcpy(ret.begin, slice.begin, slice.size);
   return ret;
+}
+
+span_byte_t iarr_byte_append_repeat(
+  Array_byte arr, slice_t slice, index_t count
+) {
+  ARR_VALID(arr);
+  assert(slice_is_valid(slice));
+  view_byte_t slice_view = slice_to_view(slice);
+  index_t start = arr->size;
+  arr_byte_insert_back_range_repeat(arr, slice_view, count);
+  return span_byte_build(arr->begin + start, arr->end);
 }

@@ -147,17 +147,20 @@ bool    span_read(span_t span, index_t index, void* out, index_t element_size);
 bool    span_read_front(span_t span, void* out, index_t element_size);
 bool    span_read_back(span_t span, void* out, index_t element_size);
 
-void    span_write(span_t span, index_t index, const void* item, index_t el_sz);
+void    span_write(
+          span_t span, index_t index, const void* item, index_t element_size);
 
 bool    span_eq(span_t lhs, span_t rhs);
-bool    span_eq_deep(span_t lh, span_t rh, compare_nosize_fn, index_t elsz);
+bool    span_eq_deep(
+          span_t lh, span_t rh, compare_nosize_fn, index_t element_size);
 bool    span_is_ordered(span_t span, compare_nosize_fn, index_t element_size);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sub-ranges
 ////////////////////////////////////////////////////////////////////////////////
 
-span_t span_subspan(span_t span, index_t start, index_t end, index_t el_sz);
+span_t span_subspan(
+         span_t span, index_t start, index_t end, index_t element_size);
 span_t span_drop(span_t span, index_t count, index_t element_size);
 span_t span_take(span_t span, index_t count, index_t element_size);
 pair_span_t span_split(span_t span, index_t element_size);
@@ -165,7 +168,9 @@ pair_span_t span_split_at(span_t span, index_t pivot, index_t element_size);
 partition_span_t span_partition(
   span_t span, const void* del, compare_nosize_fn compare, index_t element_size
 );
-partition_span_t span_partition_at(span_t span, index_t index, index_t el_size);
+partition_span_t span_partition_at(
+  span_t span, index_t index, index_t element_size
+);
 partition_span_t span_partition_match(
   span_t span, predicate_fn matcher, index_t element_size
 );

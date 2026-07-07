@@ -75,11 +75,14 @@
 // void       arr_v_insert_back(Array_V, V* element);
 // void       arr_v_insert_range(Array_V, index_t position, span_t range);
 // void       arr_v_insert_back_range(Array_V, span_t range);
+// void       arr_v_insert_back_repeat(Array_V, span_t range, index_t count);
 // void       arr_v_write(Array_V, index_t position, const V* element);
 // void       arr_v_write_back(Array_V, const V* element);
+// void       arr_v_write_back_repeat(Array_V, const V* element, index_t count);
 // void       arr_v_add(Array_V, index_t position, V element);
 // void       arr_V_add_back(Array_V, V element);
 // void       arr_v_push_back(Array_V, V element);
+// void       arr_v_push_back_repeat(Array_V, V element, index_t count);
 // void       arr_v_set(Array_V, index_t index, V element);
 //
 // // Item Removal
@@ -201,11 +204,16 @@ span_t      arr_emplace_range(Array, index_t position, index_t count);
 span_t      arr_emplace_back_range(Array, index_t count);
 void        arr_insert(Array, index_t position, const void* in_element);
 void        arr_insert_back(Array, const void* in_element);
+//void      arr_insert_repeat(Array, index_t pos, const void* in, index_t num);
 void        arr_insert_range(Array, index_t position, view_t range);
 void        arr_insert_back_range(Array, view_t range);
-void        arr_write(Array, index_t index, const void* in_element);
+void        arr_insert_back_repeat(Array, const void* element, index_t count);
+void        arr_insert_back_range_repeat(Array, view_t view, index_t count);
+void        arr_write(Array, index_t position, const void* in_element);
 SI void     arr_write_back(Array, const void* in_element);
 SI void     arr_write_back_range(Array, view_t range);
+SI void     arr_write_back_repeat(Array, const void* element, index_t count);
+SI void     arr_write_back_range_repeat(Array, view_t range, index_t count);
 bool        arr_remove(Array, index_t position);
 bool        arr_remove_unstable(Array, index_t position);
 bool        arr_remove_range(Array, index_t position, index_t count);
@@ -312,6 +320,18 @@ static inline void arr_write_back_range(
   Array array, view_t range
 ) {
   arr_insert_back_range(array, range);
+}
+
+static inline void arr_write_back_repeat(
+  Array array, const void* in_element, index_t count
+) {
+  arr_insert_back_repeat(array, in_element, count);
+}
+
+static inline void arr_write_back_range_repeat(
+  Array array, view_t range, index_t count
+) {
+  arr_insert_back_range_repeat(array, range, count);
 }
 
 static inline void* arr_ref(
@@ -898,6 +918,17 @@ static inline void _prefix(_insert_back_range)
   arr_insert_back_range((Array)arr, view_base);
 }
 
+static inline void _prefix(_insert_back_repeat)
+(_arr_type arr, const con_type* in_element, index_t count) {
+  arr_insert_back_repeat((Array)arr, in_element, count);
+}
+
+static inline void _prefix(_insert_back_range_repeat)
+(_arr_type arr, _view_type range, index_t count) {
+  view_t view_base = *(view_t*)&range;
+  arr_insert_back_range_repeat((Array)arr, view_base, count);
+}
+
 // \brief Copies the given element into the array at the given index.
 // \brief Overwrites the value at the index if it's occupied.
 // \brief If the index matches the array size, the item is added to the back.
@@ -928,6 +959,30 @@ static inline void _prefix(_write_back_range)
   arr_write_back_range((Array)arr, view_base);
 }
 
+// \brief Inserts `count` copies of the element referenced by the given pointer
+//    into the back of the array.
+//
+// \param element - a pointer to the element to write into the array
+//
+// \param count - the number of copies to add to the back of the array
+static inline void _prefix(_write_back_repeat)
+(_arr_type arr, const con_type* element, index_t count) {
+  arr_write_back_repeat((Array)arr, element, count);
+}
+
+// \brief Copies a given range of elements into the back of the array,
+//    duplicated `count` number of times. Each copy of the range appears in
+//    sequence (ie, `1, 2, 3` is appended `2` times as `1, 2, 3, 1, 2, 3`).
+//
+// \param range - a range of elements of the same type to copy directly
+//
+// \param count - the number of copies of the range to add to the array
+static inline void _prefix(_write_back_range_repeat)
+(_arr_type arr, _view_type range, index_t count) {
+  view_t view_base = *(view_t*)&range;
+  arr_write_back_range_repeat((Array)arr, view_base, count);
+}
+
 // \brief Inserts a copy of the given element into the given position in the
 //    array. Elements after the insert position will be moved one space forward.
 //
@@ -947,6 +1002,16 @@ static inline void _prefix(_add_back)
   arr_insert_back((Array)arr, &element);
 }
 
+// \brief Inserts `count` copies of the element into the back of the array.
+//
+// \param element - the element to insert multiple copies of
+//
+// \param count - the number of copies to add to the end of the array
+static inline void _prefix(_add_back_repeat)
+(_arr_type arr, con_type element, index_t count) {
+  arr_insert_back_repeat((Array)arr, &element, count);
+}
+
 // \brief Inserts a copy of the given element into the back of the array.
 // \brief An extra alias for arr_X_add_back.
 //
@@ -954,6 +1019,17 @@ static inline void _prefix(_add_back)
 static inline void _prefix(_push_back)
 (_arr_type arr, con_type element) {
   arr_insert_back((Array)arr, &element);
+}
+
+// \brief Inserts `count` copies of the element into the back of the array.
+// \brief An extra alias for arr_X_add_back_repeat
+//
+// \param element - the element to insert multiple copies of
+//
+// \param count - the number of copies to add to the end of the array
+static inline void _prefix(_push_back_repeat)
+(_arr_type arr, con_type element, index_t count) {
+  arr_insert_back_repeat((Array)arr, &element, count);
 }
 
 // \brief Assigns the value at the given index to a copy of the item.
