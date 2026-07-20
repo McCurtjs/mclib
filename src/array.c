@@ -213,7 +213,11 @@ void arr_truncate(Array a_in, index_t max_size) {
 
 void arr_trim(Array a_in) {
   DARRAY_INTERNAL;
-  if (a->size <= 0 || a->size == a->capacity) return;
+  if (a->size == a->capacity) return;
+  if (a->size <= 0) {
+    arr_free(a_in);
+    return;
+  }
   byte* new_data = realloc(a->begin, a->size * a->element_size);
   assert(new_data);
   a->begin = new_data;
@@ -261,6 +265,7 @@ void arr_delete(Array* a_in) {
 span_t arr_release(Array* a_in) {
   if (!a_in || !*a_in) return span_empty;
   Array_Internal* a = (Array_Internal*)*a_in;
+  arr_trim((Array)a);
   span_t ret = a->span;
   free(a);
   *a_in = NULL;

@@ -59,4 +59,8 @@ static inline float clampf(float value, float min, float max) {
 #define clamp(value, min, max) \
   _Generic((value), int: clampi, float clampf)(value, min, max)
 
+static inline bool isnum(char c) {
+  return (c >= '0' && c <= '9') || c == '+' || c == '-';
+}
+
 #endif

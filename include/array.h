@@ -812,6 +812,12 @@ static inline void _prefix(_truncate)
   arr_truncate((Array)arr, capacity);
 }
 
+// \brief Trims the array by resizing the available capacity to the used size.
+static inline void _prefix(_trim)
+(_arr_type arr) {
+  arr_trim((Array)arr);
+}
+
 // \brief Resizes the array to contain the exact given number of elements.
 //
 // \param new_size - the new number of elements the array should contain

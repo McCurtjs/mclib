@@ -319,3 +319,345 @@ void dtree_delete(DataTree* p_dtree) {
 ////////////////////////////////////////////////////////////////////////////////
 // Load tree from JSON
 ////////////////////////////////////////////////////////////////////////////////
+
+static char _json_parse_node(
+  DataTree_Internal*, slice_t json, index_t* i, DataNode node
+);
+
+#include <ctype.h>
+#include "utility.h"
+
+////////////////////////////////////////////////////////////////////////////////
+
+static char _json_parse_string(slice_t json, index_t* i, slice_t* out) {
+  array_byte_t str = arr_byte_build();
+
+  index_t left = *i;
+  char c = 0;
+
+  while (*i < json.size) {
+    c = json.begin[*i];
+
+    if (c == '"') break;
+
+    ++(*i);
+
+    if (c == '\\') {
+      if (*i >= json.size) goto parse_error;
+      arr_byte_append(&str, slice_substring(json, left, *i - 1));
+
+      if (json.begin[*i] == 'u') {
+        // add by hexcode unicode value*
+      }
+
+      left = (*i)++;
+    }
+  }
+
+  // check for the string to hit the end of file
+  if (c != '"') goto parse_error;
+
+  arr_byte_append(&str, slice_substring(json, left, (*i)++));
+  arr_byte_trim(&str);
+  *out = slice_build(str.begin, str.size);
+  return c;
+
+parse_error:
+
+  arr_byte_free(&str);
+  *out = slice_empty;
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static bool _json_parse_value(slice_t value, DataNode node) {
+  value = slice_trim(value);
+
+  // check for tokenized values, true, false, null
+  if (isalpha(value.begin[0])) {
+    bool result;
+    if (slice_to_bool(value, &result)) {
+      node->type = DN_BOOL;
+      node->value_bool = result;
+      return true;
+    }
+
+    if (slice_eq(value, slice_null)) {
+      node->type = DN_NULL;
+      return true;
+    }
+  }
+
+  // check for numeric value
+  else if (isnum(value.begin[0])) {
+    if (slice_contains(value, S("."))) {
+      double result;
+      if (slice_to_double(value, &result)) {
+        node->type = DN_FLOAT;
+        node->value_float = result;
+        return true;
+      }
+    }
+    else {
+      index_t result;
+      if (slice_to_long(value, &result)) {
+        node->type = DN_INT;
+        node->value_int = result;
+        return true;
+      }
+    }
+  }
+
+  node->type = DN_NULL;
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static char _json_parse_obj(
+  DataTree_Internal* tree, slice_t json, index_t* i, DataNode node
+) {
+  node->type = DN_OBJECT;
+  Array_dmemb members = arr_dmemb_new();
+
+  char delimiter;
+
+  loop {
+    // object either finds a member (starting with a quote), or ends
+    res_token_t t = slice_token_char(json, S("\"}"), i);
+
+    // invalid case (unexpected EOF)
+    delimiter = 0;
+    if (!t.delimiter.size) goto finish;
+    delimiter = t.delimiter.begin[0];
+
+    // found the end of the object, clean exit
+    if (delimiter == '}') goto finish;
+    assert(delimiter == '"');
+
+    dnode_member_t* member = arr_dmemb_emplace_back(members);
+
+    delimiter = _json_parse_string(json, i, &member->name);
+    if (delimiter != '"') goto parse_error;
+
+    t = slice_token_char(json, S(":"), i);
+
+    // hit EOF after member name, or garbage included between name and value
+    if (!t.delimiter.size || !slice_is_empty(t.token)) goto parse_error;
+
+    delimiter = _json_parse_node(tree, json, i, &member->node);
+
+    // check for error in sub-object parsing
+    if (delimiter != '}' && delimiter != ',') goto parse_error;
+  }
+
+parse_error:
+
+  delimiter = 0;
+
+finish:
+
+  arr_dmemb_trim(members);
+  node->object.size = members->size;
+  node->object.children = arr_dmemb_release(&members).begin;
+
+  return delimiter;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void _json_array_condense(DataTree_Internal* tree, DataNode node) {
+  if (node->array.size <= 0) return;
+  if (node->array.elem_type != DN_ARRAY_ELEM_MIXED) return;
+
+  dnode_type_t type = node->array.nodes[0].type;
+
+  // we can only condense the array size if they all have a matching type
+  for (index_t i = 1; i < node->array.size; ++i) {
+    if (type != node->array.nodes[i].type) return;
+  }
+
+  Array arr = NULL;
+
+  // evaluate the type of the homogeneous array
+  switch (type) {
+    case DN_NULL:
+      free(node->array.nodes);
+      node->array.nodes = NULL;
+      node->array.elem_type = DN_NULL;
+      return;
+
+    case DN_OBJECT: SWITCH_FALLTHROUGH;
+    case DN_ARRAY:
+      node->array.elem_type = type;
+      return;
+
+    case DN_BOOL:
+      arr = arr_new_reserve(bool, node->array.size);
+      break;
+
+    case DN_INT:
+      arr = arr_new_reserve(int64_t, node->array.size);
+      break;
+
+    case DN_FLOAT:
+      arr = arr_new_reserve(double, node->array.size);
+      break;
+
+    case DN_STRING:
+      arr = arr_new_reserve(slice_t, node->array.size);
+      break;
+
+    default:
+      return;
+  }
+
+  assert(arr);
+
+  // if we're left with a type, copy all values into the new array.
+  // the array is aware of the element size, `insert` can handle the conversion
+  for (index_t i = 0; i < node->array.size; ++i) {
+    arr_insert_back(arr, &node->array.nodes[i].value_int);
+  }
+
+  arr_trim(arr);
+
+  free(node->array.nodes);
+  node->array.nodes = arr_release(&arr).begin;
+  node->array.elem_type = type;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static char _json_parse_array(
+  DataTree_Internal* tree, slice_t json, index_t* i, DataNode node
+) {
+  node->type = DN_ARRAY;
+  Array_dnode children = arr_dnode_new();
+
+  char delimiter;
+
+  loop{
+    dnode_t node;
+    delimiter = _json_parse_node(tree, json, i, &node);
+
+    if (!delimiter) {
+      // lame hack for empty arrays
+      if (json.begin[*i - 1] == ']') {
+        delimiter = ']';
+        goto finish;
+      }
+      goto parse_error;
+    }
+
+    // check for error in sub-object parsing
+    if (delimiter != '}' && delimiter != '"'
+    &&  delimiter != ']' && delimiter != ','
+    ) {
+      _dtree_delete_node(&node);
+      goto parse_error;
+    }
+
+    arr_dnode_push_back(children, node);
+
+    if (delimiter == ']') goto finish;
+  }
+
+parse_error:
+
+  delimiter = 0;
+
+finish:
+
+  arr_dnode_trim(children);
+  node->array.elem_type = DN_ARRAY_ELEM_MIXED;
+  node->array.size = children->size;
+  node->array.nodes = arr_dnode_release(&children).begin;
+
+  _json_array_condense(tree, node);
+
+  return delimiter;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static char _json_parse_node(
+  DataTree_Internal* tree, slice_t json, index_t* i, DataNode node
+) {
+  UNUSED(tree);
+  UNUSED(node);
+
+  res_token_t t = slice_token_char(json, S("{}[],\""), i);
+
+  // It's possible to hit the end of file legitimately on the root node
+  char delimiter = '\0';
+  if (t.delimiter.size) delimiter = t.delimiter.begin[0];
+
+  switch (t.delimiter.begin[0]) {
+    case '{':
+      if (!slice_is_empty(t.token)) goto parse_error;
+      return _json_parse_obj(tree, json, i, node);
+
+    case '[':
+      if (!slice_is_empty(t.token)) goto parse_error;
+      return _json_parse_array(tree, json, i, node);
+
+    case '"':
+      if (!slice_is_empty(t.token)) goto parse_error;
+      node->type = DN_STRING;
+      delimiter = _json_parse_string(json, i, &node->value_str);
+      if (delimiter != '"') goto parse_error;
+      t = slice_token_char(json, S("}],"), i);
+      if (!slice_is_empty(t.token)) goto parse_error;
+      if (t.delimiter.size) return t.delimiter.begin[0];
+      return 0;
+
+    // handles:
+    //  - ',' comma separator between array elements and object members
+    //  - '}', ']' last item in an object or array
+    //  - EOF the root node can go until end of file (non-container roots)
+    default:
+      bool success = _json_parse_value(t.token, node);
+      if (!success) goto parse_error;
+      return delimiter;
+  }
+
+  // return last-read delimiter as 0 if we hit the end of the file after reading
+  if (*i >= json.size) {
+    return 0;
+  }
+
+  // for container types, return the last-read delimiter and advance past it
+  return json.begin[*i++];
+
+parse_error:
+
+  // error-case happens when we:
+  //  - read things between container start values (example: `{ "key": x {} }`
+  //  - fail to successfully read a value type (example: `{ "key": ture }`
+  node->type = DN_NULL;
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static DataNode _dtree_json_node(
+  DataTree_Internal* tree, slice_t json, index_t* i
+) {
+  DataNode node = malloc(sizeof(dnode_t));
+  assert(node);
+  _json_parse_node(tree, json, i, node);
+  return node;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+DataTree dtree_from_json(slice_t json) {
+  assert(slice_is_valid(json));
+  DataTree_Internal* ret = _dtree_new();
+  index_t i = 0;
+  ret->pub.root = _dtree_json_node(ret, json, &i);
+
+  return (DataTree)ret;
+}
