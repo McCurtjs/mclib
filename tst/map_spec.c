@@ -29,8 +29,6 @@
 
 #include "cspec.h"
 
-int cmp_int(const int* a, const int* b) { return a < b; }
-
 describe(map_construction) {
 
   it("Takes no action when trying to delete a null pointer") {
@@ -113,7 +111,7 @@ describe(map_ensure) {
   }
 
   it("adds an element to the map and reads it back") {
-    res_ensure_t result = map_ensure(map, &(int){ 5 });
+    map_ensure_t result = map_ensure(map, &(int){ 5 });
 
     expect(result.is_new to be_true);
     expect(map->size to equal(1));
@@ -140,7 +138,7 @@ describe(map_ensure) {
       expect(map->size, == , (index_t)i);
     }
 
-    // validate refernce values
+    // validate reference values
     for (i = 1; i < 6; ++i) {
       int* result = map_ref(map, &i);
       expect(*result to equal(i * 5));
@@ -161,7 +159,7 @@ describe(map_ensure) {
     int key = 1337;
     *(int*)map_ensure(map, &key).value = 123;
 
-    res_ensure_t find = map_ensure(map, &key);
+    map_ensure_t find = map_ensure(map, &key);
     expect(find.is_new to be_false);
     expect(*(int*)find.value to equal(123));
   }
@@ -209,7 +207,7 @@ describe(map_ref) {
 
   HMap map = map_new(int, int, NULL, NULL);
 
-  it("asserts if a NULL vlaue is given for the key") {
+  it("asserts if a NULL value is given for the key") {
     expect(to_assert);
     map_ref(map, NULL);
   }
@@ -255,7 +253,7 @@ describe(map_remove) {
 
   HMap map = map_new(int, int, NULL, NULL);
 
-  it("asserts if a NULL vlaue is given for the key") {
+  it("asserts if a NULL value is given for the key") {
     expect(to_assert);
     map_remove(map, NULL);
   }

@@ -70,6 +70,7 @@ extern TestSuite tests_span;
 extern TestSuite tests_slice;
 extern TestSuite tests_array;
 extern TestSuite tests_string;
+extern TestSuite tests_set;
 extern TestSuite tests_map;
 extern TestSuite tests_vec;
 extern TestSuite tests_mat;
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef CSPEC_MSVC
   /* Test values for Visual Studio without having to modify properties */
-  argv = (char* []){ argv[0], "-yv", "data_tree_spec.c" };
+  argv = (char* []){ argv[0], "-yv", "set_spec.c" };
   argc = 3;
 #endif
 
@@ -95,6 +96,7 @@ int main(int argc, char* argv[]) {
     &tests_span,
     &tests_array,
     &tests_string,
+    &tests_set,
     &tests_map,
     &tests_vec,
     &tests_mat,

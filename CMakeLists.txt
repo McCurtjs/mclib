@@ -13,6 +13,7 @@ target_sources(McLib PRIVATE
   src/mat.c
   src/packedmap.c
   src/quat.c
+  src/set.c
   src/slice.c
   src/slotmap.c
   src/span.c
@@ -34,6 +35,7 @@ target_sources(McLib PRIVATE
   include/pair.h
   include/partition.h
   include/quat.h
+  include/set.h
   include/slice.h
   include/slotkey.h
   include/slotmap.h
@@ -89,6 +91,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     tst/mat_spec.c
     tst/packedmap_spec.c
     tst/quat_spec.c
+    tst/set_spec.c
     tst/slotmap_spec.c
     tst/span_spec.c
     tst/str_spec.c

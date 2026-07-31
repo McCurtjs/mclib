@@ -26,7 +26,7 @@
 #define MCLIB_HASHMAP_H_
 
 //
-// Dynamic Hashmap container
+// Dynamic Hash Map (Dictionary) container
 //
 // // Create, Setup, Delete
 // Map_K_V      map_k_v_new();
@@ -37,7 +37,7 @@
 // void         map_k_v_delete(Map_K_V*);
 //
 // // Item Addition
-// res_ensure_t map_k_v_ensure(Map_K_V, key); { .value, .is_new }
+// map_ensure_t map_k_v_ensure(Map_K_V, key); { .value, .is_new }
 // V*           map_k_v_emplace(Map_K_V, key);
 // void         map_k_v_write(Map_K_V, key, value);
 // bool         map_k_v_insert(Map_K_V, key, value);
@@ -64,11 +64,6 @@ typedef struct _opaque_Map_base_t {
   bool          fixed_size;
 }* HMap; // Map_void? Map_base?
 
-typedef struct res_ensure_t {
-  void* value;
-  bool is_new;
-} res_ensure_t;
-
 typedef struct pair_kv_t {
   union {
     const void* key;
@@ -80,6 +75,11 @@ typedef struct pair_kv_t {
   };
 } pair_kv_t;
 
+typedef struct map_ensure_t {
+  void* value;
+  bool is_new;
+} map_ensure_t;
+
 typedef void (*map_process_fn)(pair_kv_t slot);
 
 #define       map_new(T_KEY, T_VAL, FN_HASH, FN_CMP)  \
@@ -87,7 +87,9 @@ typedef void (*map_process_fn)(pair_kv_t slot);
 
 //void*     map_emplace_hash(HMap map, const void* key, hash_t hash);
 
-HMap         imap_new(index_t ksz, index_t vsz, hash_fn hash, compare_fn cmp);
+HMap         imap_new(index_t key_size, index_t element_size,
+                      hash_fn hash, compare_fn cmp);
+
 void          map_callbacks_key(HMap m, copy_fn key_copy, delete_fn key_delete);
 void          map_callbacks_element(HMap m, copy_fn el_copy, delete_fn el_del);
 //void        map_callback_copy(HMap map);
@@ -98,7 +100,7 @@ void          map_delete(HMap* map);
 void          map_free(HMap map);
 void          map_clear(HMap map);
 
-res_ensure_t  map_ensure(HMap map, const void* key);
+map_ensure_t  map_ensure(HMap map, const void* key);
 void*         map_emplace(HMap map, const void* key);
 bool          map_write(HMap map, const void* key, const void* value);
 bool          map_insert(HMap map, const void* key, const void* value);
@@ -131,7 +133,7 @@ bool          map_remove(HMap map, const void* key);
   map_foreach_ktype(VALUE, void*, KEY, MAP)                                   //
 
 #define map_foreach(VALUE, MAP)                                               \
-  map_foreach_kv(VALUE, MACRO_CONCAT(_mapkey_, __LINE__), MAP)               //
+  map_foreach_kv(VALUE, MACRO_CONCAT(_mapkey_, __LINE__), MAP)                //
 
 #endif
 
@@ -288,19 +290,19 @@ static inline void _prefix(_delete)
 
 // \brief Finds an existing element or adds the space for it if it isn't already
 //    present. The value may or may not contain an already existing value, which
-//    can be determined by the `is_new` value in the resulting res_ensure_t
+//    can be determined by the `is_new` value in the resulting map_ensure_t
 //    struct.
 //
 // \param key - the key for the location to either find or add to the map
 //
-// \returns an res_ensure_t struct variant with:
+// \returns an map_ensure_t struct variant with:
 //    - value: a pointer to the location represented by the given key. May be
 //              either a valid value, or newly allocated and uninitialized.
 //    - is_new: a boolean value indicating whether or not the value was newly
 //              added to the map, or if it is already existing valid data.
 static inline _ensure_type _prefix(_ensure)
 (_map_type map, _key_type key) {
-  res_ensure_t ret = map_ensure((HMap)map, &key);
+  map_ensure_t ret = map_ensure((HMap)map, &key);
   return *((_ensure_type*)&ret);
 }
 

@@ -183,7 +183,7 @@ static Map_Cell* _cell_take_from_free_list(Map_Internal* m) {
 typedef struct _ensure_t {
   void* key;
   union {
-    res_ensure_t ensured_value;
+    map_ensure_t ensured_value;
     struct {
       void* value;
       bool is_new;
@@ -473,52 +473,45 @@ void map_free(HMap m_in) {
 // Inserting elements
 ////////////////////////////////////////////////////////////////////////////////
 
-res_ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
+map_ensure_t map_ensure_hash(HMap m_in, const void* key, hash_t hash) {
   HMAP_INTERNAL;
   _ensure_t ret = _map_ensure(m, key, hash);
   if (ret.is_new) m->key_copy(ret.key, key, m->key_size);
   return ret.ensured_value;
 }
 
-res_ensure_t map_ensure(HMap m_in, const void* key) {
+map_ensure_t map_ensure(HMap m_in, const void* key) {
   HMAP_INTERNAL;
   assert(key);
   return map_ensure_hash(m_in, key, _key_hash(m, key));
 }
 
 void* map_emplace_hash(HMap m_in, const void* key, hash_t hash) {
-  res_ensure_t result = map_ensure_hash(m_in, key, hash);
+  map_ensure_t result = map_ensure_hash(m_in, key, hash);
   if (!result.is_new) return NULL;
   return result.value;
 }
 
 void* map_emplace(HMap m_in, const void* key) {
-  res_ensure_t result = map_ensure(m_in, key);
+  map_ensure_t result = map_ensure(m_in, key);
   if (!result.is_new) return NULL;
   return result.value;
 }
 
-bool map_write_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
-  HMAP_INTERNAL;
-  res_ensure_t result = map_ensure_hash(m_in, key, hash);
-  assert(result.value);
-  if (!result.is_new && m->element_delete) m->element_delete(result.value);
-  m->element_copy(result.value, val, m->element_size);
-  return result.is_new;
-}
-
 bool map_write(HMap m_in, const void* key, const void* value) {
   HMAP_INTERNAL;
-  res_ensure_t result = map_ensure(m_in, key);
+  map_ensure_t result = map_ensure(m_in, key);
   assert(result.value);
-  if (!result.is_new && m->element_delete) m->element_delete(result.value);
-  m->element_copy(result.value, value, m->element_size);
+  if (result.value != value) {
+    if (!result.is_new && m->element_delete) m->element_delete(result.value);
+    m->element_copy(result.value, value, m->element_size);
+  }
   return result.is_new;
 }
 
 bool map_insert_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
   HMAP_INTERNAL;
-  res_ensure_t result = map_ensure_hash(m_in, key, hash);
+  map_ensure_t result = map_ensure_hash(m_in, key, hash);
   if (!result.is_new || !result.value) return FALSE;
   m->element_copy(result.value, val, m->element_size);
   return TRUE;
@@ -526,7 +519,7 @@ bool map_insert_hash(HMap m_in, const void* key, const void* val, hash_t hash) {
 
 bool map_insert(HMap m_in, const void* key, const void* value) {
   HMAP_INTERNAL;
-  res_ensure_t result = map_ensure(m_in, key);
+  map_ensure_t result = map_ensure(m_in, key);
   if (!result.is_new || !result.value) return FALSE;
   m->element_copy(result.value, value, m->element_size);
   return TRUE;

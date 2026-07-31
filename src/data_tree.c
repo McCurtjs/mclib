@@ -359,7 +359,7 @@ static char _json_parse_string(slice_t json, index_t* i, slice_t* out) {
 
   arr_byte_append(&str, slice_substring(json, left, (*i)++));
   arr_byte_trim(&str);
-  *out = slice_build(str.begin, str.size);
+  *out = slice_build((char* const)str.begin, str.size);
   return c;
 
 parse_error:
@@ -468,6 +468,8 @@ finish:
 ////////////////////////////////////////////////////////////////////////////////
 
 static void _json_array_condense(DataTree_Internal* tree, DataNode node) {
+  UNUSED(tree);
+
   if (node->array.size <= 0) return;
   if (node->array.elem_type != DN_ARRAY_ELEM_MIXED) return;
 
