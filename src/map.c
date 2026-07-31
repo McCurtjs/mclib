@@ -547,6 +547,33 @@ void* map_ref(HMap m_in, const void* key) {
   return map_ref_hash(m_in, key, hash);
 }
 
+bool map_read(HMap m_in, const void* key, void* out_element) {
+  HMAP_INTERNAL;
+  assert(key);
+  assert(out_element);
+  void* value = map_ref(m_in, key);
+  if (!value) return false;
+  memcpy(out_element, value, m->size);
+  return true;
+}
+
+bool map_read_or_default(
+  HMap m_in, const void* key, void* out, const void* default_value
+) {
+  HMAP_INTERNAL;
+  assert(key);
+  assert(out);
+  assert(default_value);
+  if (map_read(m_in, key, out)) return true;
+  memcpy(out, default_value, m->size);
+  return false;
+}
+
+bool set_contains_key(HMap m_in, const void* key) {
+  HMAP_INTERNAL;
+  return map_ref(m_in, key) != NULL;
+}
+
 pair_kv_t map_next(HMap m_in, const void* key) {
   HMAP_INTERNAL;
   if (!m->size) return (pair_kv_t) { NULL, NULL };

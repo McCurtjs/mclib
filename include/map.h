@@ -37,21 +37,26 @@
 // void         map_k_v_delete(Map_K_V*);
 //
 // // Item Addition
-// map_ensure_t map_k_v_ensure(Map_K_V, key); { .value, .is_new }
-// V*           map_k_v_emplace(Map_K_V, key);
-// void         map_k_v_write(Map_K_V, key, value);
-// bool         map_k_v_insert(Map_K_V, key, value);
+// map_ensure_t map_k_v_ensure(Map_K_V, const K* key); { .value, .is_new }
+// V*           map_k_v_emplace(Map_K_V, const K* key);
+// bool         map_k_v_insert(Map_K_V, const K* key, const V* value);
+// void         map_k_v_write(Map_K_V, const K* key, const V* value);
+// bool         map_k_v_add(Map_K_V, K key, V value);
+// bool         map_k_v_replace(Map_K_V, K key, V value);
 //
 // // Item Removal
-// bool         map_k_v_remove(Map_K_V, key);
+// bool         map_k_v_remove(Map_K_V, const V* key);
+// bool         map_k_v_erase(Map_K_V, V key);
 //
 // // Accessors
 // V*           map_k_v_ref(Map_K_V, key);
 // V            map_k_v_get(Map_K_V, key);
 // V            map_k_v_get_or_default(Map_K_V, key, V default);
 // bool         map_k_v_read(Map_K_V, key, V* out);
-// bool         map_k_v_read_or_default(Map_K_V, key, V* out, V default);
-// bool         map_k_v_contains_key(Map_K_V, key);
+// bool         map_k_v_read_or_default(Map_K_V, c_K* key, V* out, c_V* default);
+// bool         map_k_v_contains_key(Map_K_V, const K* key);
+// bool         map_k_v_has_key(Map_K_V, K key);
+// pair_K_V_t   map_k_v_next(Map_K_V, void* iterator);
 //
 
 #include "types.h"
@@ -105,6 +110,10 @@ void*         map_emplace(HMap map, const void* key);
 bool          map_write(HMap map, const void* key, const void* value);
 bool          map_insert(HMap map, const void* key, const void* value);
 void*         map_ref(HMap map, const void* key);
+bool          map_contains_key(HMap map, const void* key);
+bool          map_read(HMap map, const void* key, void* out_element);
+bool          map_read_or_default(
+                HMap, const void* key, void* out, const void* default_value);
 pair_kv_t     map_next(HMap map, const void* iterator);
 bool          map_remove(HMap map, const void* key);
 //bool        map_read(HMap map, key_t key, void* out_element);
@@ -301,8 +310,8 @@ static inline void _prefix(_delete)
 //    - is_new: a boolean value indicating whether or not the value was newly
 //              added to the map, or if it is already existing valid data.
 static inline _ensure_type _prefix(_ensure)
-(_map_type map, _key_type key) {
-  map_ensure_t ret = map_ensure((HMap)map, &key);
+(_map_type map, const _key_type* key) {
+  map_ensure_t ret = map_ensure((HMap)map, key);
   return *((_ensure_type*)&ret);
 }
 
@@ -319,8 +328,8 @@ static inline _ensure_type _prefix(_ensure)
 // \returns A pointer to the newly added and uninitialized element, or NULL if
 //    the key was already present in the map.
 static inline con_type* _prefix(_emplace)
-(_map_type map, _key_type key) {
-  return map_emplace((HMap)map, &key);
+(_map_type map, const _key_type* key) {
+  return map_emplace((HMap)map, key);
 }
 
 // \brief Writes a copy of the given element into the given position in the map.
@@ -330,9 +339,14 @@ static inline con_type* _prefix(_emplace)
 // \param key - the location in the map to write the element to
 //
 // \param value - the element to copy into the map.
-static inline void _prefix(_write)
+static inline bool _prefix(_write)
+(_map_type map, const _key_type* key, const con_type* value) {
+  return map_write((HMap)map, key, value);
+}
+
+static inline bool _prefix(_replace)
 (_map_type map, _key_type key, con_type value) {
-  map_write((HMap)map, &key, &value);
+  return map_write((HMap)map, &key, &value);
 }
 
 // \brief Inserts a copy of the given element into the given map position. The
@@ -345,6 +359,11 @@ static inline void _prefix(_write)
 //
 // \returns A boolean value indicating whether or not a value was written.
 static inline bool _prefix(_insert)
+(_map_type map, const _key_type* key, const con_type* value) {
+  return map_insert((HMap)map, key, value);
+}
+
+static inline bool _prefix(_add)
 (_map_type map, _key_type key, con_type value) {
   return map_insert((HMap)map, &key, &value);
 }
@@ -356,6 +375,11 @@ static inline bool _prefix(_insert)
 //
 // \returns true if an element was removed, false otherwise
 static inline bool _prefix(_remove)
+(_map_type map, const _key_type* key) {
+  return map_remove((HMap)map, key);
+}
+
+static inline bool _prefix(_erase)
 (_map_type map, _key_type key) {
   return map_remove((HMap)map, &key);
 }
@@ -367,21 +391,8 @@ static inline bool _prefix(_remove)
 //
 // \returns a pointer to the element at the given key, or NULL if none is found.
 static inline con_type* _prefix(_ref)
-(_map_type map, _key_type key) {
-  return map_ref((HMap)map, &key);
-}
-
-// \brief Given a valid pointer to an iterator/key within the map, returns the
-//    next slot in the map in memory order. Used to iterate over all elements.
-//
-// \param iterator - a key value previously returned from this function, or
-//    NULL to get the first element in the map.
-//
-// \returns a pair containing pointers to a key and its value within the map.
-static inline _pair_type _prefix(_next)
-(_map_type map, void* iterator) {
-  pair_kv_t ret = map_next((HMap)map, iterator);
-  return *((_pair_type*)&ret);
+(_map_type map, const _key_type* key) {
+  return map_ref((HMap)map, key);
 }
 
 // \brief Gets a copy of the element at the given position. If the location of
@@ -392,10 +403,20 @@ static inline _pair_type _prefix(_next)
 // \returns A copy of the element in the map.
 static inline con_type _prefix(_get)
 (_map_type map, _key_type key) {
-  assert(map);
   con_type* element = map_ref((HMap)map, &key);
   assert(element);
   return *element;
+}
+
+// \brief Gets a copy of the element at the given position. If the location of
+//    the key is not valid, an assert will be thrown.
+//
+// \param key - the location in the map to retrieve the element from
+//
+// \returns A copy of the element in the map.
+static inline con_type* _prefix(_get_ref)
+(_map_type map, _key_type key) {
+  return map_ref((HMap)map, &key);
 }
 
 // \brief Gets a copy of the element at the given key position. If the location
@@ -423,13 +444,8 @@ static inline con_type _prefix(_get_or_default)
 //
 // \returns True if an element was found and written, false otherwise.
 static inline bool _prefix(_read)
-(_map_type map, _key_type key, con_type* out_element) {
-  assert(map);
-  assert(out_element);
-  con_type* value = map_ref((HMap)map, &key);
-  if (!value) return false;
-  *out_element = *value;
-  return true;
+(_map_type map, const _key_type* key, con_type* out_element) {
+  return map_read((HMap)map, key, out_element);
 }
 
 // \brief Copies the value at the given key position into the output element. If
@@ -443,16 +459,20 @@ static inline bool _prefix(_read)
 //
 // \returns True if the written item is from the map, false if default is used.
 static inline bool _prefix(_read_or_default)
-(_map_type map, _key_type key, con_type* out_element, con_type default_value) {
+( _map_type map
+, _key_type key
+, con_type* out_element
+, const con_type* default_value
+) {
   assert(map);
   assert(out_element);
   con_type* value = map_ref((HMap)map, &key);
-  if (!value) {
-    *out_element = default_value;
-    return false;
+  if (value) {
+    *out_element = *value;
+    return true;
   }
-  *out_element = *value;
-  return true;
+  *out_element = *default_value;
+  return false;
 }
 
 // \brief Checks if a given key is contained in the map.
@@ -461,8 +481,26 @@ static inline bool _prefix(_read_or_default)
 //
 // \returns True if the map contains the key, false otherwise.
 static inline bool _prefix(_contains_key)
+(_map_type map, const _key_type* key) {
+  return map_contains_key((HMap)map, key);
+}
+
+static inline bool _prefix(_has_key)
 (_map_type map, _key_type key) {
-  return map_ref((HMap)map, &key);
+  return map_contains_key((HMap)map, &key);
+}
+
+// \brief Given a valid pointer to an iterator/key within the map, returns the
+//    next slot in the map in memory order. Used to iterate over all elements.
+//
+// \param iterator - a key value previously returned from this function, or
+//    NULL to get the first element in the map.
+//
+// \returns a pair containing pointers to a key and its value within the map.
+static inline _pair_type _prefix(_next)
+(_map_type map, void* iterator) {
+  pair_kv_t ret = map_next((HMap)map, iterator);
+  return *((_pair_type*)&ret);
 }
 
 #undef _map_type

@@ -298,7 +298,6 @@ static inline const con_type* _prefix(_ref)
 // \returns A copy of the element in the set.
 static inline con_type _prefix(_get)
 (_set_type set, con_type value) {
-  assert(set);
   const con_type* element = set_ref((HSet)set, &value);
   assert(element);
   return *element;

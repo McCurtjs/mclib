@@ -341,11 +341,11 @@ describe(map_stuff) {
 
   HMap_int ints = map_int_new();
 
-  res_ensure_int_t result = map_int_ensure(ints, S("Input"));
+  res_ensure_int_t result = map_int_ensure(ints, &S("Input"));
   *result.value = 12;
 
   map_int_new();
-  int* test = map_int_ref(ints, S("Test"));
+  int* test = map_int_ref(ints, &S("Test"));
   int xyz = map_int_get(ints, S("Input"));
   pair_kv_int_t first = map_int_next(ints, NULL);
   pair_deconstruct(key, value, first);
@@ -359,18 +359,18 @@ describe(map_stuff) {
 
   HMap_str_float fmap = map_str_float_new();
 
-  res_ensure_str_float_t e = map_str_float_ensure(fmap, S("Strings key test"));
+  res_ensure_str_float_t e = map_str_float_ensure(fmap, &S("Strings key test"));
   expect(e.is_new);
   *e.value = 42.5f;
 
-  e = map_str_float_ensure(fmap, S("Washington"));
+  e = map_str_float_ensure(fmap, &S("Washington"));
   *e.value = 999.9f;
 
   String ephemeral_key = str_concat("lhs", "_", "rhs");
-  map_str_float_write(fmap, ephemeral_key->slice, 12.1f);
+  map_str_float_write(fmap, &ephemeral_key->slice, &(float){ 12.1f });
   str_delete(&ephemeral_key);
 
-  e = map_str_float_ensure(fmap, S("lhs_rhs"));
+  e = map_str_float_ensure(fmap, &S("lhs_rhs"));
   expect(*e.value to be_about(12.1f));
 
   /*
