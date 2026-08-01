@@ -474,7 +474,7 @@ static char _json_parse_obj(
 
     delimiter = _json_parse_node(tree, json, i, &member->node);
 
-    // check for error in sub-object parsing
+    // check for errors or completion from sub-parsing
     if (delimiter != '}' && delimiter != ',') goto parse_error;
   }
 
@@ -648,6 +648,7 @@ static char _json_parse_node(
     default:
       bool success = _json_parse_value(t.token, node);
       if (!success) goto parse_error;
+      if (delimiter == '}' || delimiter == ']') --*i;
       return delimiter;
   }
 
