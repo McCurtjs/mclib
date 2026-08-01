@@ -66,6 +66,7 @@ void printer(const char* str, csUint len, csUint color) {
 // Test suites
 
 extern TestSuite tests_cspec;
+extern TestSuite tests_arena;
 extern TestSuite tests_span;
 extern TestSuite tests_slice;
 extern TestSuite tests_array;
@@ -92,6 +93,7 @@ int main(int argc, char* argv[]) {
 
   TestSuite* test_suites[] = {
     &tests_cspec,
+    &tests_arena,
     &tests_slice,
     &tests_span,
     &tests_array,

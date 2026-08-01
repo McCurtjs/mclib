@@ -5,6 +5,7 @@ add_library(McLib)
 set_property(TARGET McLib PROPERTY C_STANDARD 23)
 target_include_directories(McLib PUBLIC include)
 target_sources(McLib PRIVATE
+  src/arena.c
   src/array.c
   src/data_node.c
   src/data_tree.c
@@ -23,6 +24,7 @@ target_sources(McLib PRIVATE
   src/vec.c
   src/view.c
   include/types.h
+  include/arena.h
   include/array.h
   include/array_byte.h
   include/array_slice.h
@@ -30,12 +32,16 @@ target_sources(McLib PRIVATE
   include/data_tree.h
   include/data_view.h
   include/map.h
+  include/map_slice.h
+  include/map_str.h
   include/mat.h
   include/packedmap.h
   include/pair.h
   include/partition.h
   include/quat.h
   include/set.h
+  include/set_slice.h
+  include/set_str.h
   include/slice.h
   include/slotkey.h
   include/slotmap.h
@@ -84,6 +90,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   target_sources(McLib_specs PRIVATE
     lib/cspec/tst/cspec_spec.c
     tst/spec_main.c
+    tst/arena_spec.c
     tst/array_spec.c
     tst/data_node_spec.c
     tst/data_tree_spec.c
