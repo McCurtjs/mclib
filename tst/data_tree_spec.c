@@ -218,6 +218,12 @@ describe(dtree_from_json) {
       to all_be( == , ((int64_t[]) { 1, 2, 3, 4, 5 }) [n] ));
   }
 
+  it("can read an object using multiple copies of the same member key") {
+    dtree = dtree_from_json(
+      S("{\"first\":{\"x\":4,\"y\":12},\"second\":{\"x\":0,\"y\":1}}")
+    );
+  }
+
   after{
     expect(dtree to not be_null);
     dtree_delete(&dtree);

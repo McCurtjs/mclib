@@ -26,6 +26,7 @@
 #include "data_tree.h"
 
 #include "array_byte.h"
+#include "arena.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -50,14 +51,20 @@
 #undef con_prefix
 #undef con_type
 
-#define con_type slice_t
-#define con_prefix slice
-#include "map.h"
-#undef con_prefix
-#undef con_type
+#include "map_slice.h"
+#include "set_slice.h"
 
 typedef struct DataTree_Internal {
   struct _opaque_DataTree_t pub;
+
+  // string pool arena for storing final values of string data
+  Arena string_pool;
+
+  // slice set for ensuring uniqueness of strings
+  HSet_slice string_set;
+
+  // scratch space for building string data while reading files
+  Array_byte string_scratch;
 
   //array_dnode_t nodes;
   //array_dmemb_t membs;
@@ -73,6 +80,8 @@ DataTree_Internal* _dtree_new(void) {
   //arr_dmemb_init(&ret->membs);
   //arr_byte_init(&ret->data);
   ret->pub.root = NULL;
+  ret->string_pool = arena_new();
+  ret->string_set = set_slice_new();
 
   return ret;
 }
@@ -83,15 +92,24 @@ DataTree_Internal* _dtree_new(void) {
 
 static void _dtree_copy_node_contents(DataTree_Internal*, DataNode, DataView);
 
-static slice_t _dtree_store_string(DataTree_Internal* tree, slice_t slice) {
-  UNUSED(tree);
-  // needs to be updated to store strings in a set and arena
-  //    (set will contain slices and hash, arena will store the string data)
-  char* str = malloc(slice.length + 1);
-  assert(str);
-  memcpy(str, slice.begin, slice.size);
-  str[slice.size] = '\0';
-  return slice_build(str, slice.size);
+static slice_t _dtree_get_canon_string(DataTree_Internal* tree, slice_t slice) {
+  slice_t* canon = set_slice_ref(tree->string_set, &slice);
+
+  if (canon) {
+    slice = *canon;
+  }
+  else {
+    // our strings are only ever surfaced as slices, so the terminating
+    //    null isn't strictly necessary, but do it here to provide a
+    //    convenient guarantee.
+    char* copy = arena_alloc(tree->string_pool, slice.size + 1);
+    memcpy(copy, slice.begin, slice.size);
+    copy[slice.size] = '\0';
+    slice = slice_build(copy, slice.size);
+    set_slice_add(tree->string_set, slice);
+  }
+
+  return slice;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -112,7 +130,7 @@ static void _dtree_copy_object(
 
   for (index_t i = 0; i < src->object.size; ++i) {
     dview_member_t* src_child = &src->object.children[i];
-    children[i].name = _dtree_store_string(tree, src_child->name);
+    children[i].name = _dtree_get_canon_string(tree, src_child->name);
     _dtree_copy_node_contents(tree, &children[i].node, &src_child->node);
   }
 
@@ -181,7 +199,7 @@ static void _dtree_copy_node_contents(
     case DN_FLOAT:  node->value_float = src->value_float; break;
 
     case DN_STRING: {
-      node->value_str = _dtree_store_string(tree, src->value_str);
+      node->value_str = _dtree_get_canon_string(tree, src->value_str);
     } break;
 
     case DN_OBJECT: _dtree_copy_object(tree, node, src); break; 
@@ -258,7 +276,6 @@ void _dtree_delete_node(DataNode node) {
     case DN_OBJECT: {
       for (index_t i = 0; i < node->object.size; ++i) {
         _dtree_delete_node(&node->object.children[i].node);
-        free((char*)node->object.children[i].name.begin);
       }
 
       if (node->object.size > 0) {
@@ -287,10 +304,6 @@ void _dtree_delete_node(DataNode node) {
       }
     } break;
 
-    case DN_STRING: {
-      free((char*)node->value_str.begin);
-    } break;
-
     default: break;
   }
 
@@ -306,8 +319,13 @@ void dtree_delete(DataTree* p_dtree) {
     _dtree_delete_node(dtree->pub.root);
     free(dtree->pub.root);
   }
-  free(dtree);
 
+  assert(!dtree->string_scratch);
+
+  set_slice_delete(&dtree->string_set);
+  arena_delete(&dtree->string_pool);
+
+  free(dtree);
 
   //Array_dnode nodes = &dtree->nodes;
   //Array_byte data = &dtree->data;
@@ -329,8 +347,12 @@ static char _json_parse_node(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static char _json_parse_string(slice_t json, index_t* i, slice_t* out) {
-  array_byte_t str = arr_byte_build();
+static char _json_parse_string(
+  DataTree_Internal* tree, slice_t json, index_t* i, slice_t* out
+) {
+  Array_byte scratch = tree->string_scratch;
+  assert(scratch);
+  assert(scratch->size == 0);
 
   index_t left = *i;
   char c = 0;
@@ -344,7 +366,7 @@ static char _json_parse_string(slice_t json, index_t* i, slice_t* out) {
 
     if (c == '\\') {
       if (*i >= json.size) goto parse_error;
-      arr_byte_append(&str, slice_substring(json, left, *i - 1));
+      arr_byte_append(scratch, slice_substring(json, left, *i - 1));
 
       if (json.begin[*i] == 'u') {
         // add by hexcode unicode value*
@@ -357,14 +379,18 @@ static char _json_parse_string(slice_t json, index_t* i, slice_t* out) {
   // check for the string to hit the end of file
   if (c != '"') goto parse_error;
 
-  arr_byte_append(&str, slice_substring(json, left, (*i)++));
-  arr_byte_trim(&str);
-  *out = slice_build((char* const)str.begin, str.size);
+  arr_byte_append(scratch, slice_substring(json, left, (*i)++));
+
+  // de-dup the string before cleanup
+  slice_t slice = _dtree_get_canon_string(tree, slice_from_arr(scratch));
+
+  arr_byte_clear(scratch);
+  *out = slice;
   return c;
 
 parse_error:
 
-  arr_byte_free(&str);
+  arr_byte_clear(scratch);
   *out = slice_empty;
   return 0;
 }
@@ -438,7 +464,7 @@ static char _json_parse_obj(
 
     dnode_member_t* member = arr_dmemb_emplace_back(members);
 
-    delimiter = _json_parse_string(json, i, &member->name);
+    delimiter = _json_parse_string(tree, json, i, &member->name);
     if (delimiter != '"') goto parse_error;
 
     t = slice_token_char(json, S(":"), i);
@@ -608,7 +634,7 @@ static char _json_parse_node(
     case '"':
       if (!slice_is_empty(t.token)) goto parse_error;
       node->type = DN_STRING;
-      delimiter = _json_parse_string(json, i, &node->value_str);
+      delimiter = _json_parse_string(tree, json, i, &node->value_str);
       if (delimiter != '"') goto parse_error;
       t = slice_token_char(json, S("}],"), i);
       if (!slice_is_empty(t.token)) goto parse_error;
@@ -659,7 +685,12 @@ DataTree dtree_from_json(slice_t json) {
   assert(slice_is_valid(json));
   DataTree_Internal* ret = _dtree_new();
   index_t i = 0;
+
+  ret->string_scratch = arr_byte_new_reserve(128);
+
   ret->pub.root = _dtree_json_node(ret, json, &i);
+
+  arr_byte_delete(&ret->string_scratch);
 
   return (DataTree)ret;
 }

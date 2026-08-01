@@ -297,4 +297,48 @@
     </Expand>
   </Type>
 
+  <Type Name="dview_t">
+    <AlternativeType Name="dnode_t"/>
+    <DisplayString Condition="type==DN_NULL">null</DisplayString>
+    <DisplayString Condition="type==DN_OBJECT">Object [{object.size}]</DisplayString>
+    <DisplayString Condition="type==DN_ARRAY">Array [{array.size}] {array.elem_type}</DisplayString>
+    <DisplayString Condition="type==DN_BOOL">{value_bool}</DisplayString>
+    <DisplayString Condition="type==DN_INT">{value_int}</DisplayString>
+    <DisplayString Condition="type==DN_FLOAT">{value_float} (float)</DisplayString>
+    <DisplayString Condition="type==DN_STRING">{value_str.begin,na}</DisplayString>
+    <DisplayString>DataNode {type}</DisplayString>
+    <Expand HideRawView="true">
+      <Item Condition="type==DN_NULL" Name="Value">"null",sb</Item>
+      <Item Condition="type==DN_OBJECT" Name="Members">object.size</Item>
+      <Item Condition="type==DN_ARRAY" Name="Size">array.size</Item>
+      <Item Condition="type==DN_ARRAY" Name="Element Type">array.elem_type</Item>
+      <Item Condition="type==DN_BOOL" Name="Value">value_bool</Item>
+      <Item Condition="type==DN_INT" Name="Value">value_int</Item>
+      <Item Condition="type==DN_FLOAT" Name="Value">value_float</Item>
+      <Item Condition="type==DN_STRING" Name="Value">value_str</Item>
+      <CustomListItems Condition="type==DN_OBJECT">
+        <Variable Name="i" InitialValue="0"/>
+        <Loop Condition="i &lt; object.size">
+          <Item Name="{object.children[i].name.begin,[object.children[i].name.size]na}">object.children[i].node</Item>
+          <Exec>++i</Exec>
+        </Loop>
+      </CustomListItems>
+      <CustomListItems Condition="type==DN_ARRAY">
+        <Variable Name="i" InitialValue="0"/>
+        <!-- &#124 is a pipe | character... -->
+        <Loop Condition="i &lt; array.size">
+          <Item Condition="array.elem_type==DN_OBJECT &#124; array.elem_type==DN_ARRAY &#124; array.elem_type==DN_ARRAY_ELEM_MIXED" Name="[{i}]">
+            array.nodes[i]
+          </Item>
+          <Item Condition="array.elem_type==DN_NULL" Name="[{i}]">"null"</Item>
+          <Item Condition="array.elem_type==DN_BOOL" Name="[{i}]">array.bools[i]</Item>
+          <Item Condition="array.elem_type==DN_INT" Name="[{i}]">array.ints[i]</Item>
+          <Item Condition="array.elem_type==DN_FLOAT" Name="[{i}]">array.floats[i]</Item>
+          <Item Condition="array.elem_type==DN_STRING" Name="[{i}]">array.strings[i]</Item>
+          <Exec>++i</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>

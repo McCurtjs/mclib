@@ -30,6 +30,7 @@
 #include "map.h"
 #include "slotmap.h"
 #include "packedmap.h"
+#include "data_tree.h"
 
 #include <string.h>
 
@@ -116,6 +117,36 @@ int main(void) {
   pmap_insert(packmap, &f2);
   pmap_insert(packmap, &v2zero);
   pmap_remove(packmap, key);
+
+  DataNode dnode = NODE_ROOT(
+    NODE_OBJECT(
+      MEMB_INT("herp", 5),
+      MEMB_STRING("derp", "5"),
+      MEMB_OBJECT("test",
+        MEMB_INT("sub", 6),
+        MEMB_NULL("nothin")
+      ),
+      MEMB_ARRAY(S("arr"),
+        NODE_BOOL(false),
+        NODE_INT(5),
+        NODE_STRING("string"),
+        NODE_OBJECT_EMPTY,
+        NODE_ARRAY_FLOAT(1, 2, 3.087, 4, 5),
+        NODE_ARRAY_EMPTY,
+        NODE_ARRAY_ARRAY(
+          NODE_ARRAY_BOOL(true, false, false, true, false),
+          NODE_ARRAY_INT(1, 2, 3),
+          NODE_ARRAY_FLOAT(1.0, 2.0, 3.0),
+          NODE_ARRAY_STRING(S("one"), S("two"), S("three")),
+          NODE_ARRAY_OBJECT(
+            NODE_OBJECT(
+              MEMB_NULL(S("whoops")),
+              MEMB_FLOAT(S("decimals"), 123.456)
+            )
+          )
+        )
+      )
+    ));
 
   __debugbreak();
 
