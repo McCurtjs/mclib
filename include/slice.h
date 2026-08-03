@@ -108,24 +108,13 @@ extern void (*slice_write)(slice_t str);
   .size = sizeof(C_STR_LITERAL) - 1                                           \
 })                                                                            //
 
-// \brief Same as S, but omits the type specifier so it can be used as a
-//    constant expression.
-//
-// \param C_STR_LITERAL - The string literal value - either a string in double
-//    quotes, or a char[].
-#define STRL(C_STR_LITERAL) {                                                 \
-  .begin = (C_STR_LITERAL),                                                   \
-  .size = sizeof(C_STR_LITERAL) - 1                                           \
-}                                                                             //
-
 // \brief Used to allocate a static string from a string literal. This is only
 //    necessary in MSVC because it can't understand initializer list casting.
 //
-// \param NAME - the name symbol for the static variable
-//
 // \param C_STR_LITERAL - the compile-time constant string literal value.
-#define slice_static(NAME, C_STR_LITERAL) static slice_t NAME = {             \
-  slice_body(C_STR_LITERAL)                                                   \
+#define slice_static(C_STR_LITERAL) {                                         \
+  .begin = (C_STR_LITERAL),                                                   \
+  .size = sizeof(C_STR_LITERAL) - 1                                           \
 }                                                                             //
 
 // \brief Builds a slice from a c_string using strlen to find the length.

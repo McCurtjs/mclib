@@ -462,7 +462,7 @@ static inline bool _prefix(_read_or_default)
 ( _map_type map
 , _key_type key
 , con_type* out_element
-, const con_type* default_value
+, con_type* default_value
 ) {
   assert(map);
   assert(out_element);

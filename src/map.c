@@ -569,7 +569,7 @@ bool map_read_or_default(
   return false;
 }
 
-bool set_contains_key(HMap m_in, const void* key) {
+bool map_contains_key(HMap m_in, const void* key) {
   HMAP_INTERNAL;
   return map_ref(m_in, key) != NULL;
 }

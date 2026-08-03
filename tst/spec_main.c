@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 #ifdef CSPEC_MSVC
   /* Test values for Visual Studio without having to modify properties */
   argv = (char* []){ argv[0], "-yv", "data_tree_spec.c" };
-  argc = 3;
+  argc = 2;
 #endif
 
   TestSuite* test_suites[] = {

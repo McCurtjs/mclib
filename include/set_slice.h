@@ -29,7 +29,7 @@
 
 #define con_type slice_t
 #define con_prefix slice
-#define key_type_hash_compare slice_hash_vptr, slice_compare_vptr
+#define con_type_hash_compare slice_hash_vptr, slice_compare_vptr
 #include "set.h"
 #undef key_type_hash_compare
 #undef con_prefix

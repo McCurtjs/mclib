@@ -73,6 +73,8 @@ describe(dtree_copy) {
 describe(dtree_from_json) {
 
   DataTree dtree = NULL;
+  dtree_status_t expected_status = DS_READY;
+  index_t expected_error_pos = 0;
 
   it("can process a json string with an empty object") {
     dtree = dtree_from_json(S("{}"));
@@ -196,6 +198,14 @@ describe(dtree_from_json) {
     expect(dtree->root->array.size to be_zero);
   }
 
+  it("can process an empty array with spaces") {
+    dtree = dtree_from_json(S("[ \r\n \t ]"));
+    expect(dtree to not be_null);
+    expect(dtree->root to not be_null);
+    expect(dtree->root->type, == , DN_ARRAY);
+    expect(dtree->root->array.size to be_zero);
+  }
+
   it("can process an empty array containing an empty object") {
     dtree = dtree_from_json(S("[{}]"));
     expect(dtree to not be_null);
@@ -218,14 +228,114 @@ describe(dtree_from_json) {
       to all_be( == , ((int64_t[]) { 1, 2, 3, 4, 5 }) [n] ));
   }
 
-  it("can read an object using multiple copies of the same member key") {
-    dtree = dtree_from_json(
-      S("{\"first\":{\"x\":4,\"y\":12},\"second\":{\"x\":0,\"y\":1}}")
-    );
+  it("re-uses the memory of duplicate string values") {
+    dtree = dtree_from_json(S("{\"test\":{\"test\":\"test\"}}"));
+  }
+
+  context("json error status codes") {
+
+    it("hits the end of a file while reading a string") {
+      dtree = dtree_from_json(S("  \"String that never ends"));
+      expected_status = DS_STR_EOF;
+      expected_error_pos = 24;
+    }
+
+    it("hits the end of a file while reading a string") {
+      dtree = dtree_from_json(S("\"String ends in escape char\\"));
+      expected_status = DS_STR_EOF;
+      expected_error_pos = 27;
+    }
+
+    it("hits the end of the file while parsing an object") {
+      dtree = dtree_from_json(S("{"));
+      expected_status = DS_OBJ_EOF;
+      expected_error_pos = 0;
+    }
+
+    it("has non-member junk in an otherwise empty object specifier") {
+      dtree = dtree_from_json(S("{x}"));
+      expected_status = DS_OBJ_GARBAGE_BEFORE_MEMBER_NAME;
+      expected_error_pos = 2;
+    }
+
+    it("has an error for junk characters before a member name") {
+      dtree = dtree_from_json(S("{junk\"\":5}"));
+      expected_status = DS_OBJ_GARBAGE_BEFORE_MEMBER_NAME;
+      expected_error_pos = 5;
+    }
+
+    it("has an error for invalid closing of an object") {
+      dtree = dtree_from_json(S("{\"member\""));
+      expected_status = DS_OBJ_EOF_AFTER_KEY;
+      expected_error_pos = 8;
+    }
+
+    it("has garabge text between member name and colon") {
+      dtree = dtree_from_json(S("{\"member\"x:"));
+      expected_status = DS_OBJ_GARBAGE_AFTER_MEMBER_NAME;
+      expected_error_pos = 10;
+    }
+
+    it("has garabge text between member string value and comma separator") {
+      dtree = dtree_from_json(S("{\"member\":\"abc\"x,}"));
+      expected_status = DS_VAL_JUNK_AFTER_STR;
+      expected_error_pos = 16;
+    }
+
+    it("hits the end of the file while parsing an array") {
+      dtree = dtree_from_json(S("["));
+      expected_status = DS_VAL_PARSE_ERROR;
+      expected_error_pos = 0;
+    }
+
+    it("has an invalid terminator between items in an array") {
+      dtree = dtree_from_json(S("[ {} . 5 ]"));
+      expected_status = DS_VAL_JUNK_AFTER_OBJ;
+      expected_error_pos = 9;
+    }
+
+    it("has garbage values in an array after an object") {
+      dtree = dtree_from_json(S("[ {} x]"));
+      expected_status = DS_VAL_JUNK_AFTER_OBJ;
+      expected_error_pos = 6;
+    }
+
+    it("has garbage values in an array before a string") {
+      dtree = dtree_from_json(S("[ x \"\"]"));
+      expected_status = DS_VAL_JUNK_BEFORE_STR;
+      expected_error_pos = 4;
+    }
+
+    it("has garbage values in an array after a string") {
+      dtree = dtree_from_json(S("[ \"\" x]"));
+      expected_status = DS_VAL_JUNK_AFTER_STR;
+      expected_error_pos = 6;
+    }
+
+    it("has garbage values in an array before an array") {
+      dtree = dtree_from_json(S("[ x []]"));
+      expected_status = DS_VAL_JUNK_BEFORE_ARR;
+      expected_error_pos = 4;
+    }
+
+    it("has garbage values in an array before an object") {
+      dtree = dtree_from_json(S("[ x {}]"));
+      expected_status = DS_VAL_JUNK_BEFORE_OBJ;
+      expected_error_pos = 4;
+    }
+
+    it("hits a comma before finding a value") {
+      dtree = dtree_from_json(S("[,4]"));
+      expected_status = DS_VAL_PARSE_ERROR;
+      expected_error_pos = 1;
+    }
+
   }
 
   after{
     expect(dtree to not be_null);
+    expect(dtree->status, == , expected_status);
+    expect(dtree->error_pos, == , expected_error_pos);
     dtree_delete(&dtree);
     expect(dtree to be_null);
   }

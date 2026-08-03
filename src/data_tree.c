@@ -93,7 +93,7 @@ DataTree_Internal* _dtree_new(void) {
 static void _dtree_copy_node_contents(DataTree_Internal*, DataNode, DataView);
 
 static slice_t _dtree_get_canon_string(DataTree_Internal* tree, slice_t slice) {
-  slice_t* canon = set_slice_ref(tree->string_set, &slice);
+  const slice_t* canon = set_slice_ref(tree->string_set, &slice);
 
   if (canon) {
     slice = *canon;
@@ -345,6 +345,8 @@ static char _json_parse_node(
 #include <ctype.h>
 #include "utility.h"
 
+#define _parse_error(STATUS) if (!tree->pub.status) tree->pub.status = (STATUS)
+
 ////////////////////////////////////////////////////////////////////////////////
 
 static char _json_parse_string(
@@ -389,6 +391,7 @@ static char _json_parse_string(
   return c;
 
 parse_error:
+  _parse_error(DS_STR_EOF);
 
   arr_byte_clear(scratch);
   *out = slice_empty;
@@ -454,32 +457,61 @@ static char _json_parse_obj(
     res_token_t t = slice_token_char(json, S("\"}"), i);
 
     // invalid case (unexpected EOF)
-    delimiter = 0;
-    if (!t.delimiter.size) goto finish;
+    if (!t.delimiter.size) goto error_eof;
     delimiter = t.delimiter.begin[0];
+
+    if (!slice_is_empty(t.token)) goto error_invalid_name_prefix;
 
     // found the end of the object, clean exit
     if (delimiter == '}') goto finish;
+
+    // not eof, not end of object, only other case is hitting a member name
     assert(delimiter == '"');
 
     dnode_member_t* member = arr_dmemb_emplace_back(members);
 
     delimiter = _json_parse_string(tree, json, i, &member->name);
-    if (delimiter != '"') goto parse_error;
+    if (delimiter != '"') goto error_eof_in_member_name;
 
     t = slice_token_char(json, S(":"), i);
 
-    // hit EOF after member name, or garbage included between name and value
-    if (!t.delimiter.size || !slice_is_empty(t.token)) goto parse_error;
+    // garbage found between member name and colon
+    if (!slice_is_empty(t.token)) goto error_invalid_name_separator;
+
+    // hit EOF after reading member name but before colon
+    if (!t.delimiter.size) goto error_eof_after_member_name;
 
     delimiter = _json_parse_node(tree, json, i, &member->node);
 
-    // check for errors or completion from sub-parsing
-    if (delimiter != '}' && delimiter != ',') goto parse_error;
+    // check if the sub-object ended with the end of the object
+    if (delimiter == '}') goto finish;
+
+    // check for errors completing sub-parsing
+    if (delimiter != ',') goto error_invalid_separator;
   }
 
-parse_error:
+error_eof_in_member_name:
+  assert(tree->pub.status == DS_STR_EOF);
 
+error_eof_after_member_name:
+  _parse_error(DS_OBJ_EOF_AFTER_KEY);
+
+error_invalid_name_separator:
+  _parse_error(DS_OBJ_GARBAGE_AFTER_MEMBER_NAME);
+
+  // the previous errors all come after a member was emplaced, so remove that
+  arr_dmemb_pop_back(members);
+
+error_invalid_name_prefix:
+  _parse_error(DS_OBJ_GARBAGE_BEFORE_MEMBER_NAME);
+
+error_eof:
+  _parse_error(DS_OBJ_EOF);
+
+error_invalid_separator:
+  _parse_error(DS_OBJ_INVALID_SEPARATOR);
+
+  // in all error cases, set the delimiter to 0 to signal error to the caller
   delimiter = 0;
 
 finish:
@@ -562,37 +594,36 @@ static char _json_parse_array(
   DataTree_Internal* tree, slice_t json, index_t* i, DataNode node
 ) {
   node->type = DN_ARRAY;
-  Array_dnode children = arr_dnode_new();
 
+  // special case for empty array to avoid other edge cases in value parsing
+  for (index_t j = *i; j < json.size; ++j) {
+    if (isspace(json.begin[j])) continue;
+    if (json.begin[j] != ']') break;
+    *i = j + 1;
+    node->array.size = 0;
+    node->array.elem_type = DN_NULL;
+    node->array.nodes = NULL;
+    return ']';
+  }
+
+  Array_dnode children = arr_dnode_new();
   char delimiter;
 
-  loop{
-    dnode_t node;
+  loop {
+    dnode_t node = { 0 };
     delimiter = _json_parse_node(tree, json, i, &node);
 
-    if (!delimiter) {
-      // lame hack for empty arrays
-      if (json.begin[*i - 1] == ']') {
-        delimiter = ']';
-        goto finish;
-      }
-      goto parse_error;
-    }
+    if (!delimiter) goto error_in_subparsing;
 
-    // check for error in sub-object parsing
-    if (delimiter != '}' && delimiter != '"'
-    &&  delimiter != ']' && delimiter != ','
-    ) {
-      _dtree_delete_node(&node);
-      goto parse_error;
-    }
-
+    // add node here if successcully read, errors later should include as much
+    //    as was read successfully
     arr_dnode_push_back(children, node);
 
     if (delimiter == ']') goto finish;
   }
 
-parse_error:
+error_in_subparsing:
+  assert(tree->pub.status);
 
   delimiter = 0;
 
@@ -616,6 +647,8 @@ static char _json_parse_node(
   UNUSED(tree);
   UNUSED(node);
 
+  static const slice_t delims = slice_static("]},");
+
   res_token_t t = slice_token_char(json, S("{}[],\""), i);
 
   // It's possible to hit the end of file legitimately on the root node
@@ -624,20 +657,32 @@ static char _json_parse_node(
 
   switch (t.delimiter.begin[0]) {
     case '{':
-      if (!slice_is_empty(t.token)) goto parse_error;
-      return _json_parse_obj(tree, json, i, node);
+      if (!slice_is_empty(t.token)) goto error_before_obj;
+      delimiter = _json_parse_obj(tree, json, i, node);
+      if (delimiter != '}') goto error_in_subparsing;
+      t = slice_token_char(json, S("}],"), i);
+      if (!slice_is_empty(t.token)) goto error_after_obj;
+      if (!t.delimiter.size) return 0;
+      return t.delimiter.begin[0];
 
     case '[':
-      if (!slice_is_empty(t.token)) goto parse_error;
-      return _json_parse_array(tree, json, i, node);
+      if (!slice_is_empty(t.token)) goto error_before_arr;
+      delimiter = _json_parse_array(tree, json, i, node);
+      if (delimiter != ']') goto error_in_subparsing;
+      t = slice_token_char(json, S("}],"), i);
+      if (!slice_is_empty(t.token)) goto error_after_arr;
+      if (!t.delimiter.size) return 0;
+      return t.delimiter.begin[0];
 
     case '"':
-      if (!slice_is_empty(t.token)) goto parse_error;
+      if (!slice_is_empty(t.token)) goto error_before_str;
       node->type = DN_STRING;
       delimiter = _json_parse_string(tree, json, i, &node->value_str);
-      if (delimiter != '"') goto parse_error;
+      if (delimiter != '"') goto error_str_eof;
+
       t = slice_token_char(json, S("}],"), i);
-      if (!slice_is_empty(t.token)) goto parse_error;
+      if (!slice_is_empty(t.token)) goto error_after_str;
+
       if (t.delimiter.size) return t.delimiter.begin[0];
       return 0;
 
@@ -647,12 +692,15 @@ static char _json_parse_node(
     //  - EOF the root node can go until end of file (non-container roots)
     default:
       bool success = _json_parse_value(t.token, node);
-      if (!success) goto parse_error;
+      if (!success) goto error_parsing_value;
+
+      // 
       if (delimiter == '}' || delimiter == ']') --*i;
       return delimiter;
   }
 
   // return last-read delimiter as 0 if we hit the end of the file after reading
+  // this applies mostly when a regular value is the root node
   if (*i >= json.size) {
     return 0;
   }
@@ -660,12 +708,19 @@ static char _json_parse_node(
   // for container types, return the last-read delimiter and advance past it
   return json.begin[*i++];
 
-parse_error:
+error_str_eof:        assert(tree->pub.status == DS_STR_EOF);
+error_in_subparsing:  assert(tree->pub.status);
+error_parsing_value:  _parse_error(DS_VAL_PARSE_ERROR);
+error_before_obj:     _parse_error(DS_VAL_JUNK_BEFORE_OBJ);
+error_before_arr:     _parse_error(DS_VAL_JUNK_BEFORE_ARR);
+error_before_str:     _parse_error(DS_VAL_JUNK_BEFORE_STR);
+error_after_obj:      _parse_error(DS_VAL_JUNK_AFTER_OBJ);
+error_after_arr:      _parse_error(DS_VAL_JUNK_AFTER_ARR);
+error_after_str:      _parse_error(DS_VAL_JUNK_AFTER_STR);
 
   // error-case happens when we:
   //  - read things between container start values (example: `{ "key": x {} }`
   //  - fail to successfully read a value type (example: `{ "key": ture }`
-  node->type = DN_NULL;
   return 0;
 }
 
@@ -692,6 +747,8 @@ DataTree dtree_from_json(slice_t json) {
   ret->pub.root = _dtree_json_node(ret, json, &i);
 
   arr_byte_delete(&ret->string_scratch);
+
+  if (ret->pub.status) ret->pub.error_pos = i - 1;
 
   return (DataTree)ret;
 }

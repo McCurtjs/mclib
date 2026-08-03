@@ -48,6 +48,25 @@
 #include "data_node.h"
 #include "view_byte.h"
 
+typedef enum dtree_status_t {
+  DS_READY,
+  DS_STR_EOF,
+  DS_VAL_PARSE_ERROR,
+  DS_VAL_JUNK_BEFORE_OBJ,
+  DS_VAL_JUNK_BEFORE_ARR,
+  DS_VAL_JUNK_BEFORE_STR,
+  DS_VAL_JUNK_AFTER_OBJ,
+  DS_VAL_JUNK_AFTER_ARR,
+  DS_VAL_JUNK_AFTER_STR,
+  DS_OBJ_EOF,
+  DS_OBJ_EOF_AFTER_KEY,
+  DS_OBJ_GARBAGE_BEFORE_MEMBER_NAME,
+  DS_OBJ_GARBAGE_AFTER_MEMBER_NAME,
+  DS_OBJ_INVALID_SEPARATOR,
+  DS_ARR_EOF,
+  DS_ARR_EMPTY_VALUE
+} dtree_status_t;
+
 // While DataNode can represent an entire structure, it does not own the data it
 //    contains. A DataTree both contains and owns a copy of its data.
 typedef struct _opaque_DataTree_t {
@@ -55,6 +74,8 @@ typedef struct _opaque_DataTree_t {
     DataNode            CONST root;
     DataView            CONST view;
   };
+  dtree_status_t        CONST status;
+  index_t               CONST error_pos;
 }* DataTree;
 
 DataTree  dtree_copy(DataView tree_to_copy);
