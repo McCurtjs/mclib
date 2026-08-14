@@ -244,7 +244,7 @@ vec3 v3euler(quat q) {
   float cosr = 1.0f - 2.0f * (x * x + z * z);
   float roll = atan2f(sinr, cosr);
 
-  return v3f(yaw, pitch, roll);
+  return v3f(pitch, yaw, roll);
 }
 
 vec3 v3rotate(vec3 v, quat q) {
