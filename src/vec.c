@@ -238,6 +238,22 @@ bool v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out) {
   return TRUE;
 }
 
+bool v2in_rect_aa(vec2 point, vec2 top_left, vec2 bottom_right) {
+  return point.x > top_left.x
+      && point.x < bottom_right.x
+      && point.y < top_left.y
+      && point.y > bottom_right.y
+  ;
+}
+
+bool v2in_square_aa(vec2 point, vec2 square, float radius) {
+  return point.x > square.x - radius
+      && point.x < square.x + radius
+      && point.y > square.y - radius
+      && point.y < square.y + radius
+  ;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Vector 3 (float)
 ////////////////////////////////////////////////////////////////////////////////

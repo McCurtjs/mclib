@@ -71,6 +71,16 @@
     </Expand>
   </Type>
 
+  <Type Name="quat">
+    <DisplayString>quat: ❮ {i}, {j}, {k}, {w} ❯.</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="I">i</Item>
+      <Item Name="J">j</Item>
+      <Item Name="K">k</Item>
+      <Item Name="W">w</Item>
+    </Expand>
+  </Type>
+
   <Type Name="mat4">
     <DisplayString>mat4: 4 x 4</DisplayString>
     <Expand HideRawView="true">

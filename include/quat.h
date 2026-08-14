@@ -45,6 +45,8 @@
 
 #define I static inline
 
+I quat  q4f(float i, float j, float k, float w);
+I bool  q4eq(quat a, quat b);
 I float q4magsq(quat q);
   float q4mag(quat q);
   quat  q4norm(quat q);
@@ -88,6 +90,10 @@ I void  v3rotate_slerp_eq(vec3* v, quat q, float t);
 
 I quat q4f(float i, float j, float k, float w) {
   return (quat) { .i = i, .j = j, .k = k, .w = w };
+}
+
+I bool q4eq(quat a, quat b) {
+  return a.i == b.i && a.j == b.j && a.k == b.k && a.w == b.w;
 }
 
 I quat qv34f(vec3 ijk, float w) {

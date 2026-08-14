@@ -70,6 +70,7 @@ typedef vec3b color3b;
 typedef struct vec4b {
   union {
     byte i[4];
+    uint32_t value;
     struct {
       union { byte x; byte r; };
       union { byte y; byte g; };
@@ -352,6 +353,8 @@ I vec2    v2lerp(vec2 P, vec2 Q, float t);
   bool    v2ray_ray(vec2 R, vec2 v, vec2 Q, vec2 u, float* t_out, float* s_out);
   bool    v2ray_seg(vec2 R, vec2 v, vec2 S1, vec2 S2, float* t_out);
   bool    v2seg_seg(vec2 S1, vec2 S2, vec2 Q1, vec2 Q2, vec2* out);
+  bool    v2in_rect_aa(vec2 point, vec2 top_left, vec2 bottom_right);
+  bool    v2in_square_aa(vec2 point, vec2 square_center, float radius);
 
 I vec3    v3f(float x, float y, float z);
 I bool    v3eq(vec3 a, vec3 b);
@@ -794,8 +797,15 @@ I vec4 v24v(vec2 xy, vec2 zw) {
 
 // Convert between vector types
 
+I vec2i v2if(float x, float y) {
+  return v2i(
+    (int)x - (x < 0),
+    (int)y - (y < 0)
+  );
+}
+
 I vec2i v2iv(vec2 v) {
-  return v2i((int)v.x, (int)v.y);
+  return v2if(v.x, v.y);
 }
 
 I vec2 v2vi(vec2i v) {
