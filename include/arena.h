@@ -36,6 +36,7 @@ typedef struct _opaque_Arena_t {
 Arena arena_new(void);
 Arena arena_new_reserve(index_t capacity);
 void  arena_reserve(Arena, index_t capacity);
+void  arena_clear(Arena);
 void  arena_free(Arena);
 void  arena_delete(Arena*);
 

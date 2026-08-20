@@ -31,6 +31,7 @@
 typedef struct page_header_t {
   struct page_header_t* next;
   index_t remaining;
+  index_t size;
   byte data[];
 } page_header_t;
 
@@ -52,6 +53,7 @@ void _check_add_page(Arena_Internal* arena, index_t size) {
 
   *page = (page_header_t) {
     .next = arena->pages,
+    .size = page_size,
     .remaining = page_size,
   };
 
@@ -100,18 +102,72 @@ void arena_reserve(Arena a_in, index_t capacity) {
   arena->pub.page_count += 1;
 }
 
+// Clears the contents of the arena, freeing all but one page and updating that
+//    page to be large enough to fit all the contents, or shrinks it if the
+//    arena was mostly empty since the previous clear.
+void arena_clear(Arena a_in) {
+  Arena_Internal* arena = (Arena_Internal*)a_in;
+  assert(arena);
+
+  page_header_t* page = arena->pages;
+  if (!page) return;
+
+  while (page->next) {
+    page_header_t* next = page->next;
+    free(page);
+    page = next;
+  }
+
+  assert(page);
+  index_t total_bytes = arena->pub.bytes_used;
+
+  if (page->size < (index_t)((float)total_bytes * 0.75f)) {
+    total_bytes = (index_t)((float)total_bytes * 0.8f);
+  }
+  else if (total_bytes > page->size) {
+    total_bytes = arena->pub.bytes_used;
+  }
+  else {
+    total_bytes = page->size;
+  }
+
+  // smallest allowed allocation is the regular page size
+  total_bytes = MAX(total_bytes, PAGE_SIZE);
+
+  if (total_bytes != page->size) {
+    free(page);
+    page = malloc((size_t)arena->pub.bytes_used + sizeof(page_header_t));
+    assert(page);
+    page->size = total_bytes;
+  }
+
+  page->next = NULL;
+  page->remaining = page->size;
+
+  arena->pub = (struct _opaque_Arena_t) {
+    .page_count = 1,
+    .alloc_count = 1,
+    .bytes_used = 0,
+  };
+
+  arena->pages = page;
+  arena->head = page->data;
+}
+
+// Fully frees all the pages managed by the arena. Any pointers referring to
+//    objects allocated in the arena will be invalidated.
 void arena_free(Arena a_in) {
   Arena_Internal* arena = (Arena_Internal*)a_in;
   assert(arena);
 
   page_header_t* page = arena->pages;
   while (page) {
-    page_header_t* next = arena->pages->next;
+    page_header_t* next = page->next;
     free(page);
     page = next;
   }
 
-  *arena = (Arena_Internal){
+  *arena = (Arena_Internal) {
     .pub = {
       .page_count = 0,
       .alloc_count = 0,
@@ -122,6 +178,7 @@ void arena_free(Arena a_in) {
   };
 }
 
+// Deletes the arena and all of its contents.
 void arena_delete(Arena* p_arena) {
   if (!p_arena || !*p_arena) return;
   Arena arena = *p_arena;
@@ -145,8 +202,10 @@ void* arena_alloc(Arena a_in, index_t size_bytes) {
   return ret;
 }
 
+static void* (*const volatile memset_explicit) (void*, int, size_t) = memset;
+
 void* arena_alloc_zeroed(Arena a_in, index_t size_bytes) {
   void* ret = arena_alloc(a_in, size_bytes);
-  memset(ret, 0, (size_t)size_bytes);
+  memset_explicit(ret, 0, (size_t)size_bytes);
   return ret;
 }
