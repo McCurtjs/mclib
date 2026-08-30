@@ -722,7 +722,7 @@ static inline _arr_type _prefix(_new)
   return (_arr_type) { (_arr_type)arr_new(con_type) };
 }
 
-// \brief Initialies a new array of the given type. Pre-allocates space for N
+// \brief Initializes a new array of the given type. Pre-allocates space for N
 //    elements to be added without needing to expand the array. The array after
 //    initialization is still empty.
 //

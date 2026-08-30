@@ -30,6 +30,10 @@
 size_t  msb(size_t x);
 hash_t  hash(const void* src, index_t size);
 
+static inline float lerp(float start, float end, float dt) {
+  return dt * (end - start) + start;
+}
+
 float   frand(void);
 
 static inline float frand_01(void) {
