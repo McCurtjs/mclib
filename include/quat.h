@@ -50,7 +50,7 @@ I bool  q4eq(quat a, quat b);
 I float q4magsq(quat q);
   float q4mag(quat q);
   quat  q4norm(quat q);
-I quat  q4norm_eq(quat* q);
+I void  q4norm_eq(quat* q);
 I quat  q4conj(quat q);
 I quat  q4neg(quat q);
   quat  q4inv(quat q);
@@ -101,6 +101,10 @@ I quat qv34f(vec3 ijk, float w) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+I void q4norm_eq(quat* q) {
+  *q = q4norm(*q);
+}
 
 I float q4magsq(quat q) {
   return q.i * q.i + q.j * q.j + q.k * q.k + q.w * q.w;
